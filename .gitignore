@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node / Next.js
+node_modules/
+apps/web/.next/
+apps/web/out/
+.env.local
+.env.*.local
+
+# IDE / OS
+.idea/
+.DS_Store
+Thumbs.db

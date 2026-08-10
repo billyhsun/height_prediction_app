@@ -1,0 +1,31 @@
+# Local development — services will be wired up in Phase 0
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: growth
+      POSTGRES_PASSWORD: growth
+      POSTGRES_DB: growth_predictor
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # api:
+  #   build: ./apps/api
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     DATABASE_URL: postgresql://growth:growth@db:5432/growth_predictor
+  #   depends_on:
+  #     - db
+
+  # web:
+  #   build: ./apps/web
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - api
+
+volumes:
+  pgdata:

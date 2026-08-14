@@ -61,3 +61,44 @@ curl -X POST http://localhost:8000/api/v1/predict/llm \
 ## Disclaimer
 
 Informational estimates only. Not medical advice.
+
+## Deploy to Vercel
+
+The web app includes Python serverless functions so everything runs on Vercel (no separate API host needed).
+
+### 1. Import project in Vercel
+
+1. Go to [vercel.com/new](https://vercel.com/new) and import `height_prediction_app` from GitHub
+2. Set **Root Directory** to `apps/web`
+3. Framework preset: **Next.js** (auto-detected)
+
+### 2. Environment variables
+
+In Vercel → Project → Settings → Environment Variables:
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `OPENAI_API_KEY` | For LLM predictions | From OpenAI dashboard |
+| `OPENAI_MODEL` | Optional | Default: `gpt-5.4-mini` |
+
+Do **not** set `API_URL` on Vercel.
+
+### 3. Deploy
+
+Click Deploy. The build runs `copy-models` (copies SVR `.bin` files) then `next build`.
+
+Your app will be live at `https://your-project.vercel.app`.
+
+### Local development
+
+**Option A — separate FastAPI (current workflow):**
+```bash
+./apps/api/run.sh          # terminal 1
+cd apps/web && cp .env.local.example .env.local && npm run dev   # terminal 2
+```
+
+**Option B — Vercel dev (matches production):**
+```bash
+cd apps/web
+npx vercel dev
+```

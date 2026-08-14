@@ -1,0 +1,2 @@
+# Keep copied model binaries out of git (generated at build time).
+api/models/

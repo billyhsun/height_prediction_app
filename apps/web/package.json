@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "copy-models": "mkdir -p api/models/svr-v1 && cp ../../packages/prediction/models/svr-v1/*.bin api/models/svr-v1/",
+    "vercel-build": "npm run copy-models && next build"
   },
   "dependencies": {
     "next": "16.3.0",

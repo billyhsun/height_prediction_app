@@ -10,6 +10,7 @@ import {
   fetchChildren,
   type ChildProfile,
 } from "@/lib/children";
+import { formatEthnicities } from "@/lib/ethnicities";
 import { sexLabel } from "@/lib/prediction-session";
 
 export function ChildrenPageClient() {
@@ -102,6 +103,11 @@ export function ChildrenPageClient() {
                         {child.fatherHeightCm
                           ? `father ${child.fatherHeightCm} cm`
                           : ""}
+                      </p>
+                    )}
+                    {child.ethnicities.length > 0 && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        Ethnicity: {formatEthnicities(child.ethnicities)}
                       </p>
                     )}
                   </div>

@@ -1,31 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { getOrCreateDbUser } from "@/lib/auth";
+import { toChildProfile } from "@/lib/child-profile";
 import { prisma } from "@/lib/db";
+import { sanitizeEthnicities } from "@/lib/ethnicities";
 
 type RouteContext = { params: Promise<{ id: string }> };
-
-function toChildProfile(child: {
-  id: string;
-  displayName: string;
-  sex: number;
-  dateOfBirth: Date;
-  motherHeightCm: number | null;
-  fatherHeightCm: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    id: child.id,
-    displayName: child.displayName,
-    sex: child.sex,
-    dateOfBirth: child.dateOfBirth.toISOString().slice(0, 10),
-    motherHeightCm: child.motherHeightCm,
-    fatherHeightCm: child.fatherHeightCm,
-    createdAt: child.createdAt.toISOString(),
-    updatedAt: child.updatedAt.toISOString(),
-  };
-}
 
 async function getOwnedChild(userId: string, id: string) {
   return prisma.child.findFirst({
@@ -62,7 +42,14 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const body = await request.json();
-  const { displayName, sex, dateOfBirth, motherHeightCm, fatherHeightCm } = body;
+  const {
+    displayName,
+    sex,
+    dateOfBirth,
+    motherHeightCm,
+    fatherHeightCm,
+    ethnicities,
+  } = body;
 
   if (displayName !== undefined && !displayName?.trim()) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -79,6 +66,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       ...(dateOfBirth !== undefined && { dateOfBirth: new Date(dateOfBirth) }),
       ...(motherHeightCm !== undefined && { motherHeightCm }),
       ...(fatherHeightCm !== undefined && { fatherHeightCm }),
+      ...(ethnicities !== undefined && {
+        ethnicities: sanitizeEthnicities(ethnicities),
+      }),
     },
   });
 

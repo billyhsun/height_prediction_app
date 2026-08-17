@@ -20,6 +20,22 @@ def mid_parental_height_cm(sex: int, mother_cm: float, father_cm: float) -> floa
     return (father_cm + mother_cm - 13) / 2
 
 
+_ETHNICITY_LABELS = {
+    "east_asian": "East Asian",
+    "south_asian": "South Asian",
+    "black_african": "Black / African",
+    "hispanic_latino": "Hispanic / Latino",
+    "mena": "Middle Eastern / North African",
+    "white_european": "White / European",
+    "indigenous": "Indigenous",
+    "mixed_other": "Mixed / Other",
+}
+
+
+def _format_ethnicities(ethnicities: list[str]) -> str:
+    return ", ".join(_ETHNICITY_LABELS.get(value, value) for value in ethnicities)
+
+
 def predict_height_llm(
     *,
     sex: int,
@@ -29,6 +45,7 @@ def predict_height_llm(
     target_age_years: float,
     mother_height_cm: float,
     father_height_cm: float,
+    ethnicities: list[str] | None = None,
 ) -> LlmPredictionResult:
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
@@ -38,6 +55,9 @@ def predict_height_llm(
     bmi = weight_kg / ((height_cm / 100) ** 2)
     mph = mid_parental_height_cm(sex, mother_height_cm, father_height_cm)
     sex_label = "male" if sex == 1 else "female"
+    ethnicity_line = ""
+    if ethnicities:
+        ethnicity_line = f"- Ethnicity: {_format_ethnicities(ethnicities)}\n"
 
     prompt = f"""Estimate a child's future height for an educational app.
 
@@ -48,13 +68,13 @@ Child:
 - Current weight: {weight_kg} kg
 - Current BMI: {bmi:.1f}
 - Target age: {target_age_years} years
-
+{ethnicity_line}
 Parents:
 - Mother height: {mother_height_cm} cm
 - Father height: {father_height_cm} cm
 - Mid-parental height (Tanner): {mph:.1f} cm
 
-Use the child's current measurements, parent heights, and typical growth patterns.
+Use the child's current measurements, parent heights, ethnicity (if provided), and typical growth patterns.
 Return JSON only with:
 - pred_height_cm: predicted height in cm at target age (number)
 - reasoning: 1-2 sentences explaining the estimate (string)

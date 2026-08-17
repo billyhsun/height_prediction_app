@@ -11,7 +11,11 @@ import {
   predictLlm,
 } from "@/lib/api";
 import { ageYearsFromDateOfBirth, formatDateOfBirth } from "@/lib/age";
-import { fetchChildren, type ChildProfile } from "@/lib/children";
+import { fetchChildren, updateChild, type ChildProfile } from "@/lib/children";
+import {
+  ETHNICITY_OPTIONS,
+  type EthnicityValue,
+} from "@/lib/ethnicities";
 import {
   inputsToSearchParams,
   savePredictionSession,
@@ -50,16 +54,18 @@ function applyChildProfile(
     setCurrentAge: (v: number) => void;
     setMotherHeight: (v: string) => void;
     setFatherHeight: (v: string) => void;
+    setEthnicities: (v: string[]) => void;
   },
 ) {
   setters.setSex(child.sex);
   setters.setCurrentAge(ageYearsFromDateOfBirth(child.dateOfBirth));
-  if (child.motherHeightCm != null) {
-    setters.setMotherHeight(String(child.motherHeightCm));
-  }
-  if (child.fatherHeightCm != null) {
-    setters.setFatherHeight(String(child.fatherHeightCm));
-  }
+  setters.setMotherHeight(
+    child.motherHeightCm != null ? String(child.motherHeightCm) : "",
+  );
+  setters.setFatherHeight(
+    child.fatherHeightCm != null ? String(child.fatherHeightCm) : "",
+  );
+  setters.setEthnicities(child.ethnicities);
 }
 
 export function PredictionForm() {
@@ -94,6 +100,7 @@ export function PredictionForm() {
     const value = readOptionalNumber(searchParams, "father_height_cm");
     return value !== undefined ? String(value) : DEFAULTS.father_height_cm;
   });
+  const [ethnicities, setEthnicities] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,8 +123,17 @@ export function PredictionForm() {
       setCurrentAge,
       setMotherHeight,
       setFatherHeight,
+      setEthnicities,
     });
   }, [selectedChild]);
+
+  function toggleEthnicity(value: EthnicityValue) {
+    setEthnicities((prev) =>
+      prev.includes(value)
+        ? prev.filter((entry) => entry !== value)
+        : [...prev, value],
+    );
+  }
 
   const bmi = useMemo(
     () => (heightCm > 0 ? calculateBmi(weightKg, heightCm) : 0),
@@ -153,9 +169,38 @@ export function PredictionForm() {
       target_age_years: targetAge,
       mother_height_cm: motherHeightCm,
       father_height_cm: fatherHeightCm,
+      ethnicities: ethnicities.length > 0 ? ethnicities : undefined,
     };
 
     try {
+      if (selectedChildId) {
+        const profileChanged =
+          (motherHeightCm != null &&
+            fatherHeightCm != null &&
+            (selectedChild?.motherHeightCm !== motherHeightCm ||
+              selectedChild?.fatherHeightCm !== fatherHeightCm)) ||
+          JSON.stringify(selectedChild?.ethnicities ?? []) !==
+            JSON.stringify(ethnicities);
+
+        if (profileChanged) {
+          try {
+            const updated = await updateChild(selectedChildId, {
+              ...(motherHeightCm != null &&
+                fatherHeightCm != null && {
+                  motherHeightCm,
+                  fatherHeightCm,
+                }),
+              ethnicities,
+            });
+            setChildren((prev) =>
+              prev.map((child) => (child.id === updated.id ? updated : child)),
+            );
+          } catch {
+            // Profile save failed — prediction can still proceed.
+          }
+        }
+      }
+
       const result = await predict(inputs);
       let llmResult = null;
       let llmError: string | null = null;
@@ -196,7 +241,7 @@ export function PredictionForm() {
     <div className="w-full max-w-lg space-y-8">
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-slate-900">
-          Height Prediction
+          Child Height Predictor
         </h1>
         <p className="text-sm text-slate-600">
           Enter your child&apos;s measurements for an ML prediction. Add parent
@@ -368,8 +413,13 @@ export function PredictionForm() {
           </legend>
           <p className="text-xs text-slate-500">
             Used for the LLM prediction only. Both are required if you fill one in.
-            {profileLocked && selectedChild?.motherHeightCm != null && (
-              <span> Auto-filled from profile — you can still edit.</span>
+            {profileLocked && (
+              <span>
+                {" "}
+                {selectedChild?.motherHeightCm != null
+                  ? "Auto-filled from profile — edits are saved when you run a prediction."
+                  : "Saved to the child profile when you run a prediction."}
+              </span>
             )}
           </p>
 
@@ -401,6 +451,36 @@ export function PredictionForm() {
             />
           </label>
         </fieldset>
+
+        <SignedIn>
+          <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
+            <legend className="px-1 text-sm font-medium text-slate-700">
+              Ethnicity (optional)
+            </legend>
+            <p className="text-xs text-slate-500">
+              Select all that apply. Used for LLM predictions only.
+              {profileLocked && (
+                <span> Saved to the child profile when you run a prediction.</span>
+              )}
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {ETHNICITY_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={ethnicities.includes(option.value)}
+                    onChange={() => toggleEthnicity(option.value)}
+                    className="rounded border-slate-300"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </SignedIn>
 
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
           <legend className="px-1 text-sm font-medium text-slate-700">

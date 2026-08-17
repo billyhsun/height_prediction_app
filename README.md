@@ -1,4 +1,4 @@
-# Height Prediction App
+# Child Height Predictor
 
 Basic v0: form → API → SVR prediction + optional LLM prediction with parent heights.
 

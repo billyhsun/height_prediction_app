@@ -1,29 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { getOrCreateDbUser } from "@/lib/auth";
+import { toChildProfile } from "@/lib/child-profile";
 import { prisma } from "@/lib/db";
-
-function toChildProfile(child: {
-  id: string;
-  displayName: string;
-  sex: number;
-  dateOfBirth: Date;
-  motherHeightCm: number | null;
-  fatherHeightCm: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    id: child.id,
-    displayName: child.displayName,
-    sex: child.sex,
-    dateOfBirth: child.dateOfBirth.toISOString().slice(0, 10),
-    motherHeightCm: child.motherHeightCm,
-    fatherHeightCm: child.fatherHeightCm,
-    createdAt: child.createdAt.toISOString(),
-    updatedAt: child.updatedAt.toISOString(),
-  };
-}
+import { sanitizeEthnicities } from "@/lib/ethnicities";
 
 export async function GET() {
   const user = await getOrCreateDbUser();
@@ -46,7 +26,14 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { displayName, sex, dateOfBirth, motherHeightCm, fatherHeightCm } = body;
+  const {
+    displayName,
+    sex,
+    dateOfBirth,
+    motherHeightCm,
+    fatherHeightCm,
+    ethnicities,
+  } = body;
 
   if (!displayName?.trim()) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -66,6 +53,7 @@ export async function POST(request: Request) {
       dateOfBirth: new Date(dateOfBirth),
       motherHeightCm: motherHeightCm ?? null,
       fatherHeightCm: fatherHeightCm ?? null,
+      ethnicities: sanitizeEthnicities(ethnicities),
     },
   });
 

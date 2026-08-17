@@ -10,6 +10,10 @@ import {
   updateChild,
   type ChildInput,
 } from "@/lib/children";
+import {
+  ETHNICITY_OPTIONS,
+  type EthnicityValue,
+} from "@/lib/ethnicities";
 
 type ChildFormProps = {
   childId?: string;
@@ -21,6 +25,7 @@ const EMPTY: ChildInput = {
   dateOfBirth: "",
   motherHeightCm: null,
   fatherHeightCm: null,
+  ethnicities: [],
 };
 
 export function ChildForm({ childId }: ChildFormProps) {
@@ -45,6 +50,7 @@ export function ChildForm({ childId }: ChildFormProps) {
           dateOfBirth: child.dateOfBirth,
           motherHeightCm: child.motherHeightCm,
           fatherHeightCm: child.fatherHeightCm,
+          ethnicities: child.ethnicities,
         });
         setMotherHeight(
           child.motherHeightCm != null ? String(child.motherHeightCm) : "",
@@ -58,6 +64,18 @@ export function ChildForm({ childId }: ChildFormProps) {
       )
       .finally(() => setLoading(false));
   }, [childId]);
+
+  function toggleEthnicity(value: EthnicityValue) {
+    setForm((prev) => {
+      const current = prev.ethnicities ?? [];
+      return {
+        ...prev,
+        ethnicities: current.includes(value)
+          ? current.filter((entry) => entry !== value)
+          : [...current, value],
+      };
+    });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -169,6 +187,29 @@ export function ChildForm({ childId }: ChildFormProps) {
               className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             />
           </label>
+
+          <div className="space-y-2">
+            <span className="text-sm text-slate-600">Ethnicity (optional)</span>
+            <p className="text-xs text-slate-500">
+              Select all that apply. Used for LLM predictions only.
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {ETHNICITY_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.ethnicities?.includes(option.value) ?? false}
+                    onChange={() => toggleEthnicity(option.value)}
+                    className="rounded border-slate-300"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+          </div>
         </fieldset>
 
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">

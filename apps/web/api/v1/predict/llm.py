@@ -42,6 +42,7 @@ class handler(BaseHTTPRequestHandler):
                 target_age_years=target_age,
                 mother_height_cm=float(body["mother_height_cm"]),
                 father_height_cm=float(body["father_height_cm"]),
+                ethnicities=body.get("ethnicities"),
             )
             _send_json(
                 self,

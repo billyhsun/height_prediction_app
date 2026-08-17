@@ -1,4 +1,4 @@
-# Child Growth Predictor — System Design
+# Child Height Predictor — System Design
 
 **Status:** Draft  
 **Last updated:** 2026-08-10  
@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-Child Growth Predictor is a standalone consumer app for predicting children's future height, weight, and BMI. It ports the SVR models developed for the Kang Lee Lab **Child BMI** survey in `lab-surveys`, but is built as a separate product with user accounts, child profiles, measurement history, and a path toward LLM-augmented insights.
+Child Height Predictor is a standalone consumer app for predicting children's future height, weight, and BMI. It ports the SVR models developed for the Kang Lee Lab **Child BMI** survey in `lab-surveys`, but is built as a separate product with user accounts, child profiles, measurement history, and a path toward LLM-augmented insights.
 
 ### Goals
 
@@ -28,7 +28,7 @@ Child Growth Predictor is a standalone consumer app for predicting children's fu
 
 ## 2. Relationship to lab-surveys
 
-| Aspect | lab-surveys | Child Growth Predictor |
+| Aspect | lab-surveys | Child Height Predictor |
 |--------|-------------|------------------------|
 | Purpose | Multi-survey research / demo platform | Single-purpose growth tracker |
 | Auth | Auth0; accounts manually provisioned | Self-serve signup |

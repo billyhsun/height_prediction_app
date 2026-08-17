@@ -27,6 +27,7 @@ model Child {
   dateOfBirth    DateTime     @db.Date
   motherHeightCm Float?
   fatherHeightCm Float?
+  ethnicities    String[]     @default([])
 
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Height Prediction",
+  title: "Child Height Predictor",
   description: "Predict children's future height, weight, and BMI",
   icons: {
     icon: "/logo.png",

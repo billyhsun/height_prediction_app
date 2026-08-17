@@ -6,6 +6,7 @@ export type PredictRequest = {
   target_age_years: number;
   mother_height_cm?: number;
   father_height_cm?: number;
+  ethnicities?: string[];
 };
 
 export type PredictResponse = {

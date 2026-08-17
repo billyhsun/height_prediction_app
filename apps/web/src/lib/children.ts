@@ -5,6 +5,7 @@ export type ChildProfile = {
   dateOfBirth: string;
   motherHeightCm: number | null;
   fatherHeightCm: number | null;
+  ethnicities: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -15,6 +16,7 @@ export type ChildInput = {
   dateOfBirth: string;
   motherHeightCm?: number | null;
   fatherHeightCm?: number | null;
+  ethnicities?: string[];
 };
 
 export async function fetchChildren(): Promise<ChildProfile[]> {

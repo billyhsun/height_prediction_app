@@ -17,14 +17,14 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2.5">
           <Image
             src="/logo.png"
-            alt="Height Prediction"
+            alt="Child Height Predictor"
             width={32}
             height={32}
             className="rounded-lg"
             priority
           />
           <span className="text-sm font-semibold text-slate-900">
-            Height Prediction
+            Child Height Predictor
           </span>
         </Link>
 

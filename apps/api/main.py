@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Height Prediction API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Child Height Predictor API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -44,6 +44,7 @@ class PredictRequest(BaseModel):
 class LlmPredictRequest(PredictRequest):
     mother_height_cm: float = Field(..., ge=120, le=220)
     father_height_cm: float = Field(..., ge=120, le=220)
+    ethnicities: list[str] | None = None
 
 
 class PredictResponse(BaseModel):
@@ -66,7 +67,7 @@ class LlmPredictResponse(BaseModel):
 @app.get("/")
 def root():
     return {
-        "name": "Height Prediction API",
+        "name": "Child Height Predictor API",
         "docs": "/docs",
         "health": "/health",
         "predict": "POST /api/v1/predict",
@@ -120,6 +121,7 @@ def predict_llm(body: LlmPredictRequest):
             target_age_years=body.target_age_years,
             mother_height_cm=body.mother_height_cm,
             father_height_cm=body.father_height_cm,
+            ethnicities=body.ethnicities,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

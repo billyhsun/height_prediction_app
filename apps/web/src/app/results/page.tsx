@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ResultsPageClient } from "@/components/ResultsPageClient";
 
 export const metadata: Metadata = {
-  title: "Results | Height Prediction",
+  title: "Results | Child Height Predictor",
   description: "Prediction results for height, weight, and BMI",
 };
 

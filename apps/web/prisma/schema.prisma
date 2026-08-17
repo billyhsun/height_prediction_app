@@ -13,13 +13,36 @@ model User {
   email       String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  children    Child[]
   predictions Prediction[]
+}
+
+model Child {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  displayName    String
+  sex            Int
+  dateOfBirth    DateTime     @db.Date
+  motherHeightCm Float?
+  fatherHeightCm Float?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  predictions    Prediction[]
+
+  @@index([userId])
 }
 
 model Prediction {
   id              String   @id @default(cuid())
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  childId         String?
+  child           Child?   @relation(fields: [childId], references: [id], onDelete: SetNull)
 
   sex             Int
   heightCm        Float
@@ -42,4 +65,5 @@ model Prediction {
   createdAt       DateTime @default(now())
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([childId])
 }

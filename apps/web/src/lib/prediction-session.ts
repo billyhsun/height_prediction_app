@@ -5,6 +5,7 @@ export type PredictionSession = {
   result: PredictResponse;
   llmResult?: LlmPredictResponse | null;
   llmError?: string | null;
+  childId?: string | null;
 };
 
 const STORAGE_KEY = "height-prediction-result";

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import {
@@ -9,9 +10,12 @@ import {
   predict,
   predictLlm,
 } from "@/lib/api";
+import { ageYearsFromDateOfBirth, formatDateOfBirth } from "@/lib/age";
+import { fetchChildren, type ChildProfile } from "@/lib/children";
 import {
   inputsToSearchParams,
   savePredictionSession,
+  sexLabel,
 } from "@/lib/prediction-session";
 import { savePredictionToAccount } from "@/lib/saved-predictions";
 
@@ -39,9 +43,33 @@ function readOptionalNumber(params: URLSearchParams, key: string): number | unde
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
+function applyChildProfile(
+  child: ChildProfile,
+  setters: {
+    setSex: (v: number) => void;
+    setCurrentAge: (v: number) => void;
+    setMotherHeight: (v: string) => void;
+    setFatherHeight: (v: string) => void;
+  },
+) {
+  setters.setSex(child.sex);
+  setters.setCurrentAge(ageYearsFromDateOfBirth(child.dateOfBirth));
+  if (child.motherHeightCm != null) {
+    setters.setMotherHeight(String(child.motherHeightCm));
+  }
+  if (child.fatherHeightCm != null) {
+    setters.setFatherHeight(String(child.fatherHeightCm));
+  }
+}
+
 export function PredictionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const [children, setChildren] = useState<ChildProfile[]>([]);
+  const [selectedChildId, setSelectedChildId] = useState(
+    () => searchParams.get("child") ?? "",
+  );
 
   const [sex, setSex] = useState(() =>
     readNumber(searchParams, "sex", DEFAULTS.sex),
@@ -69,6 +97,28 @@ export function PredictionForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const selectedChild = useMemo(
+    () => children.find((child) => child.id === selectedChildId) ?? null,
+    [children, selectedChildId],
+  );
+  const profileLocked = selectedChild !== null;
+
+  useEffect(() => {
+    fetchChildren()
+      .then(setChildren)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!selectedChild) return;
+    applyChildProfile(selectedChild, {
+      setSex,
+      setCurrentAge,
+      setMotherHeight,
+      setFatherHeight,
+    });
+  }, [selectedChild]);
+
   const bmi = useMemo(
     () => (heightCm > 0 ? calculateBmi(weightKg, heightCm) : 0),
     [heightCm, weightKg],
@@ -91,11 +141,15 @@ export function PredictionForm() {
       return;
     }
 
+    const ageYears = profileLocked && selectedChild
+      ? ageYearsFromDateOfBirth(selectedChild.dateOfBirth)
+      : currentAge;
+
     const inputs = {
-      sex,
+      sex: profileLocked && selectedChild ? selectedChild.sex : sex,
       height_cm: heightCm,
       weight_kg: weightKg,
-      current_age_years: currentAge,
+      current_age_years: ageYears,
       target_age_years: targetAge,
       mother_height_cm: motherHeightCm,
       father_height_cm: fatherHeightCm,
@@ -115,7 +169,13 @@ export function PredictionForm() {
         }
       }
 
-      const session = { inputs, result, llmResult, llmError };
+      const session = {
+        inputs,
+        result,
+        llmResult,
+        llmError,
+        childId: selectedChildId || null,
+      };
       savePredictionSession(session);
 
       try {
@@ -153,53 +213,115 @@ export function PredictionForm() {
         </SignedOut>
         <SignedIn>
           <p className="text-xs text-green-700">
-            Signed in — predictions will be saved to your account.
+            Signed in — select a child profile to auto-fill sex and age, or{" "}
+            <Link href="/children" className="font-medium underline">
+              manage profiles
+            </Link>
+            .
           </p>
         </SignedIn>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        <SignedIn>
+          <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
+            <legend className="px-1 text-sm font-medium text-slate-700">
+              Child profile
+            </legend>
+
+            <label className="block space-y-1">
+              <span className="text-sm text-slate-600">Select child</span>
+              <select
+                value={selectedChildId}
+                onChange={(e) => setSelectedChildId(e.target.value)}
+                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              >
+                <option value="">Enter details manually</option>
+                {children.map((child) => (
+                  <option key={child.id} value={child.id}>
+                    {child.displayName}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {children.length === 0 && (
+              <p className="text-xs text-slate-500">
+                No profiles yet.{" "}
+                <Link href="/children/new" className="font-medium text-blue-600">
+                  Add a child
+                </Link>{" "}
+                to auto-fill the form.
+              </p>
+            )}
+          </fieldset>
+        </SignedIn>
+
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
           <legend className="px-1 text-sm font-medium text-slate-700">
             About your child
           </legend>
 
-          <div className="space-y-2">
-            <span className="text-sm text-slate-600">Sex</span>
-            <div className="flex gap-2">
-              {[
-                { value: 1, label: "Male" },
-                { value: 2, label: "Female" },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setSex(option.value)}
-                  className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${
-                    sex === option.value
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {profileLocked && selectedChild ? (
+            <>
+              <div className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <p>
+                  <span className="font-medium">{selectedChild.displayName}</span>
+                  {" · "}
+                  {sexLabel(selectedChild.sex)}
+                </p>
+                <p className="mt-1 text-slate-600">
+                  Born {formatDateOfBirth(selectedChild.dateOfBirth)} · age{" "}
+                  {ageYearsFromDateOfBirth(selectedChild.dateOfBirth)} years
+                </p>
+              </div>
+              <input type="hidden" name="sex" value={selectedChild.sex} />
+              <input
+                type="hidden"
+                name="current_age_years"
+                value={ageYearsFromDateOfBirth(selectedChild.dateOfBirth)}
+              />
+            </>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <span className="text-sm text-slate-600">Sex</span>
+                <div className="flex gap-2">
+                  {[
+                    { value: 1, label: "Male" },
+                    { value: 2, label: "Female" },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setSex(option.value)}
+                      className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${
+                        sex === option.value
+                          ? "border-blue-600 bg-blue-50 text-blue-700"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <label className="block space-y-1">
-            <span className="text-sm text-slate-600">Current age (years)</span>
-            <input
-              type="number"
-              min={0}
-              max={18}
-              step={0.5}
-              required
-              value={currentAge}
-              onChange={(e) => setCurrentAge(Number(e.target.value))}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
+              <label className="block space-y-1">
+                <span className="text-sm text-slate-600">Current age (years)</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={18}
+                  step={0.5}
+                  required
+                  value={currentAge}
+                  onChange={(e) => setCurrentAge(Number(e.target.value))}
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                />
+              </label>
+            </>
+          )}
         </fieldset>
 
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
@@ -246,6 +368,9 @@ export function PredictionForm() {
           </legend>
           <p className="text-xs text-slate-500">
             Used for the LLM prediction only. Both are required if you fill one in.
+            {profileLocked && selectedChild?.motherHeightCm != null && (
+              <span> Auto-filled from profile — you can still edit.</span>
+            )}
           </p>
 
           <label className="block space-y-1">
@@ -286,7 +411,11 @@ export function PredictionForm() {
             <span className="text-sm text-slate-600">Predict at age (years)</span>
             <input
               type="number"
-              min={Math.ceil(currentAge + 0.1)}
+              min={Math.ceil(
+                (profileLocked && selectedChild
+                  ? ageYearsFromDateOfBirth(selectedChild.dateOfBirth)
+                  : currentAge) + 0.1,
+              )}
               max={25}
               step={1}
               required
@@ -297,17 +426,23 @@ export function PredictionForm() {
           </label>
 
           <div className="flex gap-2">
-            {[15, 18, 21].map((age) => (
-              <button
-                key={age}
-                type="button"
-                disabled={age <= currentAge}
-                onClick={() => setTargetAge(age)}
-                className="rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {age}
-              </button>
-            ))}
+            {[15, 18, 21].map((age) => {
+              const minAge =
+                profileLocked && selectedChild
+                  ? ageYearsFromDateOfBirth(selectedChild.dateOfBirth)
+                  : currentAge;
+              return (
+                <button
+                  key={age}
+                  type="button"
+                  disabled={age <= minAge}
+                  onClick={() => setTargetAge(age)}
+                  className="rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {age}
+                </button>
+              );
+            })}
           </div>
         </fieldset>
 

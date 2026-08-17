@@ -9,6 +9,8 @@ export type SavedPredictionSummary = {
   targetAgeYears: number;
   predHeightCm: number;
   llmPredHeightCm: number | null;
+  childId: string | null;
+  childName: string | null;
 };
 
 export type SavedPredictionDetail = SavedPredictionSummary & {

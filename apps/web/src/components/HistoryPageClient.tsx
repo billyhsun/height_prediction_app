@@ -67,6 +67,9 @@ export function HistoryPageClient() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-slate-900">
+                    {prediction.childName ? (
+                      <span>{prediction.childName} · </span>
+                    ) : null}
                     {sexLabel(prediction.sex)} · age {prediction.currentAgeYears} →{" "}
                     {prediction.targetAgeYears}
                   </p>

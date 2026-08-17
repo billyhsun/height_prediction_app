@@ -31,6 +31,12 @@ export function Header() {
         <nav className="flex items-center gap-3">
           <SignedIn>
             <Link
+              href="/children"
+              className="text-sm text-slate-600 hover:text-slate-900"
+            >
+              My children
+            </Link>
+            <Link
               href="/history"
               className="text-sm text-slate-600 hover:text-slate-900"
             >

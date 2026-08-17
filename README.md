@@ -2,6 +2,8 @@
 
 Basic v0: form → API → SVR prediction + optional LLM prediction with parent heights.
 
+App logo: `apps/web/public/logo.png` (growth chart + child silhouette).
+
 ## Quick start
 
 ### 1. API
@@ -57,6 +59,7 @@ curl -X POST http://localhost:8000/api/v1/predict/llm \
 ## Docs
 
 - [System design](docs/design.md) — full architecture and roadmap
+- [Auth & profiles setup](docs/auth-setup.md) — Clerk, Postgres, guest vs signed-in
 
 ## Disclaimer
 

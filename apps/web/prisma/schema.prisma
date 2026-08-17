@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model User {
+  id          String       @id @default(cuid())
+  clerkId     String       @unique
+  email       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  predictions Prediction[]
+}
+
+model Prediction {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sex             Int
+  heightCm        Float
+  weightKg        Float
+  currentAgeYears Float
+  targetAgeYears  Float
+  motherHeightCm  Float?
+  fatherHeightCm  Float?
+
+  predHeightCm    Float
+  predWeightKg    Float
+  predBmi         Float
+  modelVersion    String
+
+  llmPredHeightCm       Float?
+  llmReasoning          String?
+  llmMidParentalHeight  Float?
+  llmModel              String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+}

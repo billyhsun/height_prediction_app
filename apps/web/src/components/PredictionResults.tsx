@@ -8,9 +8,13 @@ import {
 
 type PredictionResultsProps = {
   session: PredictionSession;
+  savedToAccount?: boolean;
 };
 
-export function PredictionResults({ session }: PredictionResultsProps) {
+export function PredictionResults({
+  session,
+  savedToAccount = false,
+}: PredictionResultsProps) {
   const { inputs, result, llmResult, llmError } = session;
   const currentBmi = calculateBmi(inputs.weight_kg, inputs.height_cm);
   const editHref = `/?${inputsToSearchParams(inputs)}`;
@@ -27,6 +31,14 @@ export function PredictionResults({ session }: PredictionResultsProps) {
           {sexLabel(inputs.sex).toLowerCase()} measuring {inputs.height_cm} cm
           and {inputs.weight_kg} kg.
         </p>
+        {savedToAccount && (
+          <p className="text-xs font-medium text-green-700">
+            Saved to your account ·{" "}
+            <Link href="/history" className="underline">
+              View history
+            </Link>
+          </p>
+        )}
       </header>
 
       <section className="rounded-lg border border-blue-200 bg-white p-6 shadow-sm">

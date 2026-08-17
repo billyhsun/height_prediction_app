@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { PredictionResults } from "@/components/PredictionResults";
 import {
   loadPredictionSession,
@@ -15,6 +16,10 @@ import {
   predictLlm,
   type PredictRequest,
 } from "@/lib/api";
+import {
+  sessionFromSaved,
+  type SavedPredictionDetail,
+} from "@/lib/saved-predictions";
 
 function parseInputs(params: URLSearchParams): PredictRequest | null {
   const sex = Number(params.get("sex"));
@@ -49,15 +54,36 @@ function parseInputs(params: URLSearchParams): PredictRequest | null {
 export function ResultsPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isSignedIn } = useAuth();
   const [session, setSession] = useState<PredictionSession | null>(null);
+  const [savedToAccount, setSavedToAccount] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
+      const savedId = searchParams.get("saved");
+      if (savedId) {
+        try {
+          const res = await fetch(`/api/user/predictions/${savedId}`);
+          if (!res.ok) throw new Error("Saved prediction not found");
+          const detail = (await res.json()) as SavedPredictionDetail;
+          const nextSession = sessionFromSaved(detail);
+          savePredictionSession(nextSession);
+          setSession(nextSession);
+          setSavedToAccount(true);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Failed to load prediction");
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       const stored = loadPredictionSession();
       if (stored) {
         setSession(stored);
+        setSavedToAccount(isSignedIn ?? false);
         setLoading(false);
         return;
       }
@@ -85,6 +111,7 @@ export function ResultsPageClient() {
         const nextSession = { inputs, result, llmResult, llmError };
         savePredictionSession(nextSession);
         setSession(nextSession);
+        setSavedToAccount(isSignedIn ?? false);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Prediction failed");
       } finally {
@@ -93,7 +120,7 @@ export function ResultsPageClient() {
     }
 
     load();
-  }, [searchParams]);
+  }, [searchParams, isSignedIn]);
 
   if (loading) {
     return <p className="text-sm text-slate-600">Loading results…</p>;
@@ -134,5 +161,7 @@ export function ResultsPageClient() {
     );
   }
 
-  return <PredictionResults session={session} />;
+  return (
+    <PredictionResults session={session} savedToAccount={savedToAccount} />
+  );
 }

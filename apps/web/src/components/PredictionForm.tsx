@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 import {
   calculateBmi,
   hasParentHeights,
@@ -12,6 +13,7 @@ import {
   inputsToSearchParams,
   savePredictionSession,
 } from "@/lib/prediction-session";
+import { savePredictionToAccount } from "@/lib/saved-predictions";
 
 const DEFAULTS = {
   sex: 1,
@@ -113,7 +115,15 @@ export function PredictionForm() {
         }
       }
 
-      savePredictionSession({ inputs, result, llmResult, llmError });
+      const session = { inputs, result, llmResult, llmError };
+      savePredictionSession(session);
+
+      try {
+        await savePredictionToAccount(session);
+      } catch {
+        // Guest or save failed — results still work from session storage.
+      }
+
       router.push(`/results?${inputsToSearchParams(inputs)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -132,6 +142,20 @@ export function PredictionForm() {
           Enter your child&apos;s measurements for an ML prediction. Add parent
           heights to also get an LLM-based estimate.
         </p>
+        <SignedOut>
+          <p className="text-xs text-amber-700">
+            Guest mode — predictions are not saved.{" "}
+            <a href="/sign-up" className="font-medium underline">
+              Sign up
+            </a>{" "}
+            to keep your history.
+          </p>
+        </SignedOut>
+        <SignedIn>
+          <p className="text-xs text-green-700">
+            Signed in — predictions will be saved to your account.
+          </p>
+        </SignedIn>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">

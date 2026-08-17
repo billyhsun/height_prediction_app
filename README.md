@@ -69,8 +69,10 @@ The web app includes Python serverless functions so everything runs on Vercel (n
 ### 1. Import project in Vercel
 
 1. Go to [vercel.com/new](https://vercel.com/new) and import `height_prediction_app` from GitHub
-2. Set **Root Directory** to `apps/web`
+2. Set **Root Directory** to `apps/web` ← **required; wrong root causes 404**
 3. Framework preset: **Next.js** (auto-detected)
+
+See **[Vercel deployment checklist](docs/vercel-deployment.md)** if you get 404 or build errors.
 
 ### 2. Environment variables
 

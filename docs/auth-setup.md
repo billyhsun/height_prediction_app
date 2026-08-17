@@ -33,9 +33,9 @@ npm install
 npm run db:sync
 ```
 
-On Vercel, add `POSTGRES_URL` in project env vars. The build runs `prisma db push` automatically via `vercel-build`.
+On Vercel, add `POSTGRES_URL` in project env vars. The build runs `prisma generate` automatically via `vercel-build`.
 
-If child profiles fail after deploy, run `npm run db:sync` locally with your production `POSTGRES_URL`, or paste `prisma/sync-incremental.sql` into the Supabase SQL editor.
+Run schema migrations separately (not during the Vercel build):
 
 ## 3. Behavior
 

@@ -80,24 +80,30 @@ Return JSON only with:
 - reasoning: 1-2 sentences explaining the estimate (string)
 """
 
+    request_body: dict = {
+        "model": model,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant that returns only valid JSON.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        "response_format": {"type": "json_object"},
+    }
+
     with httpx.Client(timeout=45.0) as client:
         response = client.post(
             "https://api.openai.com/v1/chat/completions",
             headers={"Authorization": f"Bearer {api_key}"},
-            json={
-                "model": model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a helpful assistant that returns only valid JSON.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.3,
-            },
+            json=request_body,
         )
-        response.raise_for_status()
+        if response.status_code >= 400:
+            try:
+                detail = response.json()["error"]["message"]
+            except (KeyError, ValueError, TypeError):
+                detail = response.text
+            raise ValueError(f"OpenAI API error: {detail}") from None
         content = response.json()["choices"][0]["message"]["content"]
 
     data = json.loads(content)

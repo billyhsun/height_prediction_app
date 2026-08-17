@@ -20,7 +20,9 @@ Logged-in users can save predictions to a personal history. Guests can still run
 Use **Vercel Postgres**, **Neon**, or **Supabase**.
 
 1. Create a database
-2. Copy the connection string to `POSTGRES_URL`
+2. Copy the **Postgres connection string** (not the Supabase REST/API URL) to `POSTGRES_URL`
+   - Supabase: **Project Settings → Database → Connection string → URI** (port `5432` or pooler `6543`)
+   - If using Supabase pooler (port 6543), append `?pgbouncer=true`
 3. Run migrations:
 
 ```bash
@@ -28,10 +30,12 @@ cd apps/web
 cp .env.local.example .env.local
 # fill in POSTGRES_URL and Clerk keys
 npm install
-npx prisma db push
+npm run db:sync
 ```
 
-On Vercel, add `POSTGRES_URL` in project env vars. The build runs `prisma generate` automatically.
+On Vercel, add `POSTGRES_URL` in project env vars. The build runs `prisma db push` automatically via `vercel-build`.
+
+If child profiles fail after deploy, run `npm run db:sync` locally with your production `POSTGRES_URL`, or paste `prisma/sync-incremental.sql` into the Supabase SQL editor.
 
 ## 3. Behavior
 

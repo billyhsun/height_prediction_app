@@ -11,12 +11,19 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const children = await prisma.child.findMany({
-    where: { userId: user.id, deletedAt: null },
-    orderBy: { displayName: "asc" },
-  });
+  try {
+    const children = await prisma.child.findMany({
+      where: { userId: user.id, deletedAt: null },
+      orderBy: { displayName: "asc" },
+    });
 
-  return NextResponse.json(children.map(toChildProfile));
+    return NextResponse.json(children.map(toChildProfile));
+  } catch (error) {
+    console.error("Failed to list children:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to load children";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -45,17 +52,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Date of birth is required" }, { status: 400 });
   }
 
-  const child = await prisma.child.create({
-    data: {
-      userId: user.id,
-      displayName: displayName.trim(),
-      sex,
-      dateOfBirth: new Date(dateOfBirth),
-      motherHeightCm: motherHeightCm ?? null,
-      fatherHeightCm: fatherHeightCm ?? null,
-      ethnicities: sanitizeEthnicities(ethnicities),
-    },
-  });
+  try {
+    const child = await prisma.child.create({
+      data: {
+        userId: user.id,
+        displayName: displayName.trim(),
+        sex,
+        dateOfBirth: new Date(dateOfBirth),
+        motherHeightCm: motherHeightCm ?? null,
+        fatherHeightCm: fatherHeightCm ?? null,
+        ethnicities: sanitizeEthnicities(ethnicities),
+      },
+    });
 
-  return NextResponse.json(toChildProfile(child), { status: 201 });
+    return NextResponse.json(toChildProfile(child), { status: 201 });
+  } catch (error) {
+    console.error("Failed to create child:", error);
+    const message =
+      error instanceof Error ? error.message : "Failed to create child profile";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

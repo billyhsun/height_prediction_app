@@ -9,8 +9,10 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "copy-models": "mkdir -p api/models/svr-v1 && cp ../../packages/prediction/models/svr-v1/*.bin api/models/svr-v1/",
-    "vercel-build": "prisma generate && npm run copy-models && next build",
+    "vercel-build": "prisma db push && prisma generate && npm run copy-models && next build",
     "db:push": "prisma db push",
+    "db:sync": "node scripts/sync-db.mjs",
+    "db:reset-local": "prisma dev rm default -y || true && prisma dev -d && prisma db push",
     "db:studio": "prisma studio"
   },
   "dependencies": {

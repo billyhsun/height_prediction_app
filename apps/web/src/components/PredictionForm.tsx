@@ -253,7 +253,7 @@ export function PredictionForm() {
             <a href="/sign-up" className="font-medium underline">
               Sign up
             </a>{" "}
-            to keep your history.
+            to keep your history for each child.
           </p>
         </SignedOut>
         <SignedIn>
@@ -452,35 +452,35 @@ export function PredictionForm() {
           </label>
         </fieldset>
 
-        <SignedIn>
-          <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
-            <legend className="px-1 text-sm font-medium text-slate-700">
-              Ethnicity (optional)
-            </legend>
-            <p className="text-xs text-slate-500">
-              Select all that apply. Used for LLM predictions only.
+        <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
+          <legend className="px-1 text-sm font-medium text-slate-700">
+            Ethnicity (optional)
+          </legend>
+          <p className="text-xs text-slate-500">
+            Select all that apply. Used for LLM predictions only.
+            <SignedIn>
               {profileLocked && (
                 <span> Saved to the child profile when you run a prediction.</span>
               )}
-            </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {ETHNICITY_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <input
-                    type="checkbox"
-                    checked={ethnicities.includes(option.value)}
-                    onChange={() => toggleEthnicity(option.value)}
-                    className="rounded border-slate-300"
-                  />
-                  {option.label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </SignedIn>
+            </SignedIn>
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {ETHNICITY_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <input
+                  type="checkbox"
+                  checked={ethnicities.includes(option.value)}
+                  onChange={() => toggleEthnicity(option.value)}
+                  className="rounded border-slate-300"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
           <legend className="px-1 text-sm font-medium text-slate-700">

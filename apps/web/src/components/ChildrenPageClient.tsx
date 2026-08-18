@@ -35,8 +35,8 @@ export function ChildrenPageClient() {
     try {
       await deleteChild(id);
       setChildren((prev) => prev.filter((child) => child.id !== id));
-    } catch {
-      setError("Failed to delete child");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete child");
     }
   }
 

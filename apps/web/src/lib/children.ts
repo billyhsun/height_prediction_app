@@ -63,5 +63,8 @@ export async function updateChild(
 
 export async function deleteChild(id: string): Promise<void> {
   const res = await fetch(`/api/user/children/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Failed to delete child");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error ?? "Failed to delete child");
+  }
 }

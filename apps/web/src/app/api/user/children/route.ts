@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { getOrCreateDbUser } from "@/lib/auth";
+import { requireDbUser } from "@/lib/auth";
 import { toChildProfile } from "@/lib/child-profile";
 import { prisma } from "@/lib/db";
 import { sanitizeEthnicities } from "@/lib/ethnicities";
 
 export async function GET() {
-  const user = await getOrCreateDbUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { user, errorResponse } = await requireDbUser();
+  if (errorResponse) return errorResponse;
 
   try {
     const children = await prisma.child.findMany({
@@ -20,17 +18,16 @@ export async function GET() {
     return NextResponse.json(children.map(toChildProfile));
   } catch (error) {
     console.error("Failed to list children:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to load children";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to load children" },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(request: Request) {
-  const user = await getOrCreateDbUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { user, errorResponse } = await requireDbUser();
+  if (errorResponse) return errorResponse;
 
   const body = await request.json();
   const {
@@ -68,8 +65,9 @@ export async function POST(request: Request) {
     return NextResponse.json(toChildProfile(child), { status: 201 });
   } catch (error) {
     console.error("Failed to create child:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to create child profile";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create child profile" },
+      { status: 500 },
+    );
   }
 }

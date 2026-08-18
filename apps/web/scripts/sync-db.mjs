@@ -31,6 +31,7 @@ const statements = [
     CONSTRAINT "Child_pkey" PRIMARY KEY ("id")
   )`,
   `ALTER TABLE "Child" ADD COLUMN IF NOT EXISTS "ethnicities" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]`,
+  `ALTER TABLE "Child" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3)`,
   `ALTER TABLE "Prediction" ADD COLUMN IF NOT EXISTS "childId" TEXT`,
   `CREATE INDEX IF NOT EXISTS "Child_userId_idx" ON "Child"("userId")`,
   `CREATE INDEX IF NOT EXISTS "Prediction_childId_idx" ON "Prediction"("childId")`,

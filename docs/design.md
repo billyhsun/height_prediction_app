@@ -1,7 +1,7 @@
 # Child Height Predictor — System Design
 
 **Status:** Draft  
-**Last updated:** 2026-08-10  
+**Last updated:** 2026-08-18  
 **Related:** [lab-surveys child BMI model](../../lab-surveys/backend/surveys/utils/child_bmi/child_bmi_survey.py)
 
 ---
@@ -411,6 +411,25 @@ packages/prediction/models/svr-v1/
 
 When a new measurement is logged, show delta vs previous prediction at the same target age (e.g. "Predicted adult height updated from 172 cm to 175 cm").
 
+### UI modernization — prerequisite for the native apps
+
+The current interface is functional but visually plain: stacked `fieldset` blocks, default Tailwind slate borders, no design language of its own. That was the right trade for a v0 web app. It is not the right starting point for iOS and Android, and the modernization needs to happen **before** the native work rather than after.
+
+**Why the order matters.** Going native means rebuilding the UI regardless — Tailwind classes and DOM-based JSX do not port to React Native. Only the logic layer travels (`src/lib`: API client, validation, i18n dictionaries). So the visual design has to be settled *first*, or it gets built twice: once as a port of the dated web UI, then again when the redesign lands, with web and mobile drifting apart in between.
+
+**Why it also matters commercially.** App Store reviewers assess polish, and an app that reads as a styled web form invites scrutiny under guideline 4.2 (minimum functionality). Charging a subscription raises that bar further — users comparing a paid growth tracker against free alternatives judge it on feel within seconds.
+
+**Scope of the pass**
+
+- **Design tokens** — colour, type scale, spacing, radii, elevation — defined once so React Native can mirror the same values rather than approximating them.
+- **Component primitives** — button, input, select, card, chip — replacing the ad-hoc class strings currently repeated across forms.
+- **The growth chart as the signature screen.** It is the most distinctive thing this product does and currently does not exist. Design it as the centrepiece, not an afterthought.
+- **State coverage** — empty, loading, error, and offline states designed rather than defaulted. These are far more visible on mobile.
+- **Touch-first sizing** — 44pt minimum targets, thumb-reachable primary actions. Cheap to honour now, expensive to retrofit.
+- **Text-length tolerance.** With English and Simplified Chinese both shipping, labels vary in width; the layout must not depend on a particular string length.
+
+**Sequencing.** Do the redesign on web, where iteration costs nothing and there is no review cycle, then treat the finished web UI as the visual spec the native apps implement.
+
 ---
 
 ## 9. LLM integration (future)
@@ -555,6 +574,25 @@ CORS_ORIGINS=https://app.example.com
 - [ ] Rate limiting, monitoring, alerting
 - [ ] Privacy policy + consent flows
 - [ ] Optional family sharing
+
+### Phase 5 — UI modernization (blocks Phase 6)
+
+- [ ] Design tokens and component primitives (see §8, *UI modernization*)
+- [ ] Growth chart designed and built as the signature screen
+- [ ] Empty / loading / error states designed rather than defaulted
+- [ ] Touch-first sizing and text-length tolerance across both locales
+
+**Acceptance:** the web UI is good enough to serve as the visual spec for the native apps — no screen that would need redesigning again once mobile ships.
+
+### Phase 6 — iOS and Android
+
+- [ ] Extract shared logic into `packages/core` (types, API client, validation, i18n)
+- [ ] Expo / React Native app implementing the Phase 5 design
+- [ ] Clerk bearer-token auth against the existing route handlers
+- [ ] In-app purchase wired to the entitlement layer
+- [ ] Store requirements: account deletion (done), privacy disclosures, health disclaimers
+
+**Depends on Phase 5.** Native work rebuilds the UI from scratch, so starting it before the redesign means building every screen twice and letting web and mobile diverge.
 
 ---
 

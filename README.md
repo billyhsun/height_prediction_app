@@ -53,12 +53,13 @@ curl -X POST http://localhost:8000/api/v1/predict/llm \
 
 ## Predictions
 
-- **ML (SVR)** — always runs from child measurements (same model as lab-surveys)
-- **LLM** — runs when both parent heights are provided; uses OpenAI (`gpt-5.4-mini` by default, set via `OPENAI_MODEL`)
+- **ML (SVR)** — always runs from child measurements; served by the Google Cloud backend
+- **LLM** — runs in this app when both parent heights are provided; uses OpenAI (`gpt-5.4-mini` by default, via `OPENAI_MODEL`)
 
 ## Docs
 
 - [System design](docs/design.md) — full architecture and roadmap
+- [Prediction backend](docs/prediction-api.md) — the ML endpoint contract and auth
 - [Auth & profiles setup](docs/auth-setup.md) — Clerk, Postgres, guest vs signed-in
 
 ## Disclaimer
@@ -67,7 +68,7 @@ Informational estimates only. Not medical advice.
 
 ## Deploy to Vercel
 
-The web app includes Python serverless functions so everything runs on Vercel (no separate API host needed).
+The web app is pure Next.js — no Python is deployed to Vercel. The **ML model** runs on the Google Cloud backend (`lab-surveys-backend`), reached through route handlers under `src/app/api/v1/`. The **LLM layer** runs in this app, since that backend serves the ML model only.
 
 ### 1. Import project in Vercel
 
@@ -83,27 +84,31 @@ In Vercel → Project → Settings → Environment Variables:
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `OPENAI_API_KEY` | For LLM predictions | From OpenAI dashboard |
-| `OPENAI_MODEL` | Optional | Default: `gpt-5.4-mini` |
+| `PREDICTION_API_URL` | Yes | Base URL of the ML backend on Cloud Run (lab-surveys-backend) |
+| `PREDICTION_API_TOKEN` | Only if the backend is private | See [prediction backend](docs/prediction-api.md) |
+| `PREDICTION_MODEL_VERSION` | Optional | Recorded on every prediction. Default `svr-v1` |
+| `OPENAI_API_KEY` | For LLM predictions | The LLM layer runs here, not on the ML backend |
+| `OPENAI_MODEL` | Optional | Default `gpt-5.4-mini` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `SUPABASE_SECRET_KEY` | Yes | Server-only. Never prefix with `NEXT_PUBLIC_` |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | From Clerk dashboard |
+| `CLERK_SECRET_KEY` | Yes | From Clerk dashboard |
 
-Do **not** set `API_URL` on Vercel.
+Do **not** set a `/api/*` rewrite on Vercel. It would be applied before dynamic routes and would hijack `/api/user/children/[id]`.
 
 ### 3. Deploy
 
-Click Deploy. The build runs `copy-models` (copies SVR `.bin` files) then `next build`.
+Click Deploy. The build is just `next build`.
 
 Your app will be live at `https://your-project.vercel.app`.
 
 ### Local development
 
-**Option A — separate FastAPI (current workflow):**
+Point `PREDICTION_API_URL` at either the deployed backend or a local FastAPI:
+
 ```bash
-./apps/api/run.sh          # terminal 1
-cd apps/web && cp .env.local.example .env.local && npm run dev   # terminal 2
+./apps/api/run.sh          # terminal 1 — serves http://localhost:8000
+cd apps/web && npm run dev # terminal 2 — set PREDICTION_API_URL=http://localhost:8000
 ```
 
-**Option B — Vercel dev (matches production):**
-```bash
-cd apps/web
-npx vercel dev
-```
+To develop against the deployed backend instead, set `PREDICTION_API_URL` to the Cloud Run URL and skip terminal 1.

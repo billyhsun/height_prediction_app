@@ -2,11 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "npm run vercel-build",
-  "installCommand": "npm install",
-  "functions": {
-    "api/**/*.py": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  }
+  "installCommand": "npm install"
 }

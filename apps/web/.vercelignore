@@ -1,2 +1,2 @@
-# Keep copied model binaries out of git (generated at build time).
-api/models/
+# Nothing to exclude: the prediction model is served from the Google Cloud
+# backend, so no model binaries or Python sources are deployed here.

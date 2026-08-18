@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "copy-models": "mkdir -p api/models/svr-v1 && cp ../../packages/prediction/models/svr-v1/*.bin api/models/svr-v1/",
-    "vercel-build": "npm run copy-models && next build",
+    "vercel-build": "next build",
     "db:ddl": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script"
   },
   "dependencies": {

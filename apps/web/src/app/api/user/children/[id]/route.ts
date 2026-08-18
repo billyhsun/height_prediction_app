@@ -1,16 +1,29 @@
 import { NextResponse } from "next/server";
 
 import { requireDbUser } from "@/lib/auth";
-import { toChildProfile } from "@/lib/child-profile";
-import { prisma } from "@/lib/db";
+import { toChildProfile, type ChildRow } from "@/lib/child-profile";
 import { sanitizeEthnicities } from "@/lib/ethnicities";
+import { getSupabase } from "@/lib/supabase";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-async function getOwnedChild(userId: string, id: string) {
-  return prisma.child.findFirst({
-    where: { id, userId, deletedAt: null },
-  });
+/**
+ * Returns the child only if it belongs to this user and is not soft-deleted.
+ * Every handler goes through this so an id from another account can never be
+ * read or mutated.
+ */
+async function getOwnedChild(userId: string, id: string): Promise<ChildRow | null> {
+  const { data, error } = await getSupabase()
+    .from("Child")
+    .select("*")
+    .eq("id", id)
+    .eq("userId", userId)
+    .is("deletedAt", null)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  return data as ChildRow | null;
 }
 
 export async function GET(_request: Request, context: RouteContext) {
@@ -65,21 +78,28 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const child = await prisma.child.update({
-      where: { id },
-      data: {
+    const { data, error } = await getSupabase()
+      .from("Child")
+      .update({
         ...(displayName !== undefined && { displayName: displayName.trim() }),
         ...(sex !== undefined && { sex }),
-        ...(dateOfBirth !== undefined && { dateOfBirth: new Date(dateOfBirth) }),
+        ...(dateOfBirth !== undefined && {
+          dateOfBirth: String(dateOfBirth).slice(0, 10),
+        }),
         ...(motherHeightCm !== undefined && { motherHeightCm }),
         ...(fatherHeightCm !== undefined && { fatherHeightCm }),
         ...(ethnicities !== undefined && {
           ethnicities: sanitizeEthnicities(ethnicities),
         }),
-      },
-    });
+      })
+      .eq("id", id)
+      .eq("userId", user.id)
+      .select("*")
+      .single();
 
-    return NextResponse.json(toChildProfile(child));
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json(toChildProfile(data as ChildRow));
   } catch (error) {
     console.error("Failed to update child:", error);
     return NextResponse.json(
@@ -101,10 +121,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    await prisma.child.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    const { error } = await getSupabase()
+      .from("Child")
+      .update({ deletedAt: new Date().toISOString() })
+      .eq("id", id)
+      .eq("userId", user.id);
+
+    if (error) throw new Error(error.message);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 
 import type { PredictionSession } from "@/lib/prediction-session";
 import { requireDbUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { toIsoString } from "@/lib/child-profile";
+import { getSupabase } from "@/lib/supabase";
 
-function toSummary(prediction: {
+type PredictionRow = {
   id: string;
-  createdAt: Date;
+  createdAt: string;
   sex: number;
   currentAgeYears: number;
   targetAgeYears: number;
@@ -14,10 +15,18 @@ function toSummary(prediction: {
   llmPredHeightCm: number | null;
   childId: string | null;
   child: { displayName: string } | null;
-}) {
+};
+
+// PostgREST embeds the related row under the alias declared in the select
+// string. `child:Child(...)` resolves the Prediction.childId -> Child.id
+// foreign key and returns it as `child`, matching Prisma's old `include` shape.
+const SUMMARY_SELECT =
+  "id, createdAt, sex, currentAgeYears, targetAgeYears, predHeightCm, llmPredHeightCm, childId, child:Child(displayName)";
+
+function toSummary(prediction: PredictionRow) {
   return {
     id: prediction.id,
-    createdAt: prediction.createdAt.toISOString(),
+    createdAt: toIsoString(prediction.createdAt),
     sex: prediction.sex,
     currentAgeYears: prediction.currentAgeYears,
     targetAgeYears: prediction.targetAgeYears,
@@ -33,14 +42,18 @@ export async function GET() {
   if (errorResponse) return errorResponse;
 
   try {
-    const predictions = await prisma.prediction.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      include: { child: { select: { displayName: true } } },
-    });
+    const { data, error } = await getSupabase()
+      .from("Prediction")
+      .select(SUMMARY_SELECT)
+      .eq("userId", user.id)
+      .order("createdAt", { ascending: false })
+      .limit(50);
 
-    return NextResponse.json(predictions.map(toSummary));
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json(
+      (data as unknown as PredictionRow[]).map(toSummary),
+    );
   } catch (error) {
     console.error("Failed to list predictions:", error);
     return NextResponse.json(
@@ -58,17 +71,26 @@ export async function POST(request: Request) {
   const { inputs, result, llmResult, childId } = body;
 
   try {
+    const supabase = getSupabase();
+
     if (childId) {
-      const child = await prisma.child.findFirst({
-        where: { id: childId, userId: user.id, deletedAt: null },
-      });
+      const { data: child, error: childError } = await supabase
+        .from("Child")
+        .select("id")
+        .eq("id", childId)
+        .eq("userId", user.id)
+        .is("deletedAt", null)
+        .maybeSingle();
+
+      if (childError) throw new Error(childError.message);
       if (!child) {
         return NextResponse.json({ error: "Child not found" }, { status: 400 });
       }
     }
 
-    const prediction = await prisma.prediction.create({
-      data: {
+    const { data, error } = await supabase
+      .from("Prediction")
+      .insert({
         userId: user.id,
         childId: childId ?? null,
         sex: inputs.sex,
@@ -86,11 +108,16 @@ export async function POST(request: Request) {
         llmReasoning: llmResult?.reasoning ?? null,
         llmMidParentalHeight: llmResult?.mid_parental_height_cm ?? null,
         llmModel: llmResult?.model ?? null,
-      },
-      include: { child: { select: { displayName: true } } },
-    });
+      })
+      .select(SUMMARY_SELECT)
+      .single();
 
-    return NextResponse.json(toSummary(prediction), { status: 201 });
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json(
+      toSummary(data as unknown as PredictionRow),
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Failed to save prediction:", error);
     return NextResponse.json(

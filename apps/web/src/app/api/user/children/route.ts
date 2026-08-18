@@ -1,21 +1,25 @@
 import { NextResponse } from "next/server";
 
 import { requireDbUser } from "@/lib/auth";
-import { toChildProfile } from "@/lib/child-profile";
-import { prisma } from "@/lib/db";
+import { toChildProfile, type ChildRow } from "@/lib/child-profile";
 import { sanitizeEthnicities } from "@/lib/ethnicities";
+import { getSupabase } from "@/lib/supabase";
 
 export async function GET() {
   const { user, errorResponse } = await requireDbUser();
   if (errorResponse) return errorResponse;
 
   try {
-    const children = await prisma.child.findMany({
-      where: { userId: user.id, deletedAt: null },
-      orderBy: { displayName: "asc" },
-    });
+    const { data, error } = await getSupabase()
+      .from("Child")
+      .select("*")
+      .eq("userId", user.id)
+      .is("deletedAt", null)
+      .order("displayName", { ascending: true });
 
-    return NextResponse.json(children.map(toChildProfile));
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json((data as ChildRow[]).map(toChildProfile));
   } catch (error) {
     console.error("Failed to list children:", error);
     return NextResponse.json(
@@ -50,19 +54,24 @@ export async function POST(request: Request) {
   }
 
   try {
-    const child = await prisma.child.create({
-      data: {
+    const { data, error } = await getSupabase()
+      .from("Child")
+      .insert({
         userId: user.id,
         displayName: displayName.trim(),
         sex,
-        dateOfBirth: new Date(dateOfBirth),
+        // DATE column: PostgREST wants "YYYY-MM-DD", not an ISO timestamp.
+        dateOfBirth: String(dateOfBirth).slice(0, 10),
         motherHeightCm: motherHeightCm ?? null,
         fatherHeightCm: fatherHeightCm ?? null,
         ethnicities: sanitizeEthnicities(ethnicities),
-      },
-    });
+      })
+      .select("*")
+      .single();
 
-    return NextResponse.json(toChildProfile(child), { status: 201 });
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json(toChildProfile(data as ChildRow), { status: 201 });
   } catch (error) {
     console.error("Failed to create child:", error);
     return NextResponse.json(

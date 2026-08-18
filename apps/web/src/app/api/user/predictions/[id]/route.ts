@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { requireDbUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { toIsoString } from "@/lib/child-profile";
+import { getSupabase } from "@/lib/supabase";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -12,9 +13,14 @@ export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    const prediction = await prisma.prediction.findFirst({
-      where: { id, userId: user.id },
-    });
+    const { data: prediction, error } = await getSupabase()
+      .from("Prediction")
+      .select("*")
+      .eq("id", id)
+      .eq("userId", user.id)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
 
     if (!prediction) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -22,7 +28,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
     return NextResponse.json({
       id: prediction.id,
-      createdAt: prediction.createdAt.toISOString(),
+      createdAt: toIsoString(prediction.createdAt),
       sex: prediction.sex,
       heightCm: prediction.heightCm,
       weightKg: prediction.weightKg,
@@ -55,11 +61,18 @@ export async function DELETE(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    const result = await prisma.prediction.deleteMany({
-      where: { id, userId: user.id },
-    });
+    // `.select()` makes PostgREST return the deleted rows, which stands in for
+    // Prisma's deleteMany count when deciding between 200 and 404.
+    const { data, error } = await getSupabase()
+      .from("Prediction")
+      .delete()
+      .eq("id", id)
+      .eq("userId", user.id)
+      .select("id");
 
-    if (result.count === 0) {
+    if (error) throw new Error(error.message);
+
+    if (!data || data.length === 0) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

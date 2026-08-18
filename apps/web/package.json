@@ -11,6 +11,7 @@
     "db:ddl": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script"
   },
   "dependencies": {
+    "@clerk/localizations": "^4.15.4",
     "@clerk/nextjs": "^6.12.0",
     "@supabase/supabase-js": "^2.112.3",
     "next": "16.3.0",

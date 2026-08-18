@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 import {
@@ -35,14 +36,24 @@ export function LocaleProvider({
   children: React.ReactNode;
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const router = useRouter();
 
-  const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
-    // Keep the served markup in sync for assistive tech and font selection
-    // without waiting for the next server render.
-    document.documentElement.lang = next;
-  }, []);
+  const setLocale = useCallback(
+    (next: Locale) => {
+      setLocaleState(next);
+      document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
+      // Keep the served markup in sync for assistive tech and font selection
+      // without waiting for the next server render.
+      document.documentElement.lang = next;
+      // Server components read the locale from the cookie — the root layout uses
+      // it for <html lang>, the page title, and Clerk's own string catalogue
+      // (its user menu and sign-in modal are not covered by our dictionaries).
+      // Refreshing re-runs them with the new cookie; client state is preserved,
+      // so in-progress form input survives the switch.
+      router.refresh();
+    },
+    [router],
+  );
 
   const value = useMemo(
     () => ({ locale, setLocale, t: getDictionary(locale) }),

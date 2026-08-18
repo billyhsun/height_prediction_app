@@ -13,13 +13,14 @@ import {
 import { ageYearsFromDateOfBirth, formatDateOfBirth } from "@/lib/age";
 import { fetchChildren, updateChild, type ChildProfile } from "@/lib/children";
 import {
-  ETHNICITY_OPTIONS,
+  ETHNICITY_VALUES,
   type EthnicityValue,
 } from "@/lib/ethnicities";
+import { useI18n } from "@/lib/i18n/context";
+import { displayError } from "@/lib/request-error";
 import {
   inputsToSearchParams,
   savePredictionSession,
-  sexLabel,
 } from "@/lib/prediction-session";
 import { savePredictionToAccount } from "@/lib/saved-predictions";
 
@@ -71,6 +72,7 @@ function applyChildProfile(
 export function PredictionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { locale, t } = useI18n();
 
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [selectedChildId, setSelectedChildId] = useState(
@@ -140,7 +142,7 @@ export function PredictionForm() {
     [heightCm, weightKg],
   );
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -152,7 +154,7 @@ export function PredictionForm() {
       (motherHeightCm && !fatherHeightCm) ||
       (!motherHeightCm && fatherHeightCm)
     ) {
-      setError("Please enter both mother and father heights, or leave both blank.");
+      setError(t.form.bothParentHeightsRequired);
       setLoading(false);
       return;
     }
@@ -209,8 +211,7 @@ export function PredictionForm() {
         try {
           llmResult = await predictLlm(inputs);
         } catch (err) {
-          llmError =
-            err instanceof Error ? err.message : "LLM prediction failed";
+          llmError = err instanceof Error ? err.message : t.form.llmFailed;
         }
       }
 
@@ -231,7 +232,7 @@ export function PredictionForm() {
 
       router.push(`/results?${inputsToSearchParams(inputs)}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(displayError(err, t.form.somethingWentWrong));
     } finally {
       setLoading(false);
     }
@@ -241,26 +242,23 @@ export function PredictionForm() {
     <div className="w-full max-w-lg space-y-8">
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-slate-900">
-          Child Height Predictor
+          {t.form.title}
         </h1>
-        <p className="text-sm text-slate-600">
-          Enter your child&apos;s measurements for an ML prediction. Add parent
-          heights to also get an LLM-based estimate.
-        </p>
+        <p className="text-sm text-slate-600">{t.form.subtitle}</p>
         <SignedOut>
           <p className="text-xs text-amber-700">
-            Guest mode — predictions are not saved.{" "}
-            <a href="/sign-up" className="font-medium underline">
-              Sign up
-            </a>{" "}
-            to keep your history for each child.
+            {t.form.guestNoticeLead}{" "}
+            <Link href="/sign-up" className="font-medium underline">
+              {t.form.guestNoticeSignUp}
+            </Link>{" "}
+            {t.form.guestNoticeTail}
           </p>
         </SignedOut>
         <SignedIn>
           <p className="text-xs text-green-700">
-            Signed in — select a child profile to auto-fill sex and age, or{" "}
+            {t.form.signedInLead}{" "}
             <Link href="/children" className="font-medium underline">
-              manage profiles
+              {t.form.signedInManage}
             </Link>
             .
           </p>
@@ -271,17 +269,19 @@ export function PredictionForm() {
         <SignedIn>
           <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
             <legend className="px-1 text-sm font-medium text-slate-700">
-              Child profile
+              {t.form.childProfileLegend}
             </legend>
 
             <label className="block space-y-1">
-              <span className="text-sm text-slate-600">Select child</span>
+              <span className="text-sm text-slate-600">
+                {t.form.selectChild}
+              </span>
               <select
                 value={selectedChildId}
                 onChange={(e) => setSelectedChildId(e.target.value)}
                 className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
               >
-                <option value="">Enter details manually</option>
+                <option value="">{t.form.enterManually}</option>
                 {children.map((child) => (
                   <option key={child.id} value={child.id}>
                     {child.displayName}
@@ -292,11 +292,11 @@ export function PredictionForm() {
 
             {children.length === 0 && (
               <p className="text-xs text-slate-500">
-                No profiles yet.{" "}
+                {t.form.noProfilesYet}{" "}
                 <Link href="/children/new" className="font-medium text-blue-600">
-                  Add a child
+                  {t.form.addAChild}
                 </Link>{" "}
-                to auto-fill the form.
+                {t.form.toAutoFill}
               </p>
             )}
           </fieldset>
@@ -304,7 +304,7 @@ export function PredictionForm() {
 
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
           <legend className="px-1 text-sm font-medium text-slate-700">
-            About your child
+            {t.form.aboutYourChild}
           </legend>
 
           {profileLocked && selectedChild ? (
@@ -313,11 +313,13 @@ export function PredictionForm() {
                 <p>
                   <span className="font-medium">{selectedChild.displayName}</span>
                   {" · "}
-                  {sexLabel(selectedChild.sex)}
+                  {selectedChild.sex === 1 ? t.common.male : t.common.female}
                 </p>
                 <p className="mt-1 text-slate-600">
-                  Born {formatDateOfBirth(selectedChild.dateOfBirth)} · age{" "}
-                  {ageYearsFromDateOfBirth(selectedChild.dateOfBirth)} years
+                  {t.form.bornAndAge(
+                    formatDateOfBirth(selectedChild.dateOfBirth, locale),
+                    ageYearsFromDateOfBirth(selectedChild.dateOfBirth),
+                  )}
                 </p>
               </div>
               <input type="hidden" name="sex" value={selectedChild.sex} />
@@ -330,11 +332,11 @@ export function PredictionForm() {
           ) : (
             <>
               <div className="space-y-2">
-                <span className="text-sm text-slate-600">Sex</span>
+                <span className="text-sm text-slate-600">{t.form.sex}</span>
                 <div className="flex gap-2">
                   {[
-                    { value: 1, label: "Male" },
-                    { value: 2, label: "Female" },
+                    { value: 1, label: t.common.male },
+                    { value: 2, label: t.common.female },
                   ].map((option) => (
                     <button
                       key={option.value}
@@ -353,7 +355,9 @@ export function PredictionForm() {
               </div>
 
               <label className="block space-y-1">
-                <span className="text-sm text-slate-600">Current age (years)</span>
+                <span className="text-sm text-slate-600">
+                  {t.form.currentAgeYears}
+                </span>
                 <input
                   type="number"
                   min={0}
@@ -371,11 +375,11 @@ export function PredictionForm() {
 
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
           <legend className="px-1 text-sm font-medium text-slate-700">
-            Current measurements
+            {t.form.currentMeasurements}
           </legend>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">Height (cm)</span>
+            <span className="text-sm text-slate-600">{t.form.heightCm}</span>
             <input
               type="number"
               min={40}
@@ -389,7 +393,7 @@ export function PredictionForm() {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">Weight (kg)</span>
+            <span className="text-sm text-slate-600">{t.form.weightKg}</span>
             <input
               type="number"
               min={2}
@@ -403,28 +407,31 @@ export function PredictionForm() {
           </label>
 
           <p className="text-sm text-slate-500">
-            BMI: <span className="font-medium text-slate-700">{bmi.toFixed(1)}</span>
+            {t.form.bmi}:{" "}
+            <span className="font-medium text-slate-700">{bmi.toFixed(1)}</span>
           </p>
         </fieldset>
 
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
           <legend className="px-1 text-sm font-medium text-slate-700">
-            Parent heights (optional)
+            {t.form.parentHeightsLegend}
           </legend>
           <p className="text-xs text-slate-500">
-            Used for the LLM prediction only. Both are required if you fill one in.
+            {t.form.parentHeightsHelp}
             {profileLocked && (
               <span>
                 {" "}
                 {selectedChild?.motherHeightCm != null
-                  ? "Auto-filled from profile — edits are saved when you run a prediction."
-                  : "Saved to the child profile when you run a prediction."}
+                  ? t.form.parentHeightsAutoFilled
+                  : t.form.parentHeightsWillSave}
               </span>
             )}
           </p>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">Mother&apos;s height (cm)</span>
+            <span className="text-sm text-slate-600">
+              {t.form.mothersHeightCm}
+            </span>
             <input
               type="number"
               min={120}
@@ -432,13 +439,15 @@ export function PredictionForm() {
               step={0.1}
               value={motherHeight}
               onChange={(e) => setMotherHeight(e.target.value)}
-              placeholder="e.g. 165"
+              placeholder={t.common.egPlaceholder("165")}
               className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             />
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">Father&apos;s height (cm)</span>
+            <span className="text-sm text-slate-600">
+              {t.form.fathersHeightCm}
+            </span>
             <input
               type="number"
               min={120}
@@ -446,7 +455,7 @@ export function PredictionForm() {
               step={0.1}
               value={fatherHeight}
               onChange={(e) => setFatherHeight(e.target.value)}
-              placeholder="e.g. 178"
+              placeholder={t.common.egPlaceholder("178")}
               className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             />
           </label>
@@ -454,29 +463,27 @@ export function PredictionForm() {
 
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
           <legend className="px-1 text-sm font-medium text-slate-700">
-            Ethnicity (optional)
+            {t.form.ethnicityLegend}
           </legend>
           <p className="text-xs text-slate-500">
-            Select all that apply. Used for LLM predictions only.
+            {t.form.ethnicityHelp}
             <SignedIn>
-              {profileLocked && (
-                <span> Saved to the child profile when you run a prediction.</span>
-              )}
+              {profileLocked && <span> {t.form.ethnicityWillSave}</span>}
             </SignedIn>
           </p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {ETHNICITY_OPTIONS.map((option) => (
+            {ETHNICITY_VALUES.map((value) => (
               <label
-                key={option.value}
+                key={value}
                 className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
               >
                 <input
                   type="checkbox"
-                  checked={ethnicities.includes(option.value)}
-                  onChange={() => toggleEthnicity(option.value)}
+                  checked={ethnicities.includes(value)}
+                  onChange={() => toggleEthnicity(value)}
                   className="rounded border-slate-300"
                 />
-                {option.label}
+                {t.ethnicity[value]}
               </label>
             ))}
           </div>
@@ -484,11 +491,13 @@ export function PredictionForm() {
 
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
           <legend className="px-1 text-sm font-medium text-slate-700">
-            Prediction
+            {t.form.predictionLegend}
           </legend>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">Predict at age (years)</span>
+            <span className="text-sm text-slate-600">
+              {t.form.predictAtAgeYears}
+            </span>
             <input
               type="number"
               min={Math.ceil(
@@ -526,9 +535,7 @@ export function PredictionForm() {
           </div>
         </fieldset>
 
-        <p className="text-xs text-slate-500">
-          For informational purposes only. Not medical advice.
-        </p>
+        <p className="text-xs text-slate-500">{t.common.disclaimer}</p>
 
         {error && (
           <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -541,7 +548,7 @@ export function PredictionForm() {
           disabled={loading}
           className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
         >
-          {loading ? "Calculating…" : "Get prediction"}
+          {loading ? t.form.calculating : t.form.submit}
         </button>
       </form>
     </div>

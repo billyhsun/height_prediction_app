@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { PredictionResults } from "@/components/PredictionResults";
+import { useTranslations } from "@/lib/i18n/context";
+import { displayError } from "@/lib/request-error";
 import {
   loadPredictionSession,
   savePredictionSession,
@@ -55,6 +57,7 @@ export function ResultsPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isSignedIn } = useAuth();
+  const t = useTranslations();
   const [session, setSession] = useState<PredictionSession | null>(null);
   const [savedToAccount, setSavedToAccount] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,14 +69,14 @@ export function ResultsPageClient() {
       if (savedId) {
         try {
           const res = await fetch(`/api/user/predictions/${savedId}`);
-          if (!res.ok) throw new Error("Saved prediction not found");
+          if (!res.ok) throw new Error(t.results.savedNotFound);
           const detail = (await res.json()) as SavedPredictionDetail;
           const nextSession = sessionFromSaved(detail);
           savePredictionSession(nextSession);
           setSession(nextSession);
           setSavedToAccount(true);
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Failed to load prediction");
+          setError(displayError(err, t.results.failedToLoadPrediction));
         } finally {
           setLoading(false);
         }
@@ -104,7 +107,7 @@ export function ResultsPageClient() {
             llmResult = await predictLlm(inputs);
           } catch (err) {
             llmError =
-              err instanceof Error ? err.message : "LLM prediction failed";
+              err instanceof Error ? err.message : t.form.llmFailed;
           }
         }
 
@@ -113,24 +116,27 @@ export function ResultsPageClient() {
         setSession(nextSession);
         setSavedToAccount(isSignedIn ?? false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Prediction failed");
+        setError(displayError(err, t.results.predictionFailed));
       } finally {
         setLoading(false);
       }
     }
 
     load();
+    // t is only read for fallback messages; excluding it avoids refetching
+    // the prediction on every language switch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isSignedIn]);
 
   if (loading) {
-    return <p className="text-sm text-slate-600">Loading results…</p>;
+    return <p className="text-sm text-slate-600">{t.results.loading}</p>;
   }
 
   if (error) {
     return (
       <div className="w-full max-w-lg space-y-4 text-center">
         <h1 className="text-2xl font-semibold text-slate-900">
-          Could not load results
+          {t.results.couldNotLoad}
         </h1>
         <p className="text-sm text-red-700">{error}</p>
         <button
@@ -138,7 +144,7 @@ export function ResultsPageClient() {
           onClick={() => router.push("/")}
           className="inline-block rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
         >
-          Back to form
+          {t.results.backToForm}
         </button>
       </div>
     );
@@ -147,15 +153,17 @@ export function ResultsPageClient() {
   if (!session) {
     return (
       <div className="w-full max-w-lg space-y-4 text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">No results yet</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">
+          {t.results.noResults}
+        </h1>
         <p className="text-sm text-slate-600">
-          Submit the prediction form first to see results here.
+          {t.results.noResultsHelp}
         </p>
         <Link
           href="/"
           className="inline-block rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
         >
-          Go to form
+          {t.results.goToForm}
         </Link>
       </div>
     );

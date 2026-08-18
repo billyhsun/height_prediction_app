@@ -11,9 +11,11 @@ import {
   type ChildInput,
 } from "@/lib/children";
 import {
-  ETHNICITY_OPTIONS,
+  ETHNICITY_VALUES,
   type EthnicityValue,
 } from "@/lib/ethnicities";
+import { useTranslations } from "@/lib/i18n/context";
+import { displayError } from "@/lib/request-error";
 
 type ChildFormProps = {
   childId?: string;
@@ -30,6 +32,7 @@ const EMPTY: ChildInput = {
 
 export function ChildForm({ childId }: ChildFormProps) {
   const router = useRouter();
+  const t = useTranslations();
   const isEdit = Boolean(childId);
 
   const [form, setForm] = useState<ChildInput>(EMPTY);
@@ -59,10 +62,11 @@ export function ChildForm({ childId }: ChildFormProps) {
           child.fatherHeightCm != null ? String(child.fatherHeightCm) : "",
         );
       })
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to load child"),
-      )
+      .catch((err) => setError(displayError(err, t.childForm.failedToLoad)))
       .finally(() => setLoading(false));
+    // Refetching on locale change would discard in-progress edits; t is only
+    // used for a fallback message here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [childId]);
 
   function toggleEthnicity(value: EthnicityValue) {
@@ -77,7 +81,7 @@ export function ChildForm({ childId }: ChildFormProps) {
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
     setError(null);
@@ -89,7 +93,7 @@ export function ChildForm({ childId }: ChildFormProps) {
       (motherHeightCm && !fatherHeightCm) ||
       (!motherHeightCm && fatherHeightCm)
     ) {
-      setError("Please enter both parent heights, or leave both blank.");
+      setError(t.childForm.bothParentHeightsRequired);
       setSaving(false);
       return;
     }
@@ -108,35 +112,33 @@ export function ChildForm({ childId }: ChildFormProps) {
       }
       router.push("/children");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save");
+      setError(displayError(err, t.childForm.failedToSave));
     } finally {
       setSaving(false);
     }
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-600">Loading…</p>;
+    return <p className="text-sm text-slate-600">{t.common.loading}</p>;
   }
 
   return (
     <div className="w-full max-w-lg space-y-6">
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-slate-900">
-          {isEdit ? "Edit child" : "Add child"}
+          {isEdit ? t.childForm.editTitle : t.childForm.addTitle}
         </h1>
-        <p className="text-sm text-slate-600">
-          Birth date and sex are used to auto-fill the prediction form.
-        </p>
+        <p className="text-sm text-slate-600">{t.childForm.subtitle}</p>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
           <legend className="px-1 text-sm font-medium text-slate-700">
-            Profile
+            {t.childForm.profileLegend}
           </legend>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">Name</span>
+            <span className="text-sm text-slate-600">{t.childForm.name}</span>
             <input
               type="text"
               required
@@ -144,17 +146,17 @@ export function ChildForm({ childId }: ChildFormProps) {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, displayName: e.target.value }))
               }
-              placeholder="e.g. Alex"
+              placeholder={t.childForm.namePlaceholder}
               className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             />
           </label>
 
           <div className="space-y-2">
-            <span className="text-sm text-slate-600">Sex</span>
+            <span className="text-sm text-slate-600">{t.form.sex}</span>
             <div className="flex gap-2">
               {[
-                { value: 1, label: "Male" },
-                { value: 2, label: "Female" },
+                { value: 1, label: t.common.male },
+                { value: 2, label: t.common.female },
               ].map((option) => (
                 <button
                   key={option.value}
@@ -175,7 +177,9 @@ export function ChildForm({ childId }: ChildFormProps) {
           </div>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">Date of birth</span>
+            <span className="text-sm text-slate-600">
+              {t.childForm.dateOfBirth}
+            </span>
             <input
               type="date"
               required
@@ -189,23 +193,25 @@ export function ChildForm({ childId }: ChildFormProps) {
           </label>
 
           <div className="space-y-2">
-            <span className="text-sm text-slate-600">Ethnicity (optional)</span>
+            <span className="text-sm text-slate-600">
+              {t.childForm.ethnicityLabel}
+            </span>
             <p className="text-xs text-slate-500">
-              Select all that apply. Used for LLM predictions only.
+              {t.childForm.ethnicityHelp}
             </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {ETHNICITY_OPTIONS.map((option) => (
+              {ETHNICITY_VALUES.map((value) => (
                 <label
-                  key={option.value}
+                  key={value}
                   className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                 >
                   <input
                     type="checkbox"
-                    checked={form.ethnicities?.includes(option.value) ?? false}
-                    onChange={() => toggleEthnicity(option.value)}
+                    checked={form.ethnicities?.includes(value) ?? false}
+                    onChange={() => toggleEthnicity(value)}
                     className="rounded border-slate-300"
                   />
-                  {option.label}
+                  {t.ethnicity[value]}
                 </label>
               ))}
             </div>
@@ -214,14 +220,16 @@ export function ChildForm({ childId }: ChildFormProps) {
 
         <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
           <legend className="px-1 text-sm font-medium text-slate-700">
-            Parent heights (optional)
+            {t.childForm.parentHeightsLegend}
           </legend>
           <p className="text-xs text-slate-500">
-            Saved on the profile and auto-filled for LLM predictions.
+            {t.childForm.parentHeightsHelp}
           </p>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">Mother&apos;s height (cm)</span>
+            <span className="text-sm text-slate-600">
+              {t.childForm.mothersHeightCm}
+            </span>
             <input
               type="number"
               min={120}
@@ -229,13 +237,15 @@ export function ChildForm({ childId }: ChildFormProps) {
               step={0.1}
               value={motherHeight}
               onChange={(e) => setMotherHeight(e.target.value)}
-              placeholder="e.g. 165"
+              placeholder={t.common.egPlaceholder("165")}
               className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             />
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">Father&apos;s height (cm)</span>
+            <span className="text-sm text-slate-600">
+              {t.childForm.fathersHeightCm}
+            </span>
             <input
               type="number"
               min={120}
@@ -243,7 +253,7 @@ export function ChildForm({ childId }: ChildFormProps) {
               step={0.1}
               value={fatherHeight}
               onChange={(e) => setFatherHeight(e.target.value)}
-              placeholder="e.g. 178"
+              placeholder={t.common.egPlaceholder("178")}
               className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             />
           </label>
@@ -261,13 +271,17 @@ export function ChildForm({ childId }: ChildFormProps) {
             disabled={saving}
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
           >
-            {saving ? "Saving…" : isEdit ? "Save changes" : "Add child"}
+            {saving
+              ? t.childForm.saving
+              : isEdit
+                ? t.childForm.saveChanges
+                : t.childForm.addChild}
           </button>
           <Link
             href="/children"
             className="rounded-md border border-slate-200 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
           >
-            Cancel
+            {t.common.cancel}
           </Link>
         </div>
       </form>

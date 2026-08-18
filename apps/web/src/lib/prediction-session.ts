@@ -41,6 +41,5 @@ export function inputsToSearchParams(inputs: PredictRequest): string {
   return params.toString();
 }
 
-export function sexLabel(sex: number): string {
-  return sex === 1 ? "Male" : "Female";
-}
+// sexLabel moved into the locale dictionaries (`common.male` / `common.female`)
+// so it can be translated; callers read it from useTranslations().

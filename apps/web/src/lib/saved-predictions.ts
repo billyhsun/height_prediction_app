@@ -1,5 +1,6 @@
 import type { LlmPredictResponse, PredictRequest, PredictResponse } from "@/lib/api";
 import type { PredictionSession } from "@/lib/prediction-session";
+import { GenericRequestError } from "@/lib/request-error";
 
 export type SavedPredictionSummary = {
   id: string;
@@ -38,7 +39,8 @@ export async function savePredictionToAccount(
   if (res.status === 401) return null;
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error ?? "Failed to save prediction");
+    if (err.error) throw new Error(err.error);
+    throw new GenericRequestError("POST /predictions failed", res.status);
   }
 
   return res.json();
@@ -47,7 +49,7 @@ export async function savePredictionToAccount(
 export async function fetchPredictionHistory(): Promise<SavedPredictionSummary[]> {
   const res = await fetch("/api/user/predictions");
   if (res.status === 401) return [];
-  if (!res.ok) throw new Error("Failed to load history");
+  if (!res.ok) throw new GenericRequestError("GET /predictions failed", res.status);
   return res.json();
 }
 

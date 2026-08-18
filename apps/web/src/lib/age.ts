@@ -9,9 +9,17 @@ export function ageYearsFromDateOfBirth(
   return Math.round(age * 2) / 2;
 }
 
-export function formatDateOfBirth(dateOfBirth: Date | string): string {
+/**
+ * `locale` is passed explicitly rather than relying on the runtime default so
+ * the rendered date follows the chosen UI language, not the browser's or the
+ * server's. Chinese renders as "2018年5月4日", English as "May 4, 2018".
+ */
+export function formatDateOfBirth(
+  dateOfBirth: Date | string,
+  locale?: string,
+): string {
   const dob = typeof dateOfBirth === "string" ? new Date(dateOfBirth) : dateOfBirth;
-  return dob.toLocaleDateString(undefined, {
+  return dob.toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",

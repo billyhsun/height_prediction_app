@@ -180,6 +180,21 @@ const en = {
     predictionFailed: "Prediction failed",
   },
 
+  account: {
+    title: "Account",
+    subtitle: "Manage your account and data.",
+    dangerHeading: "Delete account",
+    dangerBody:
+      "This permanently deletes your account, every child profile, and every saved prediction. It cannot be undone.",
+    /** Typed by the user to confirm. Localised so the prompt matches the UI. */
+    confirmWord: "DELETE",
+    confirmPrompt: (word: string) => `Type ${word} to confirm`,
+    confirmPlaceholder: "DELETE",
+    deleteButton: "Delete my account",
+    deleting: "Deleting…",
+    failed: "Could not delete your account",
+  },
+
   ethnicity: {
     east_asian: "East Asian",
     south_asian: "South Asian",
@@ -358,6 +373,20 @@ const zhCN: Dictionary = {
     savedNotFound: "未找到已保存的预测",
     failedToLoadPrediction: "加载预测失败",
     predictionFailed: "预测失败",
+  },
+
+  account: {
+    title: "账户",
+    subtitle: "管理您的账户和数据。",
+    dangerHeading: "删除账户",
+    dangerBody:
+      "这将永久删除您的账户、所有孩子档案以及所有已保存的预测记录，且无法恢复。",
+    confirmWord: "删除",
+    confirmPrompt: (word: string) => `请输入“${word}”以确认`,
+    confirmPlaceholder: "删除",
+    deleteButton: "删除我的账户",
+    deleting: "正在删除…",
+    failed: "无法删除您的账户",
   },
 
   ethnicity: {

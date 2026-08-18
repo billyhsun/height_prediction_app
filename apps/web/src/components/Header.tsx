@@ -49,7 +49,30 @@ export function Header() {
             >
               {t.header.myHistory}
             </Link>
-            <UserButton afterSignOutUrl="/" />
+            <UserButton afterSignOutUrl="/">
+              {/* Account deletion lives in the user menu because that is where
+                  people (and app-store reviewers) look for it. */}
+              <UserButton.MenuItems>
+                <UserButton.Link
+                  href="/account"
+                  label={t.account.title}
+                  labelIcon={
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      aria-hidden="true"
+                    >
+                      <circle cx="8" cy="5" r="2.75" />
+                      <path d="M2.5 14c0-2.8 2.5-4.5 5.5-4.5s5.5 1.7 5.5 4.5" />
+                    </svg>
+                  }
+                />
+              </UserButton.MenuItems>
+            </UserButton>
           </SignedIn>
 
           <SignedOut>

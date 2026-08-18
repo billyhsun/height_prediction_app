@@ -46,6 +46,30 @@ export async function savePredictionToAccount(
   return res.json();
 }
 
+/**
+ * Reports a prediction made without an account, for model-improvement data.
+ *
+ * Whether anything is actually stored is decided server-side by
+ * ENABLE_GUEST_DATA_COLLECTION — the client never sees the flag and cannot
+ * override it.
+ *
+ * Failures are swallowed: collection is incidental to the user's task and must
+ * never break or delay a prediction.
+ */
+export async function reportGuestPrediction(
+  session: PredictionSession,
+): Promise<void> {
+  try {
+    await fetch("/api/guest/predictions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(session),
+    });
+  } catch {
+    // Intentionally ignored.
+  }
+}
+
 export async function fetchPredictionHistory(): Promise<SavedPredictionSummary[]> {
   const res = await fetch("/api/user/predictions");
   if (res.status === 401) return [];

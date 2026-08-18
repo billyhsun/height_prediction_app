@@ -22,7 +22,10 @@ import {
   inputsToSearchParams,
   savePredictionSession,
 } from "@/lib/prediction-session";
-import { savePredictionToAccount } from "@/lib/saved-predictions";
+import {
+  reportGuestPrediction,
+  savePredictionToAccount,
+} from "@/lib/saved-predictions";
 
 const DEFAULTS = {
   sex: 1,
@@ -225,9 +228,14 @@ export function PredictionForm() {
       savePredictionSession(session);
 
       try {
-        await savePredictionToAccount(session);
+        // Returns null on 401, which is how a guest is identified here.
+        const saved = await savePredictionToAccount(session);
+        if (saved === null) {
+          // Only collected if ENABLE_GUEST_DATA_COLLECTION is on server-side.
+          await reportGuestPrediction(session);
+        }
       } catch {
-        // Guest or save failed — results still work from session storage.
+        // Save failed — results still work from session storage.
       }
 
       router.push(`/results?${inputsToSearchParams(inputs)}`);

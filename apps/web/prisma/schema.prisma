@@ -38,6 +38,44 @@ model Child {
   @@index([userId])
 }
 
+/// Predictions run without an account, collected only when
+/// ENABLE_GUEST_DATA_COLLECTION is on.
+///
+/// Deliberately a separate table rather than a nullable userId on Prediction:
+///   - it can be dropped wholesale if collection has to be undone
+///   - it has no foreign key to identity, so nothing links a row to a person
+///   - it can never surface in a signed-in user's history by accident
+///
+/// Deliberately stores no identifier of any kind — no userId, IP address, user
+/// agent, or session id. That is what keeps the rows non-identifying, and it is
+/// also the limitation: without a stable key, two predictions for the same child
+/// cannot be linked, so this data is cross-sectional only and cannot produce the
+/// longitudinal pairs needed to train "future height". See docs/guest-data.md.
+model GuestPrediction {
+  id              String   @id @default(cuid())
+
+  sex             Int
+  heightCm        Float
+  weightKg        Float
+  currentAgeYears Float
+  targetAgeYears  Float
+  motherHeightCm  Float?
+  fatherHeightCm  Float?
+  ethnicities     String[] @default([])
+
+  predHeightCm    Float
+  predWeightKg    Float
+  predBmi         Float
+  modelVersion    String
+
+  llmPredHeightCm Float?
+  llmModel        String?
+
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+}
+
 model Prediction {
   id              String   @id @default(cuid())
   userId          String

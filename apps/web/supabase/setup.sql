@@ -60,6 +60,29 @@ CREATE TABLE IF NOT EXISTS "Prediction" (
     CONSTRAINT "Prediction_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE IF NOT EXISTS "GuestPrediction" (
+    "id" TEXT NOT NULL,
+    "sex" INTEGER NOT NULL,
+    "heightCm" DOUBLE PRECISION NOT NULL,
+    "weightKg" DOUBLE PRECISION NOT NULL,
+    "currentAgeYears" DOUBLE PRECISION NOT NULL,
+    "targetAgeYears" DOUBLE PRECISION NOT NULL,
+    "motherHeightCm" DOUBLE PRECISION,
+    "fatherHeightCm" DOUBLE PRECISION,
+    "ethnicities" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "predHeightCm" DOUBLE PRECISION NOT NULL,
+    "predWeightKg" DOUBLE PRECISION NOT NULL,
+    "predBmi" DOUBLE PRECISION NOT NULL,
+    "modelVersion" TEXT NOT NULL,
+    "llmPredHeightCm" DOUBLE PRECISION,
+    "llmModel" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "GuestPrediction_pkey" PRIMARY KEY ("id")
+);
+
+-- No userId, no foreign key, no IP or user-agent column. Predictions collected
+-- without an account must not be linkable to a person. See docs/guest-data.md.
+
 -- Columns added after the tables first shipped.
 ALTER TABLE "Child" ADD COLUMN IF NOT EXISTS "ethnicities" TEXT[] DEFAULT ARRAY[]::TEXT[];
 ALTER TABLE "Child" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
@@ -73,6 +96,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "User_clerkId_key" ON "User"("clerkId");
 CREATE INDEX IF NOT EXISTS "Child_userId_idx" ON "Child"("userId");
 CREATE INDEX IF NOT EXISTS "Prediction_userId_createdAt_idx" ON "Prediction"("userId", "createdAt" DESC);
 CREATE INDEX IF NOT EXISTS "Prediction_childId_idx" ON "Prediction"("childId");
+CREATE INDEX IF NOT EXISTS "GuestPrediction_createdAt_idx" ON "GuestPrediction"("createdAt" DESC);
 
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Child_userId_fkey') THEN
@@ -107,6 +131,7 @@ END $$;
 ALTER TABLE "User"       ALTER COLUMN "id" SET DEFAULT gen_random_uuid()::text;
 ALTER TABLE "Child"      ALTER COLUMN "id" SET DEFAULT gen_random_uuid()::text;
 ALTER TABLE "Prediction" ALTER COLUMN "id" SET DEFAULT gen_random_uuid()::text;
+ALTER TABLE "GuestPrediction" ALTER COLUMN "id" SET DEFAULT gen_random_uuid()::text;
 
 ALTER TABLE "User"  ALTER COLUMN "updatedAt" SET DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE "Child" ALTER COLUMN "updatedAt" SET DEFAULT CURRENT_TIMESTAMP;
@@ -142,11 +167,12 @@ CREATE TRIGGER "Child_set_updated_at" BEFORE UPDATE ON "Child"
 ALTER TABLE "User"       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Child"      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Prediction" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "GuestPrediction" ENABLE ROW LEVEL SECURITY;
 
-REVOKE ALL ON TABLE "User", "Child", "Prediction" FROM anon, authenticated;
+REVOKE ALL ON TABLE "User", "Child", "Prediction", "GuestPrediction" FROM anon, authenticated;
 
 GRANT USAGE ON SCHEMA public TO service_role;
-GRANT ALL ON TABLE "User", "Child", "Prediction" TO service_role;
+GRANT ALL ON TABLE "User", "Child", "Prediction", "GuestPrediction" TO service_role;
 
 -- ---------------------------------------------------------------------------
 -- 5. Make PostgREST notice the new tables

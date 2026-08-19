@@ -10,10 +10,24 @@
  * OPENAI_API_KEY therefore remains a Vercel environment variable.
  */
 
+import {
+  DEFAULT_LOCALE,
+  LOCALE_LANGUAGE_NAMES,
+  type Locale,
+} from "@/lib/i18n/config";
 import { dictionaries } from "@/lib/i18n/dictionaries";
 import { sanitizeEthnicities } from "@/lib/ethnicities";
 
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+/**
+ * Overridable so the endpoint can be pointed at an Azure OpenAI deployment, a
+ * gateway, or a local stub in tests. Defaults to OpenAI directly.
+ */
+function openAiUrl(): string {
+  const base = process.env.OPENAI_BASE_URL?.replace(/\/+$/, "");
+  return base
+    ? `${base}/chat/completions`
+    : "https://api.openai.com/v1/chat/completions";
+}
 const DEFAULT_MODEL = "gpt-5.4-mini";
 const TIMEOUT_MS = 45_000;
 
@@ -26,6 +40,8 @@ export type LlmPredictionInputs = {
   mother_height_cm: number;
   father_height_cm: number;
   ethnicities?: unknown;
+  /** Language for the generated `reasoning`. Defaults to English. */
+  locale?: Locale;
 };
 
 export type LlmPredictionResult = {
@@ -35,6 +51,10 @@ export type LlmPredictionResult = {
   target_age_years: number;
   model_version: string;
   model: string;
+  /** Which language `reasoning` was generated in. Stored alongside the text so a
+   *  reader can tell, since the wording is not re-generated when the UI language
+   *  changes later. */
+  reasoning_locale: Locale;
 };
 
 export class LlmError extends Error {
@@ -70,7 +90,11 @@ function formatEthnicities(values: unknown): string {
   return clean.map((value) => labels[value]).join(", ");
 }
 
-function buildPrompt(inputs: LlmPredictionInputs, mph: number): string {
+export function buildLlmPrompt(
+  inputs: LlmPredictionInputs,
+  mph: number,
+): string {
+  const language = LOCALE_LANGUAGE_NAMES[inputs.locale ?? DEFAULT_LOCALE];
   const bmi = inputs.weight_kg / (inputs.height_cm / 100) ** 2;
   const sexLabel = inputs.sex === 1 ? "male" : "female";
   const ethnicities = formatEthnicities(inputs.ethnicities);
@@ -95,6 +119,10 @@ Use the child's current measurements, parent heights, ethnicity (if provided), a
 Return JSON only with:
 - pred_height_cm: predicted height in cm at target age (number)
 - reasoning: 1-2 sentences explaining the estimate (string)
+
+Write the "reasoning" value in ${language}. The JSON keys stay exactly as named
+above in English; only the reasoning text is translated. Use units and number
+formatting natural to ${language}.
 `;
 }
 
@@ -115,7 +143,7 @@ export async function predictHeightLlm(
 
   let response: Response;
   try {
-    response = await fetch(OPENAI_URL, {
+    response = await fetch(openAiUrl(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -127,9 +155,9 @@ export async function predictHeightLlm(
           {
             role: "system",
             content:
-              "You are a helpful assistant that returns only valid JSON.",
+              "You are a helpful assistant that returns only valid JSON. Follow the language instruction in the user message for any human-readable text.",
           },
-          { role: "user", content: buildPrompt(inputs, mph) },
+          { role: "user", content: buildLlmPrompt(inputs, mph) },
         ],
         response_format: { type: "json_object" },
       }),
@@ -177,13 +205,18 @@ export async function predictHeightLlm(
 
   const reasoning = String(parsed.reasoning ?? "").trim();
 
+  const locale = inputs.locale ?? DEFAULT_LOCALE;
+
   return {
     pred_height_cm: predHeight,
-    reasoning:
-      reasoning || "Estimate based on child measurements and parent heights.",
+    // The fallback is only reached when the model returns no reasoning at all.
+    // It is read from the locale dictionaries so it is not an English string
+    // appearing in an otherwise translated response.
+    reasoning: reasoning || dictionaries[locale].results.llmFallbackReasoning,
     mid_parental_height_cm: mph,
     target_age_years: inputs.target_age_years,
     model_version: "llm-v1",
     model,
+    reasoning_locale: locale,
   };
 }

@@ -156,6 +156,9 @@ const en = {
     midParental: (cm: string, model: string) =>
       `Mid-parental height: ${cm} cm · Model: ${model}`,
     llmUnavailable: "LLM prediction unavailable",
+    /** Only shown if the model returns no reasoning text at all. */
+    llmFallbackReasoning:
+      "Estimate based on child measurements and parent heights.",
     addParentHeightsHint:
       "Add parent heights on the form to get a separate LLM-based height prediction.",
     inputsUsed: "Inputs used",
@@ -351,6 +354,7 @@ const zhCN: Dictionary = {
     midParental: (cm: string, model: string) =>
       `父母平均身高：${cm} 厘米 · 模型：${model}`,
     llmUnavailable: "大语言模型预测不可用",
+    llmFallbackReasoning: "该估算基于孩子的身体数据和父母身高。",
     addParentHeightsHint:
       "在表单中填写父母身高，即可获得独立的大语言模型身高预测。",
     inputsUsed: "使用的输入数据",

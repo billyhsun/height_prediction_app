@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { LlmError, predictHeightLlm } from "@/lib/llm-predictor";
+import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/config";
 import { ValidationError, validateInputs } from "@/lib/prediction-api";
 
 /**
@@ -36,11 +38,19 @@ export async function POST(request: Request) {
       }
     }
 
+    // Taken from the cookie rather than the request body so the LLM's language
+    // follows the same source of truth as <html lang>, the page title and
+    // Clerk's UI — and so a client cannot ask for a different language than the
+    // one it is displaying.
+    const cookieStore = await cookies();
+    const locale = resolveLocale(cookieStore.get(LOCALE_COOKIE)?.value);
+
     const result = await predictHeightLlm({
       ...base,
       mother_height_cm: motherHeight,
       father_height_cm: fatherHeight,
       ethnicities: raw.ethnicities,
+      locale,
     });
 
     return NextResponse.json(result);

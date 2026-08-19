@@ -24,6 +24,9 @@ export type LlmPredictResponse = {
   target_age_years: number;
   model_version: string;
   model: string;
+  /** Language the reasoning was generated in. Absent on predictions saved
+   *  before the LLM was made locale-aware. */
+  reasoning_locale?: string;
 };
 
 export function calculateBmi(weightKg: number, heightCm: number): number {

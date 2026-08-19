@@ -24,6 +24,18 @@ export const LOCALE_SHORT_LABELS: Record<Locale, string> = {
   "zh-CN": "中文",
 };
 
+/**
+ * How each locale is named to an LLM.
+ *
+ * Written in English because that is what models resolve most reliably in an
+ * instruction, with the native name included so there is no ambiguity about
+ * which Chinese script is wanted.
+ */
+export const LOCALE_LANGUAGE_NAMES: Record<Locale, string> = {
+  en: "English",
+  "zh-CN": "Simplified Chinese (简体中文)",
+};
+
 export function isLocale(value: unknown): value is Locale {
   return typeof value === "string" && (LOCALES as readonly string[]).includes(value);
 }

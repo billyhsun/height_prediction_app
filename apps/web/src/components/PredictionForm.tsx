@@ -19,6 +19,16 @@ import {
 import { useI18n } from "@/lib/i18n/context";
 import { displayError } from "@/lib/request-error";
 import {
+  Badge,
+  Button,
+  Field,
+  Input,
+  OptionGrid,
+  SegmentedControl,
+  Section,
+  Select,
+} from "@/components/ui";
+import {
   inputsToSearchParams,
   savePredictionSession,
 } from "@/lib/prediction-session";
@@ -246,318 +256,288 @@ export function PredictionForm() {
     }
   }
 
+  const ethnicityOptions = ETHNICITY_VALUES.map((value) => ({
+    value,
+    label: t.ethnicity[value],
+  }));
+
+  const minTargetAge = Math.ceil(
+    (profileLocked && selectedChild
+      ? ageYearsFromDateOfBirth(selectedChild.dateOfBirth)
+      : currentAge) + 0.1,
+  );
+
   return (
-    <div className="w-full max-w-lg space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-slate-900">
-          {t.form.title}
-        </h1>
-        <p className="text-sm text-slate-600">{t.form.subtitle}</p>
+    <div className="w-full max-w-xl">
+      <header className="mb-8 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-text-primary">
+            {t.form.title}
+          </h1>
+          <SignedOut>
+            <Badge tone="warning">{t.header.guestMode}</Badge>
+          </SignedOut>
+        </div>
+        <p className="max-w-prose text-sm leading-relaxed text-text-secondary">
+          {t.form.subtitle}
+        </p>
         <SignedOut>
-          <p className="text-xs text-amber-700">
+          <p className="text-xs text-text-secondary">
             {t.form.guestNoticeLead}{" "}
-            <Link href="/sign-up" className="font-medium underline">
+            <Link
+              href="/sign-up"
+              className="font-medium text-primary-700 underline underline-offset-2"
+            >
               {t.form.guestNoticeSignUp}
             </Link>{" "}
             {t.form.guestNoticeTail}
           </p>
         </SignedOut>
-        <SignedIn>
-          <p className="text-xs text-green-700">
-            {t.form.signedInLead}{" "}
-            <Link href="/children" className="font-medium underline">
-              {t.form.signedInManage}
-            </Link>
-            .
-          </p>
-        </SignedIn>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <SignedIn>
-          <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
-            <legend className="px-1 text-sm font-medium text-slate-700">
-              {t.form.childProfileLegend}
-            </legend>
-
-            <label className="block space-y-1">
-              <span className="text-sm text-slate-600">
-                {t.form.selectChild}
-              </span>
-              <select
-                value={selectedChildId}
-                onChange={(e) => setSelectedChildId(e.target.value)}
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
-              >
-                <option value="">{t.form.enterManually}</option>
-                {children.map((child) => (
-                  <option key={child.id} value={child.id}>
-                    {child.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {children.length === 0 && (
-              <p className="text-xs text-slate-500">
-                {t.form.noProfilesYet}{" "}
-                <Link href="/children/new" className="font-medium text-blue-600">
-                  {t.form.addAChild}
-                </Link>{" "}
-                {t.form.toAutoFill}
-              </p>
-            )}
-          </fieldset>
+          <Section
+            title={t.form.childProfileLegend}
+            description={
+              children.length === 0 ? (
+                <>
+                  {t.form.noProfilesYet}{" "}
+                  <Link
+                    href="/children/new"
+                    className="font-medium text-primary-700 underline underline-offset-2"
+                  >
+                    {t.form.addAChild}
+                  </Link>{" "}
+                  {t.form.toAutoFill}
+                </>
+              ) : undefined
+            }
+          >
+            <Field label={t.form.selectChild}>
+              {({ id }) => (
+                <Select
+                  id={id}
+                  value={selectedChildId}
+                  onChange={(e) => setSelectedChildId(e.target.value)}
+                >
+                  <option value="">{t.form.enterManually}</option>
+                  {children.map((child) => (
+                    <option key={child.id} value={child.id}>
+                      {child.displayName}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          </Section>
         </SignedIn>
 
-        <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
-          <legend className="px-1 text-sm font-medium text-slate-700">
-            {t.form.aboutYourChild}
-          </legend>
-
+        <Section title={t.form.aboutYourChild}>
           {profileLocked && selectedChild ? (
-            <>
-              <div className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                <p>
-                  <span className="font-medium">{selectedChild.displayName}</span>
-                  {" · "}
-                  {selectedChild.sex === 1 ? t.common.male : t.common.female}
-                </p>
-                <p className="mt-1 text-slate-600">
-                  {t.form.bornAndAge(
-                    formatDateOfBirth(selectedChild.dateOfBirth, locale),
-                    ageYearsFromDateOfBirth(selectedChild.dateOfBirth),
-                  )}
-                </p>
-              </div>
-              <input type="hidden" name="sex" value={selectedChild.sex} />
-              <input
-                type="hidden"
-                name="current_age_years"
-                value={ageYearsFromDateOfBirth(selectedChild.dateOfBirth)}
-              />
-            </>
+            <div className="flex flex-col gap-1 rounded-md bg-primary-50 px-4 py-3">
+              <span className="text-sm font-semibold text-primary-800">
+                {selectedChild.displayName}
+              </span>
+              <span className="text-xs text-primary-700">
+                {selectedChild.sex === 1 ? t.common.male : t.common.female} ·{" "}
+                {t.form.bornAndAge(
+                  formatDateOfBirth(selectedChild.dateOfBirth, locale),
+                  ageYearsFromDateOfBirth(selectedChild.dateOfBirth),
+                )}
+              </span>
+            </div>
           ) : (
-            <>
-              <div className="space-y-2">
-                <span className="text-sm text-slate-600">{t.form.sex}</span>
-                <div className="flex gap-2">
-                  {[
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-text-primary">
+                  {t.form.sex}
+                </span>
+                <SegmentedControl
+                  label={t.form.sex}
+                  value={sex}
+                  onChange={setSex}
+                  options={[
                     { value: 1, label: t.common.male },
                     { value: 2, label: t.common.female },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setSex(option.value)}
-                      className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${
-                        sex === option.value
-                          ? "border-blue-600 bg-blue-50 text-blue-700"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
+                  ]}
+                />
               </div>
 
-              <label className="block space-y-1">
-                <span className="text-sm text-slate-600">
-                  {t.form.currentAgeYears}
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  max={18}
-                  step={0.5}
-                  required
-                  value={currentAge}
-                  onChange={(e) => setCurrentAge(Number(e.target.value))}
-                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
-                />
-              </label>
-            </>
+              <Field label={t.form.currentAgeYears}>
+                {({ id }) => (
+                  <Input
+                    id={id}
+                    type="number"
+                    min={0}
+                    max={18}
+                    step={0.5}
+                    required
+                    value={currentAge}
+                    onChange={(e) => setCurrentAge(Number(e.target.value))}
+                  />
+                )}
+              </Field>
+            </div>
           )}
-        </fieldset>
+        </Section>
 
-        <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
-          <legend className="px-1 text-sm font-medium text-slate-700">
-            {t.form.currentMeasurements}
-          </legend>
-
-          <label className="block space-y-1">
-            <span className="text-sm text-slate-600">{t.form.heightCm}</span>
-            <input
-              type="number"
-              min={40}
-              max={220}
-              step={0.1}
-              required
-              value={heightCm}
-              onChange={(e) => setHeightCm(Number(e.target.value))}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
-
-          <label className="block space-y-1">
-            <span className="text-sm text-slate-600">{t.form.weightKg}</span>
-            <input
-              type="number"
-              min={2}
-              max={150}
-              step={0.1}
-              required
-              value={weightKg}
-              onChange={(e) => setWeightKg(Number(e.target.value))}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
-
-          <p className="text-sm text-slate-500">
-            {t.form.bmi}:{" "}
-            <span className="font-medium text-slate-700">{bmi.toFixed(1)}</span>
-          </p>
-        </fieldset>
-
-        <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
-          <legend className="px-1 text-sm font-medium text-slate-700">
-            {t.form.parentHeightsLegend}
-          </legend>
-          <p className="text-xs text-slate-500">
-            {t.form.parentHeightsHelp}
-            {profileLocked && (
-              <span>
-                {" "}
-                {selectedChild?.motherHeightCm != null
-                  ? t.form.parentHeightsAutoFilled
-                  : t.form.parentHeightsWillSave}
-              </span>
-            )}
-          </p>
-
-          <label className="block space-y-1">
-            <span className="text-sm text-slate-600">
-              {t.form.mothersHeightCm}
-            </span>
-            <input
-              type="number"
-              min={120}
-              max={220}
-              step={0.1}
-              value={motherHeight}
-              onChange={(e) => setMotherHeight(e.target.value)}
-              placeholder={t.common.egPlaceholder("165")}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
-
-          <label className="block space-y-1">
-            <span className="text-sm text-slate-600">
-              {t.form.fathersHeightCm}
-            </span>
-            <input
-              type="number"
-              min={120}
-              max={220}
-              step={0.1}
-              value={fatherHeight}
-              onChange={(e) => setFatherHeight(e.target.value)}
-              placeholder={t.common.egPlaceholder("178")}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
-        </fieldset>
-
-        <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
-          <legend className="px-1 text-sm font-medium text-slate-700">
-            {t.form.ethnicityLegend}
-          </legend>
-          <p className="text-xs text-slate-500">
-            {t.form.ethnicityHelp}
-            <SignedIn>
-              {profileLocked && <span> {t.form.ethnicityWillSave}</span>}
-            </SignedIn>
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {ETHNICITY_VALUES.map((value) => (
-              <label
-                key={value}
-                className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                <input
-                  type="checkbox"
-                  checked={ethnicities.includes(value)}
-                  onChange={() => toggleEthnicity(value)}
-                  className="rounded border-slate-300"
+        <Section title={t.form.currentMeasurements}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label={t.form.heightCm}>
+              {({ id }) => (
+                <Input
+                  id={id}
+                  type="number"
+                  min={40}
+                  max={220}
+                  step={0.1}
+                  required
+                  value={heightCm}
+                  onChange={(e) => setHeightCm(Number(e.target.value))}
                 />
-                {t.ethnicity[value]}
-              </label>
+              )}
+            </Field>
+            <Field label={t.form.weightKg}>
+              {({ id }) => (
+                <Input
+                  id={id}
+                  type="number"
+                  min={2}
+                  max={150}
+                  step={0.1}
+                  required
+                  value={weightKg}
+                  onChange={(e) => setWeightKg(Number(e.target.value))}
+                />
+              )}
+            </Field>
+          </div>
+          <div className="flex items-baseline gap-2 border-t border-border pt-3">
+            <span className="text-xs font-medium tracking-wide text-text-secondary uppercase">
+              {t.form.bmi}
+            </span>
+            <span className="text-lg font-semibold tabular-nums text-text-primary">
+              {bmi.toFixed(1)}
+            </span>
+          </div>
+        </Section>
+
+        <Section
+          title={t.form.parentHeightsLegend}
+          description={
+            <>
+              {t.form.parentHeightsHelp}
+              {profileLocked && (
+                <>
+                  {" "}
+                  {selectedChild?.motherHeightCm != null
+                    ? t.form.parentHeightsAutoFilled
+                    : t.form.parentHeightsWillSave}
+                </>
+              )}
+            </>
+          }
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label={t.form.mothersHeightCm}>
+              {({ id }) => (
+                <Input
+                  id={id}
+                  type="number"
+                  min={120}
+                  max={220}
+                  step={0.1}
+                  value={motherHeight}
+                  onChange={(e) => setMotherHeight(e.target.value)}
+                  placeholder={t.common.egPlaceholder("165")}
+                />
+              )}
+            </Field>
+            <Field label={t.form.fathersHeightCm}>
+              {({ id }) => (
+                <Input
+                  id={id}
+                  type="number"
+                  min={120}
+                  max={220}
+                  step={0.1}
+                  value={fatherHeight}
+                  onChange={(e) => setFatherHeight(e.target.value)}
+                  placeholder={t.common.egPlaceholder("178")}
+                />
+              )}
+            </Field>
+          </div>
+        </Section>
+
+        <Section
+          title={t.form.ethnicityLegend}
+          description={
+            <>
+              {t.form.ethnicityHelp}
+              <SignedIn>
+                {profileLocked && <> {t.form.ethnicityWillSave}</>}
+              </SignedIn>
+            </>
+          }
+        >
+          <OptionGrid
+            label={t.form.ethnicityLegend}
+            options={ethnicityOptions}
+            selected={ethnicities}
+            onToggle={toggleEthnicity}
+          />
+        </Section>
+
+        <Section title={t.form.predictionLegend}>
+          <Field label={t.form.predictAtAgeYears}>
+            {({ id }) => (
+              <Input
+                id={id}
+                type="number"
+                min={minTargetAge}
+                max={25}
+                step={1}
+                required
+                value={targetAge}
+                onChange={(e) => setTargetAge(Number(e.target.value))}
+              />
+            )}
+          </Field>
+          <div className="flex gap-2">
+            {[15, 18, 21].map((age) => (
+              <Button
+                key={age}
+                type="button"
+                variant={targetAge === age ? "primary" : "secondary"}
+                size="sm"
+                disabled={age < minTargetAge}
+                onClick={() => setTargetAge(age)}
+              >
+                {age}
+              </Button>
             ))}
           </div>
-        </fieldset>
-
-        <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
-          <legend className="px-1 text-sm font-medium text-slate-700">
-            {t.form.predictionLegend}
-          </legend>
-
-          <label className="block space-y-1">
-            <span className="text-sm text-slate-600">
-              {t.form.predictAtAgeYears}
-            </span>
-            <input
-              type="number"
-              min={Math.ceil(
-                (profileLocked && selectedChild
-                  ? ageYearsFromDateOfBirth(selectedChild.dateOfBirth)
-                  : currentAge) + 0.1,
-              )}
-              max={25}
-              step={1}
-              required
-              value={targetAge}
-              onChange={(e) => setTargetAge(Number(e.target.value))}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
-
-          <div className="flex gap-2">
-            {[15, 18, 21].map((age) => {
-              const minAge =
-                profileLocked && selectedChild
-                  ? ageYearsFromDateOfBirth(selectedChild.dateOfBirth)
-                  : currentAge;
-              return (
-                <button
-                  key={age}
-                  type="button"
-                  disabled={age <= minAge}
-                  onClick={() => setTargetAge(age)}
-                  className="rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {age}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-
-        <p className="text-xs text-slate-500">{t.common.disclaimer}</p>
+        </Section>
 
         {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p
+            role="alert"
+            className="rounded-md border border-danger-600/20 bg-danger-50 px-4 py-3 text-sm text-danger-700"
+          >
             {error}
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-        >
-          {loading ? t.form.calculating : t.form.submit}
-        </button>
+        <div className="flex flex-col gap-3 pt-2">
+          <Button type="submit" size="lg" fullWidth disabled={loading}>
+            {loading ? t.form.calculating : t.form.submit}
+          </Button>
+          <p className="text-center text-xs text-text-muted">
+            {t.common.disclaimer}
+          </p>
+        </div>
       </form>
     </div>
   );

@@ -43,33 +43,33 @@ export function ChildrenPageClient() {
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-600">{t.common.loading}</p>;
+    return <p className="text-sm text-text-secondary">{t.common.loading}</p>;
   }
 
   if (error) {
-    return <p className="text-sm text-red-700">{error}</p>;
+    return <p className="text-sm text-danger-700">{error}</p>;
   }
 
   return (
     <div className="w-full max-w-lg space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold text-text-primary">
           {t.children.title}
         </h1>
-        <p className="text-sm text-slate-600">{t.children.subtitle}</p>
+        <p className="text-sm text-text-secondary">{t.children.subtitle}</p>
       </header>
 
       <Link
         href="/children/new"
-        className="inline-flex rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        className="inline-flex rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
       >
         {t.children.addChild}
       </Link>
 
       {children.length === 0 ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 text-center">
-          <p className="text-sm text-slate-600">{t.children.empty}</p>
-          <p className="mt-2 text-xs text-slate-500">{t.children.emptyHelp}</p>
+        <div className="rounded-lg border border-border bg-surface p-6 text-center">
+          <p className="text-sm text-text-secondary">{t.children.empty}</p>
+          <p className="mt-2 text-xs text-text-muted">{t.children.emptyHelp}</p>
         </div>
       ) : (
         <ul className="space-y-3">
@@ -78,14 +78,14 @@ export function ChildrenPageClient() {
             return (
               <li
                 key={child.id}
-                className="rounded-lg border border-slate-200 bg-white p-4"
+                className="rounded-lg border border-border bg-surface p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-text-primary">
                       {child.displayName}
                     </p>
-                    <p className="mt-1 text-sm text-slate-600">
+                    <p className="mt-1 text-sm text-text-secondary">
                       {child.sex === 1 ? t.common.male : t.common.female} ·{" "}
                       {t.children.bornAndAge(
                         formatDateOfBirth(child.dateOfBirth, locale),
@@ -93,7 +93,7 @@ export function ChildrenPageClient() {
                       )}
                     </p>
                     {(child.motherHeightCm || child.fatherHeightCm) && (
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-text-muted">
                         {t.children.parentsLabel}{" "}
                         {child.motherHeightCm
                           ? t.children.motherHeight(child.motherHeightCm)
@@ -107,7 +107,7 @@ export function ChildrenPageClient() {
                       </p>
                     )}
                     {child.ethnicities.length > 0 && (
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-text-muted">
                         {t.children.ethnicityLabel(
                           formatEthnicities(
                             child.ethnicities,
@@ -122,20 +122,20 @@ export function ChildrenPageClient() {
                     <button
                       type="button"
                       onClick={() => router.push(`/?child=${child.id}`)}
-                      className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                      className="text-xs font-medium text-primary-700 hover:text-primary-800"
                     >
                       {t.children.predict}
                     </button>
                     <Link
                       href={`/children/${child.id}/edit`}
-                      className="text-xs text-slate-600 hover:text-slate-900"
+                      className="text-xs text-text-secondary hover:text-text-primary"
                     >
                       {t.common.edit}
                     </Link>
                     <button
                       type="button"
                       onClick={() => handleDelete(child.id)}
-                      className="text-xs text-slate-500 hover:text-red-600"
+                      className="text-xs text-text-muted hover:text-danger-600"
                     >
                       {t.common.delete}
                     </button>

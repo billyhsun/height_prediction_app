@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { calculateBmi } from "@/lib/api";
 import { useTranslations } from "@/lib/i18n/context";
+import { Badge, Button, Card, Stat } from "@/components/ui";
 import {
   inputsToSearchParams,
   type PredictionSession,
@@ -22,14 +23,33 @@ export function PredictionResults({
   const currentBmi = calculateBmi(inputs.weight_kg, inputs.height_cm);
   const editHref = `/?${inputsToSearchParams(inputs)}`;
 
+  const inputRows: { label: string; value: string }[] = [
+    { label: t.results.sex, value: inputs.sex === 1 ? t.common.male : t.common.female },
+    { label: t.results.currentAge, value: t.common.years(inputs.current_age_years) },
+    { label: t.results.height, value: `${inputs.height_cm} cm` },
+    { label: t.results.weight, value: `${inputs.weight_kg} kg` },
+    { label: t.results.currentBmi, value: currentBmi.toFixed(1) },
+    { label: t.results.targetAge, value: t.common.years(inputs.target_age_years) },
+    ...(inputs.mother_height_cm
+      ? [{ label: t.results.motherHeight, value: `${inputs.mother_height_cm} cm` }]
+      : []),
+    ...(inputs.father_height_cm
+      ? [{ label: t.results.fatherHeight, value: `${inputs.father_height_cm} cm` }]
+      : []),
+  ];
+
   return (
-    <div className="w-full max-w-lg space-y-6">
-      <header className="space-y-2">
-        <p className="text-sm font-medium text-blue-600">{t.results.eyebrow}</p>
-        <h1 className="text-2xl font-semibold text-slate-900">
-          {t.results.atAge(result.target_age_years)}
-        </h1>
-        <p className="text-sm text-slate-600">
+    <div className="w-full max-w-xl">
+      <header className="mb-6 flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-text-primary">
+            {t.results.atAge(result.target_age_years)}
+          </h1>
+          {savedToAccount && (
+            <Badge tone="success">{t.results.savedToAccount}</Badge>
+          )}
+        </div>
+        <p className="text-sm leading-relaxed text-text-secondary">
           {t.results.basedOn(
             inputs.current_age_years,
             t.common.sexNoun(inputs.sex),
@@ -38,153 +58,130 @@ export function PredictionResults({
           )}
         </p>
         {savedToAccount && (
-          <p className="text-xs font-medium text-green-700">
-            {t.results.savedToAccount}{" "}
-            <Link href="/history" className="underline">
-              {t.results.viewHistory}
-            </Link>
-          </p>
+          <Link
+            href="/history"
+            className="text-xs font-medium text-primary-700 underline underline-offset-2"
+          >
+            {t.results.viewHistory}
+          </Link>
         )}
       </header>
 
-      <section className="rounded-lg border border-blue-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium text-blue-700">{t.results.mlModel}</p>
-        <p className="mt-1 text-sm text-slate-500">
-          {t.results.predictedHeight}
-        </p>
-        <p className="mt-1 text-4xl font-bold text-slate-900">
-          {result.pred_height_cm.toFixed(1)}{" "}
-          <span className="text-2xl font-semibold text-slate-500">cm</span>
-        </p>
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs text-slate-500">
-              {t.results.predictedWeight}
-            </p>
-            <p className="text-lg font-semibold text-slate-900">
-              {result.pred_weight_kg.toFixed(1)} kg
+      <div className="flex flex-col gap-4">
+        <Card tone="raised" padding="lg">
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-primary-600" />
+              <span className="text-xs font-semibold tracking-wide text-primary-700 uppercase">
+                {t.results.mlModel}
+              </span>
+            </div>
+            <Stat
+              label={t.results.predictedHeight}
+              value={result.pred_height_cm.toFixed(1)}
+              unit="cm"
+            />
+            <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs text-text-secondary">
+                  {t.results.predictedWeight}
+                </span>
+                <span className="text-lg font-semibold tabular-nums text-text-primary">
+                  {result.pred_weight_kg.toFixed(1)} kg
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs text-text-secondary">
+                  {t.results.predictedBmi}
+                </span>
+                <span className="text-lg font-semibold tabular-nums text-text-primary">
+                  {result.pred_bmi.toFixed(1)}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-text-muted">
+              {t.results.modelLabel(result.model_version)}
             </p>
           </div>
-          <div>
-            <p className="text-xs text-slate-500">{t.results.predictedBmi}</p>
-            <p className="text-lg font-semibold text-slate-900">
-              {result.pred_bmi.toFixed(1)}
+        </Card>
+
+        {llmResult && (
+          <Card tone="accent" padding="lg">
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-accent-600" />
+                <span className="text-xs font-semibold tracking-wide text-accent-700 uppercase">
+                  {t.results.llmPrediction}
+                </span>
+              </div>
+              <Stat
+                label={t.results.predictedHeight}
+                value={llmResult.pred_height_cm.toFixed(1)}
+                unit="cm"
+                tone="accent"
+              />
+              <p className="text-sm leading-relaxed text-text-primary">
+                {llmResult.reasoning}
+              </p>
+              <p className="text-xs text-text-muted">
+                {t.results.midParental(
+                  llmResult.mid_parental_height_cm.toFixed(1),
+                  llmResult.model,
+                )}
+              </p>
+            </div>
+          </Card>
+        )}
+
+        {llmError && (
+          <Card tone="muted" padding="sm">
+            <p className="text-sm font-medium text-warning-700">
+              {t.results.llmUnavailable}
             </p>
-          </div>
+            <p className="mt-1 text-sm text-text-secondary">{llmError}</p>
+          </Card>
+        )}
+
+        {!llmResult && !llmError && !inputs.mother_height_cm && (
+          <Card tone="muted" padding="sm">
+            <p className="text-sm text-text-secondary">
+              {t.results.addParentHeightsHint}
+            </p>
+          </Card>
+        )}
+
+        <Card tone="muted" padding="md">
+          <h2 className="mb-3 text-xs font-semibold tracking-wide text-text-secondary uppercase">
+            {t.results.inputsUsed}
+          </h2>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+            {inputRows.map((row) => (
+              <div key={row.label} className="flex flex-col gap-0.5">
+                <dt className="text-xs text-text-muted">{row.label}</dt>
+                <dd className="text-sm font-medium tabular-nums text-text-primary">
+                  {row.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
+
+        <p className="text-center text-xs text-text-muted">
+          {t.common.disclaimer}
+        </p>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link href={editHref} className="flex-1">
+            <Button variant="secondary" size="lg" fullWidth>
+              {t.results.editInputs}
+            </Button>
+          </Link>
+          <Link href="/" className="flex-1">
+            <Button size="lg" fullWidth>
+              {t.results.newPrediction}
+            </Button>
+          </Link>
         </div>
-        <p className="mt-3 text-xs text-slate-500">
-          {t.results.modelLabel(result.model_version)}
-        </p>
-      </section>
-
-      {llmResult && (
-        <section className="rounded-lg border border-violet-200 bg-violet-50 p-6 shadow-sm">
-          <p className="text-sm font-medium text-violet-700">
-            {t.results.llmPrediction}
-          </p>
-          <p className="mt-1 text-sm text-slate-500">
-            {t.results.predictedHeight}
-          </p>
-          <p className="mt-1 text-4xl font-bold text-slate-900">
-            {llmResult.pred_height_cm.toFixed(1)}{" "}
-            <span className="text-2xl font-semibold text-slate-500">cm</span>
-          </p>
-          <p className="mt-4 text-sm text-slate-700">{llmResult.reasoning}</p>
-          <p className="mt-3 text-xs text-slate-500">
-            {t.results.midParental(
-              llmResult.mid_parental_height_cm.toFixed(1),
-              llmResult.model,
-            )}
-          </p>
-        </section>
-      )}
-
-      {llmError && (
-        <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-800">
-            {t.results.llmUnavailable}
-          </p>
-          <p className="mt-1 text-sm text-amber-700">{llmError}</p>
-        </section>
-      )}
-
-      {!llmResult && !llmError && !inputs.mother_height_cm && (
-        <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm text-slate-600">
-            {t.results.addParentHeightsHint}
-          </p>
-        </section>
-      )}
-
-      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <h2 className="text-sm font-medium text-slate-700">
-          {t.results.inputsUsed}
-        </h2>
-        <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <dt className="text-slate-500">{t.results.sex}</dt>
-            <dd className="font-medium text-slate-900">
-              {inputs.sex === 1 ? t.common.male : t.common.female}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">{t.results.currentAge}</dt>
-            <dd className="font-medium text-slate-900">
-              {t.common.years(inputs.current_age_years)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">{t.results.height}</dt>
-            <dd className="font-medium text-slate-900">{inputs.height_cm} cm</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">{t.results.weight}</dt>
-            <dd className="font-medium text-slate-900">{inputs.weight_kg} kg</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">{t.results.currentBmi}</dt>
-            <dd className="font-medium text-slate-900">{currentBmi.toFixed(1)}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">{t.results.targetAge}</dt>
-            <dd className="font-medium text-slate-900">
-              {t.common.years(inputs.target_age_years)}
-            </dd>
-          </div>
-          {inputs.mother_height_cm && (
-            <div>
-              <dt className="text-slate-500">{t.results.motherHeight}</dt>
-              <dd className="font-medium text-slate-900">
-                {inputs.mother_height_cm} cm
-              </dd>
-            </div>
-          )}
-          {inputs.father_height_cm && (
-            <div>
-              <dt className="text-slate-500">{t.results.fatherHeight}</dt>
-              <dd className="font-medium text-slate-900">
-                {inputs.father_height_cm} cm
-              </dd>
-            </div>
-          )}
-        </dl>
-      </section>
-
-      <p className="text-xs text-slate-500">{t.common.disclaimer}</p>
-
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Link
-          href={editHref}
-          className="flex-1 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-center text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          {t.results.editInputs}
-        </Link>
-        <Link
-          href="/"
-          className="flex-1 rounded-md bg-blue-600 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-700"
-        >
-          {t.results.newPrediction}
-        </Link>
       </div>
     </div>
   );

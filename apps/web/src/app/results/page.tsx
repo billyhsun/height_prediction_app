@@ -26,7 +26,7 @@ export default async function ResultsPage() {
 
   return (
     <Suspense
-      fallback={<p className="text-sm text-slate-600">{t.results.loading}</p>}
+      fallback={<p className="text-sm text-text-secondary">{t.results.loading}</p>}
     >
       <ResultsPageClient />
     </Suspense>

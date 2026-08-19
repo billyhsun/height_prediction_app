@@ -37,20 +37,20 @@ export function AccountPageClient() {
   return (
     <div className="w-full max-w-lg space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold text-text-primary">
           {t.account.title}
         </h1>
-        <p className="text-sm text-slate-600">{t.account.subtitle}</p>
+        <p className="text-sm text-text-secondary">{t.account.subtitle}</p>
       </header>
 
-      <section className="space-y-4 rounded-lg border border-red-200 bg-white p-5">
-        <h2 className="text-sm font-medium text-red-800">
+      <section className="space-y-4 rounded-lg border border-danger-600/20 bg-surface p-5">
+        <h2 className="text-sm font-medium text-danger-700">
           {t.account.dangerHeading}
         </h2>
-        <p className="text-sm text-slate-600">{t.account.dangerBody}</p>
+        <p className="text-sm text-text-secondary">{t.account.dangerBody}</p>
 
         <label className="block space-y-1">
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-text-secondary">
             {t.account.confirmPrompt(t.account.confirmWord)}
           </span>
           <input
@@ -60,12 +60,12 @@ export function AccountPageClient() {
             placeholder={t.account.confirmPlaceholder}
             autoComplete="off"
             disabled={deleting}
-            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm"
           />
         </label>
 
         {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="rounded-md bg-danger-50 px-3 py-2 text-sm text-danger-700">
             {error}
           </p>
         )}
@@ -74,7 +74,7 @@ export function AccountPageClient() {
           type="button"
           onClick={handleDelete}
           disabled={!confirmed || deleting}
-          className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-md bg-danger-600 px-4 py-2 text-sm font-medium text-white hover:bg-danger-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {deleting ? t.account.deleting : t.account.deleteButton}
         </button>

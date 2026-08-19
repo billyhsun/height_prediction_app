@@ -119,26 +119,26 @@ export function ChildForm({ childId }: ChildFormProps) {
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-600">{t.common.loading}</p>;
+    return <p className="text-sm text-text-secondary">{t.common.loading}</p>;
   }
 
   return (
     <div className="w-full max-w-lg space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold text-text-primary">
           {isEdit ? t.childForm.editTitle : t.childForm.addTitle}
         </h1>
-        <p className="text-sm text-slate-600">{t.childForm.subtitle}</p>
+        <p className="text-sm text-text-secondary">{t.childForm.subtitle}</p>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
-          <legend className="px-1 text-sm font-medium text-slate-700">
+        <fieldset className="space-y-4 rounded-lg border border-border bg-surface p-5">
+          <legend className="px-1 text-sm font-medium text-text-primary">
             {t.childForm.profileLegend}
           </legend>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">{t.childForm.name}</span>
+            <span className="text-sm text-text-secondary">{t.childForm.name}</span>
             <input
               type="text"
               required
@@ -147,12 +147,12 @@ export function ChildForm({ childId }: ChildFormProps) {
                 setForm((prev) => ({ ...prev, displayName: e.target.value }))
               }
               placeholder={t.childForm.namePlaceholder}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </label>
 
           <div className="space-y-2">
-            <span className="text-sm text-slate-600">{t.form.sex}</span>
+            <span className="text-sm text-text-secondary">{t.form.sex}</span>
             <div className="flex gap-2">
               {[
                 { value: 1, label: t.common.male },
@@ -166,8 +166,8 @@ export function ChildForm({ childId }: ChildFormProps) {
                   }
                   className={`flex-1 rounded-md border px-3 py-2 text-sm transition-colors ${
                     form.sex === option.value
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      ? "border-primary-600 bg-primary-50 text-primary-800"
+                      : "border-border bg-surface text-text-primary hover:bg-neutral-50"
                   }`}
                 >
                   {option.label}
@@ -177,7 +177,7 @@ export function ChildForm({ childId }: ChildFormProps) {
           </div>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-text-secondary">
               {t.childForm.dateOfBirth}
             </span>
             <input
@@ -188,28 +188,28 @@ export function ChildForm({ childId }: ChildFormProps) {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, dateOfBirth: e.target.value }))
               }
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </label>
 
           <div className="space-y-2">
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-text-secondary">
               {t.childForm.ethnicityLabel}
             </span>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-text-muted">
               {t.childForm.ethnicityHelp}
             </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {ETHNICITY_VALUES.map((value) => (
                 <label
                   key={value}
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-text-primary hover:bg-neutral-50"
                 >
                   <input
                     type="checkbox"
                     checked={form.ethnicities?.includes(value) ?? false}
                     onChange={() => toggleEthnicity(value)}
-                    className="rounded border-slate-300"
+                    className="rounded border-border-strong"
                   />
                   {t.ethnicity[value]}
                 </label>
@@ -218,16 +218,16 @@ export function ChildForm({ childId }: ChildFormProps) {
           </div>
         </fieldset>
 
-        <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
-          <legend className="px-1 text-sm font-medium text-slate-700">
+        <fieldset className="space-y-4 rounded-lg border border-border bg-surface p-5">
+          <legend className="px-1 text-sm font-medium text-text-primary">
             {t.childForm.parentHeightsLegend}
           </legend>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-text-muted">
             {t.childForm.parentHeightsHelp}
           </p>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-text-secondary">
               {t.childForm.mothersHeightCm}
             </span>
             <input
@@ -238,12 +238,12 @@ export function ChildForm({ childId }: ChildFormProps) {
               value={motherHeight}
               onChange={(e) => setMotherHeight(e.target.value)}
               placeholder={t.common.egPlaceholder("165")}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-text-secondary">
               {t.childForm.fathersHeightCm}
             </span>
             <input
@@ -254,13 +254,13 @@ export function ChildForm({ childId }: ChildFormProps) {
               value={fatherHeight}
               onChange={(e) => setFatherHeight(e.target.value)}
               placeholder={t.common.egPlaceholder("178")}
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </label>
         </fieldset>
 
         {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="rounded-md bg-danger-50 px-3 py-2 text-sm text-danger-700">
             {error}
           </p>
         )}
@@ -269,7 +269,7 @@ export function ChildForm({ childId }: ChildFormProps) {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+            className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60"
           >
             {saving
               ? t.childForm.saving
@@ -279,7 +279,7 @@ export function ChildForm({ childId }: ChildFormProps) {
           </button>
           <Link
             href="/children"
-            className="rounded-md border border-slate-200 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            className="rounded-md border border-border px-4 py-2 text-sm text-text-primary hover:bg-neutral-50"
           >
             {t.common.cancel}
           </Link>

@@ -145,7 +145,7 @@ const en = {
     atAge: (age: number) => `At age ${age}`,
     basedOn: (age: number, sexNoun: string, heightCm: number, weightKg: number) =>
       `Based on a ${age}-year-old ${sexNoun} measuring ${heightCm} cm and ${weightKg} kg.`,
-    savedToAccount: "Saved to your account ·",
+    savedToAccount: "Saved to your account",
     viewHistory: "View history",
     mlModel: "ML model (SVR)",
     predictedHeight: "Predicted height",
@@ -340,7 +340,7 @@ const zhCN: Dictionary = {
     atAge: (age: number) => `${age} 岁时`,
     basedOn: (age: number, sexNoun: string, heightCm: number, weightKg: number) =>
       `基于一名 ${age} 岁${sexNoun}，身高 ${heightCm} 厘米，体重 ${weightKg} 公斤。`,
-    savedToAccount: "已保存到您的账户 ·",
+    savedToAccount: "已保存到您的账户",
     viewHistory: "查看历史记录",
     mlModel: "机器学习模型（SVR）",
     predictedHeight: "预测身高",

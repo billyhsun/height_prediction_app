@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "npm run tokens && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "vercel-build": "next build",
-    "db:ddl": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script"
+    "vercel-build": "npm run tokens && next build",
+    "db:ddl": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script",
+    "tokens": "node --experimental-strip-types scripts/build-tokens.mjs"
   },
   "dependencies": {
     "@clerk/localizations": "^4.15.4",

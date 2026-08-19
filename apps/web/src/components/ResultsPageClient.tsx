@@ -129,20 +129,20 @@ export function ResultsPageClient() {
   }, [searchParams, isSignedIn]);
 
   if (loading) {
-    return <p className="text-sm text-slate-600">{t.results.loading}</p>;
+    return <p className="text-sm text-text-secondary">{t.results.loading}</p>;
   }
 
   if (error) {
     return (
       <div className="w-full max-w-lg space-y-4 text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold text-text-primary">
           {t.results.couldNotLoad}
         </h1>
-        <p className="text-sm text-red-700">{error}</p>
+        <p className="text-sm text-danger-700">{error}</p>
         <button
           type="button"
           onClick={() => router.push("/")}
-          className="inline-block rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-block rounded-md bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700"
         >
           {t.results.backToForm}
         </button>
@@ -153,15 +153,15 @@ export function ResultsPageClient() {
   if (!session) {
     return (
       <div className="w-full max-w-lg space-y-4 text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold text-text-primary">
           {t.results.noResults}
         </h1>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-text-secondary">
           {t.results.noResultsHelp}
         </p>
         <Link
           href="/"
-          className="inline-block rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-block rounded-md bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700"
         >
           {t.results.goToForm}
         </Link>

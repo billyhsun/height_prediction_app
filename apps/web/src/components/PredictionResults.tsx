@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { calculateBmi } from "@/lib/api";
 import { useTranslations } from "@/lib/i18n/context";
-import { Badge, Button, Card, Stat } from "@/components/ui";
+import { Badge, Button, Card, GrowthChart, Stat } from "@/components/ui";
+import type { ChartPoint } from "@/lib/design/chart";
 import {
   inputsToSearchParams,
   type PredictionSession,
@@ -12,16 +13,31 @@ import {
 type PredictionResultsProps = {
   session: PredictionSession;
   savedToAccount?: boolean;
+  /**
+   * Earlier measurements for this child, if any, so the chart shows a real
+   * trajectory rather than a single point. Optional: guests and first-time
+   * predictions have none, and the chart degrades to one measured point plus
+   * the projection.
+   */
+  history?: ChartPoint[];
 };
 
 export function PredictionResults({
   session,
   savedToAccount = false,
+  history = [],
 }: PredictionResultsProps) {
   const t = useTranslations();
   const { inputs, result, llmResult, llmError } = session;
   const currentBmi = calculateBmi(inputs.weight_kg, inputs.height_cm);
   const editHref = `/?${inputsToSearchParams(inputs)}`;
+
+  // The measurement behind this prediction is always plotted; prior ones are
+  // added when available. dedupeByAge in the chart collapses repeats.
+  const observed: ChartPoint[] = [
+    ...history,
+    { ageYears: inputs.current_age_years, heightCm: inputs.height_cm },
+  ];
 
   const inputRows: { label: string; value: string }[] = [
     { label: t.results.sex, value: inputs.sex === 1 ? t.common.male : t.common.female },
@@ -103,6 +119,25 @@ export function PredictionResults({
               {t.results.modelLabel(result.model_version)}
             </p>
           </div>
+        </Card>
+
+        <Card padding="lg">
+          <GrowthChart
+            observed={observed}
+            predicted={{
+              ageYears: result.target_age_years,
+              heightCm: result.pred_height_cm,
+            }}
+            llmPredicted={
+              llmResult
+                ? {
+                    ageYears: llmResult.target_age_years,
+                    heightCm: llmResult.pred_height_cm,
+                  }
+                : null
+            }
+            labels={t.results.chart}
+          />
         </Card>
 
         {llmResult && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -19,9 +19,12 @@ import {
   type PredictRequest,
 } from "@/lib/api";
 import {
+  fetchPredictionHistory,
   sessionFromSaved,
   type SavedPredictionDetail,
+  type SavedPredictionSummary,
 } from "@/lib/saved-predictions";
+import type { ChartPoint } from "@/lib/design/chart";
 
 function parseInputs(params: URLSearchParams): PredictRequest | null {
   const sex = Number(params.get("sex"));
@@ -62,6 +65,7 @@ export function ResultsPageClient() {
   const [savedToAccount, setSavedToAccount] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState<SavedPredictionSummary[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -128,6 +132,26 @@ export function ResultsPageClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isSignedIn]);
 
+  // Fetched unconditionally for signed-in users, then narrowed per child below.
+  // Best-effort: a failure leaves the chart with only the current measurement,
+  // which still renders correctly.
+  useEffect(() => {
+    if (!isSignedIn) return;
+    fetchPredictionHistory()
+      .then(setSaved)
+      .catch(() => {});
+  }, [isSignedIn]);
+
+  // Derived rather than stored, so switching to a different child cannot leave
+  // the previous child's points on the chart.
+  const history = useMemo<ChartPoint[]>(() => {
+    const childId = session?.childId;
+    if (!childId) return [];
+    return saved
+      .filter((row) => row.childId === childId)
+      .map((row) => ({ ageYears: row.currentAgeYears, heightCm: row.heightCm }));
+  }, [saved, session?.childId]);
+
   if (loading) {
     return <p className="text-sm text-text-secondary">{t.results.loading}</p>;
   }
@@ -170,6 +194,10 @@ export function ResultsPageClient() {
   }
 
   return (
-    <PredictionResults session={session} savedToAccount={savedToAccount} />
+    <PredictionResults
+      session={session}
+      savedToAccount={savedToAccount}
+      history={history}
+    />
   );
 }

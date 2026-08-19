@@ -8,6 +8,8 @@ export type SavedPredictionSummary = {
   sex: number;
   currentAgeYears: number;
   targetAgeYears: number;
+  /** Measured height at currentAgeYears — the observed point for the chart. */
+  heightCm: number;
   predHeightCm: number;
   llmPredHeightCm: number | null;
   childId: string | null;
@@ -15,7 +17,6 @@ export type SavedPredictionSummary = {
 };
 
 export type SavedPredictionDetail = SavedPredictionSummary & {
-  heightCm: number;
   weightKg: number;
   motherHeightCm: number | null;
   fatherHeightCm: number | null;
@@ -110,5 +111,5 @@ export function sessionFromSaved(
         }
       : null;
 
-  return { inputs, result, llmResult, llmError: null };
+  return { inputs, result, llmResult, llmError: null, childId: detail.childId };
 }

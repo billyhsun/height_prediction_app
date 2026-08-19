@@ -11,6 +11,7 @@ type PredictionRow = {
   sex: number;
   currentAgeYears: number;
   targetAgeYears: number;
+  heightCm: number;
   predHeightCm: number;
   llmPredHeightCm: number | null;
   childId: string | null;
@@ -21,7 +22,7 @@ type PredictionRow = {
 // string. `child:Child(...)` resolves the Prediction.childId -> Child.id
 // foreign key and returns it as `child`, matching Prisma's old `include` shape.
 const SUMMARY_SELECT =
-  "id, createdAt, sex, currentAgeYears, targetAgeYears, predHeightCm, llmPredHeightCm, childId, child:Child(displayName)";
+  "id, createdAt, sex, currentAgeYears, targetAgeYears, heightCm, predHeightCm, llmPredHeightCm, childId, child:Child(displayName)";
 
 function toSummary(prediction: PredictionRow) {
   return {
@@ -30,6 +31,9 @@ function toSummary(prediction: PredictionRow) {
     sex: prediction.sex,
     currentAgeYears: prediction.currentAgeYears,
     targetAgeYears: prediction.targetAgeYears,
+    // The measured height that produced this prediction. Included so the growth
+    // chart can plot observed points, not just predicted ones.
+    heightCm: prediction.heightCm,
     predHeightCm: prediction.predHeightCm,
     llmPredHeightCm: prediction.llmPredHeightCm,
     childId: prediction.childId,

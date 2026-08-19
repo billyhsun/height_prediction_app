@@ -142,6 +142,14 @@ const en = {
 
   results: {
     eyebrow: "Prediction results",
+    chart: {
+      title: "Height over time",
+      observed: "Measured",
+      predicted: "ML prediction",
+      llmPredicted: "LLM prediction",
+      ageAxis: "age (years)",
+      heightAxis: "height (cm)",
+    },
     atAge: (age: number) => `At age ${age}`,
     basedOn: (age: number, sexNoun: string, heightCm: number, weightKg: number) =>
       `Based on a ${age}-year-old ${sexNoun} measuring ${heightCm} cm and ${weightKg} kg.`,
@@ -340,6 +348,14 @@ const zhCN: Dictionary = {
 
   results: {
     eyebrow: "预测结果",
+    chart: {
+      title: "身高变化",
+      observed: "实测",
+      predicted: "机器学习预测",
+      llmPredicted: "大语言模型预测",
+      ageAxis: "年龄（岁）",
+      heightAxis: "身高（厘米）",
+    },
     atAge: (age: number) => `${age} 岁时`,
     basedOn: (age: number, sexNoun: string, heightCm: number, weightKg: number) =>
       `基于一名 ${age} 岁${sexNoun}，身高 ${heightCm} 厘米，体重 ${weightKg} 公斤。`,

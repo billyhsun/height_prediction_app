@@ -6,6 +6,7 @@ import {
   linePath,
   type ChartPoint,
 } from "@/lib/design/chart";
+import { growthProjection } from "@/lib/design/growth-curve";
 
 export type GrowthChartLabels = {
   title: string;
@@ -21,6 +22,9 @@ type GrowthChartProps = {
   observed: ChartPoint[];
   predicted: ChartPoint;
   llmPredicted?: ChartPoint | null;
+  /** 1 = male, 2 = female. Selects the reference growth shape, since the
+   *  pubertal spurt arrives earlier for girls. */
+  sex: number;
   labels: GrowthChartLabels;
 };
 
@@ -43,6 +47,7 @@ export function GrowthChart({
   observed,
   predicted,
   llmPredicted,
+  sex,
   labels,
 }: GrowthChartProps) {
   const points = dedupeByAge(observed);
@@ -51,6 +56,22 @@ export function GrowthChart({
 
   const last = points[points.length - 1];
   const observedPath = points.length > 1 ? linePath(points, scales) : null;
+
+  // Follows a typical growth shape between the measurement and the prediction
+  // rather than a straight line. Anchored at both ends, so it cannot imply a
+  // height the model did not predict. Falls back to a direct segment when the
+  // reference offers no shape (both ages past the growth plateau).
+  const projection = growthProjection(last, predicted, sex);
+  const projectionPath = projection.length
+    ? linePath(projection, scales)
+    : linePath([last, predicted], scales);
+
+  const llmProjection = llmPredicted
+    ? growthProjection(last, llmPredicted, sex)
+    : [];
+  const llmProjectionPath = llmPredicted
+    ? linePath(llmProjection.length ? llmProjection : [last, llmPredicted], scales)
+    : null;
 
   return (
     <figure className="m-0 flex flex-col gap-3">
@@ -106,29 +127,27 @@ export function GrowthChart({
           </text>
         ))}
 
-        {/* Projection: last measurement to the model's target. Dashed so it
-            reads as an estimate rather than recorded data. */}
-        <line
-          x1={scales.x(last.ageYears)}
-          y1={scales.y(last.heightCm)}
-          x2={scales.x(predicted.ageYears)}
-          y2={scales.y(predicted.heightCm)}
+        {/* Projection: measurement to the model's target, following a typical
+            growth shape. Dashed so it reads as an estimate, not recorded data. */}
+        <path
+          d={projectionPath}
+          fill="none"
           stroke="var(--color-primary-500)"
           strokeWidth={2}
           strokeDasharray="5 4"
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
 
-        {llmPredicted && (
-          <line
-            x1={scales.x(last.ageYears)}
-            y1={scales.y(last.heightCm)}
-            x2={scales.x(llmPredicted.ageYears)}
-            y2={scales.y(llmPredicted.heightCm)}
+        {llmProjectionPath && (
+          <path
+            d={llmProjectionPath}
+            fill="none"
             stroke="var(--color-accent-500)"
             strokeWidth={2}
             strokeDasharray="2 4"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
         )}
 

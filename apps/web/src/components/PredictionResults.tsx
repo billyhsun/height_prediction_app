@@ -136,6 +136,7 @@ export function PredictionResults({
                   }
                 : null
             }
+            sex={inputs.sex}
             labels={t.results.chart}
           />
         </Card>

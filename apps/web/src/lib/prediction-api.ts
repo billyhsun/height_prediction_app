@@ -14,7 +14,7 @@
  *   - the endpoint is `POST /surveys/results`, dispatched by a `survey` field
  *   - inputs are title-case keys with spaces: `Sex`, `Current age`, …
  *   - outputs are `pred_height` / `pred_weight` / `pred_bmi`, with no units
- *     suffix and no model version
+ *     suffix; `model_version` is reported by the backend as of svr-v2
  *   - `duration` is read unconditionally, so omitting it produces a 500
  *   - every internal failure collapses to a generic 500, so useful validation
  *     errors have to be produced here rather than forwarded
@@ -227,9 +227,13 @@ export async function predict(
     pred_weight_kg: weight,
     pred_bmi: bmi,
     target_age_years: inputs.target_age_years,
-    // The upstream does not report which model produced this, so the version is
-    // configured here. Every stored prediction records it, so it must stay
-    // accurate when the backend's model changes.
-    model_version: process.env.PREDICTION_MODEL_VERSION ?? "svr-v1",
+    // The backend now reports which model produced the prediction, so prefer
+    // that over local configuration — it cannot drift when the model changes.
+    // PREDICTION_MODEL_VERSION remains a fallback for older deployments that
+    // do not yet return the field.
+    model_version:
+      typeof record.model_version === "string" && record.model_version
+        ? record.model_version
+        : process.env.PREDICTION_MODEL_VERSION ?? "svr-v1",
   };
 }

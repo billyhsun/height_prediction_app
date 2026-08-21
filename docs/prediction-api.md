@@ -128,7 +128,9 @@ these are the differences worth knowing.
 ### Which endpoint serves the model
 
 Confirmed from `GET /surveys/catalog` on the live service — `child_bmi` is served
-by `lab-surveys-backend-all-other-surveys` despite the name:
+by the `kangleelab-legacy` Cloud Run service. The service has been renamed once
+already (from `lab-surveys-backend-all-other-surveys`), so treat the URL as
+configuration rather than something to hardcode:
 
 ```json
 { "route_id": "child_bmi", "survey_id": "childbmi",
@@ -186,10 +188,9 @@ POST {PREDICTION_API_URL}/surveys/results
 Mapped to `pred_height_cm` / `pred_weight_kg` / `pred_bmi`. The extra survey
 fields are ignored.
 
-**There is no `model_version` in the response.** Every stored prediction records
-one, so it comes from `PREDICTION_MODEL_VERSION` on this side and must be updated
-by hand when the backend's model changes. That is a weak link — the roadmap's
-shadow-mode work should have the backend report its own version.
+**`model_version` is reported by the backend** as of svr-v2 (currently
+`svr-v2-height`), and the client prefers it over `PREDICTION_MODEL_VERSION`,
+which remains only as a fallback for deployments predating that change.
 
 ### Errors
 
@@ -274,7 +275,7 @@ IAM, much simpler, far better than an open endpoint.
 
 ```bash
 # apps/web/.env.local
-PREDICTION_API_URL=https://lab-surveys-backend-xxxxxxxx.a.run.app
+PREDICTION_API_URL=https://kangleelab-legacy-489345092369.northamerica-northeast2.run.app/surveys
 OPENAI_API_KEY=sk-...
 ```
 

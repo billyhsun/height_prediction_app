@@ -1,4 +1,4 @@
-# Child Height Predictor — System Design
+# Notch — System Design
 
 **Status:** Draft  
 **Last updated:** 2026-08-18  
@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-Child Height Predictor is a standalone consumer app for predicting children's future height, weight, and BMI. It ports the SVR models developed for the Kang Lee Lab **Child BMI** survey in `lab-surveys`, but is built as a separate product with user accounts, child profiles, measurement history, and a path toward LLM-augmented insights.
+Notch (formerly "Child Height Predictor") is a standalone consumer app for tracking children's growth and predicting their future height, weight, and BMI. The name refers to the pencil mark on a doorframe — the product is a record of a child's growth first, and a prediction second. It ports the SVR models developed for the Kang Lee Lab **Child BMI** survey in `lab-surveys`, but is built as a separate product with user accounts, child profiles, measurement history, and a path toward LLM-augmented insights.
 
 ### Goals
 
@@ -28,7 +28,7 @@ Child Height Predictor is a standalone consumer app for predicting children's fu
 
 ## 2. Relationship to lab-surveys
 
-| Aspect | lab-surveys | Child Height Predictor |
+| Aspect | lab-surveys | Notch |
 |--------|-------------|------------------------|
 | Purpose | Multi-survey research / demo platform | Single-purpose growth tracker |
 | Auth | Auth0; accounts manually provisioned | Self-serve signup |

@@ -1,8 +1,11 @@
-# Child Height Predictor
+# Notch
 
 Basic v0: form → API → SVR prediction + optional LLM prediction with parent heights.
 
-App logo: `apps/web/public/logo.png` (growth chart + child silhouette).
+Child growth tracking and height prediction. Formerly "Child Height Predictor".
+
+App logo: `apps/web/public/logo.png` — still the old growth-chart-and-silhouette
+mark; it has not been redesigned for the new name.
 
 ## Quick start
 

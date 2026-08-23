@@ -9,7 +9,7 @@ import type { Locale } from "@/lib/i18n/config";
  */
 const en = {
   common: {
-    appName: "Child Height Predictor",
+    appName: "Notch",
     loading: "Loading…",
     cancel: "Cancel",
     edit: "Edit",
@@ -38,7 +38,7 @@ const en = {
   },
 
   form: {
-    title: "Child Height Predictor",
+    title: "Growth prediction",
     subtitle:
       "Enter your child's measurements for an ML prediction. Add parent heights to also get an LLM-based estimate.",
     guestNoticeLead: "Guest mode — predictions are not saved.",
@@ -218,10 +218,13 @@ const en = {
   },
 
   metadata: {
-    title: "Child Height Predictor",
-    description: "Predict children's future height, weight, and BMI",
-    resultsTitle: "Results | Child Height Predictor",
-    resultsDescription: "Prediction results for height, weight, and BMI",
+    // The brand carries the tab and the store listing; searchable keywords go in
+    // the description and, on the App Store, the subtitle field — not the name.
+    title: "Notch — Child growth tracker",
+    description:
+      "Track your child's growth and estimate their future height, weight, and BMI.",
+    resultsTitle: "Results | Notch",
+    resultsDescription: "Estimated height, weight, and BMI at your target age",
   },
 };
 
@@ -229,7 +232,7 @@ export type Dictionary = typeof en;
 
 const zhCN: Dictionary = {
   common: {
-    appName: "儿童身高预测",
+    appName: "成长刻度",
     loading: "加载中…",
     cancel: "取消",
     edit: "编辑",
@@ -254,7 +257,7 @@ const zhCN: Dictionary = {
   },
 
   form: {
-    title: "儿童身高预测",
+    title: "成长预测",
     subtitle:
       "输入孩子的身体数据以获得机器学习预测。填写父母身高还可获得基于大语言模型的估算。",
     guestNoticeLead: "访客模式——预测结果不会保存。",
@@ -421,10 +424,10 @@ const zhCN: Dictionary = {
   },
 
   metadata: {
-    title: "儿童身高预测",
-    description: "预测孩子未来的身高、体重和 BMI",
-    resultsTitle: "预测结果 | 儿童身高预测",
-    resultsDescription: "身高、体重和 BMI 的预测结果",
+    title: "成长刻度 — 儿童成长记录",
+    description: "记录孩子的成长，并估算未来的身高、体重和 BMI。",
+    resultsTitle: "预测结果 | 成长刻度",
+    resultsDescription: "目标年龄的身高、体重和 BMI 估算",
   },
 };
 

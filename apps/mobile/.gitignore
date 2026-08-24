@@ -12,3 +12,6 @@ expo-env.d.ts
 # be committed even though the values are not server secrets.
 .env
 .env.local
+
+# Output of scripts/verify-ui.mjs
+.verify-dist/

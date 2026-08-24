@@ -1,4 +1,5 @@
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
+import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -30,6 +31,31 @@ const tokenCache = {
   },
 };
 
+/** Port the web app's dev server listens on. */
+const DEV_API_PORT = 3000;
+
+/**
+ * Where to reach the API.
+ *
+ * An explicit EXPO_PUBLIC_API_BASE_URL always wins — that is how a release build
+ * points at the deployed app. Failing that, in development, the host is taken
+ * from the Expo dev server the app was loaded from: a physical device cannot
+ * resolve "localhost" (that would be the phone itself), and hardcoding the Mac's
+ * LAN address means editing .env every time the network hands out a new one.
+ * Whatever host served the JS can also serve the API.
+ */
+function resolveApiBaseUrl(): string | undefined {
+  const configured = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (configured) return configured;
+  if (!__DEV__) return undefined;
+
+  // e.g. "10.0.0.126:8081" — shape differs across Expo versions, so try both.
+  const hostUri =
+    Constants.expoConfig?.hostUri ?? Constants.expoGoConfig?.debuggerHost;
+  const host = hostUri?.split(":")[0];
+  return host ? `http://${host}:${DEV_API_PORT}` : undefined;
+}
+
 /**
  * Points @notch/core at the deployed web app and teaches it how to authenticate.
  *
@@ -42,7 +68,7 @@ function ApiBridge({ children }: { children: React.ReactNode }) {
   const { getToken } = useAuth();
 
   useEffect(() => {
-    const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+    const baseUrl = resolveApiBaseUrl();
     if (baseUrl) configureApiBaseUrl(baseUrl);
 
     // Resolved per request rather than once, so a refreshed token is picked up

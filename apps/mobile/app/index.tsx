@@ -1,61 +1,74 @@
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
   DEFAULT_LOCALE,
+  ETHNICITY_VALUES,
   LOCALES,
   LOCALE_SHORT_LABELS,
+  MAX_MODEL_CURRENT_AGE,
   calculateBmi,
   getDictionary,
   predict,
-  tokens,
+  type EthnicityValue,
   type Locale,
   type PredictResponse,
 } from "@notch/core";
 
+import {
+  Badge,
+  Button,
+  Card,
+  Field,
+  GrowthChart,
+  Input,
+  OptionGrid,
+  SegmentedControl,
+  Section,
+  Select,
+  Stat,
+  fontSize,
+  theme,
+} from "@/components/ui";
+
 /**
- * Scaffold screen — not the shipping UI.
+ * Development harness, not the shipping screen.
  *
- * Its job is to prove the four things the port depends on actually work on
- * device, so that failures surface now rather than after nine screens have been
- * written against them:
- *
- *   1. @notch/core resolves through Metro in a workspace
- *   2. the design tokens drive React Native styles from the same source as the
- *      web app's CSS
- *   3. the locale dictionaries render, including Chinese glyphs
- *   4. a real prediction round-trips via apiFetch against the deployed API
+ * It renders every primitive and runs a real prediction, so that a broken
+ * primitive or a resolution problem surfaces here rather than part-way through
+ * building the nine actual screens. The real form comes next and will follow the
+ * web's PredictionForm structure closely.
  */
-export default function ScaffoldScreen() {
+export default function Harness() {
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const [sex, setSex] = useState(1);
+  const [currentAge, setCurrentAge] = useState("5");
+  const [height, setHeight] = useState("110");
+  const [weight, setWeight] = useState("20");
+  const [targetAge, setTargetAge] = useState("18");
+  const [ethnicities, setEthnicities] = useState<string[]>([]);
   const [result, setResult] = useState<PredictResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const t = getDictionary(locale);
-
-  // A fixed, in-domain child: age 5 is well inside the model's supported range.
-  const inputs = {
-    sex: 1,
-    height_cm: 110,
-    weight_kg: 20,
-    current_age_years: 5,
-    target_age_years: 18,
-  };
+  const num = (value: string) => Number(value) || 0;
+  const bmi = num(height) > 0 ? calculateBmi(num(weight), num(height)) : 0;
 
   async function run() {
     setLoading(true);
     setError(null);
     setResult(null);
     try {
-      setResult(await predict(inputs));
+      setResult(
+        await predict({
+          sex,
+          height_cm: num(height),
+          weight_kg: num(weight),
+          current_age_years: num(currentAge),
+          target_age_years: num(targetAge),
+        }),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -65,154 +78,204 @@ export default function ScaffoldScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
-      <Text style={styles.brand}>{t.common.appName}</Text>
-      <Text style={styles.heading}>{t.form.title}</Text>
-      <Text style={styles.body}>{t.form.subtitle}</Text>
-
-      {/* Same two locales as the web app, from the same dictionaries. */}
-      <View style={styles.segment}>
-        {LOCALES.map((option) => {
-          const active = option === locale;
-          return (
-            <Pressable
-              key={option}
-              onPress={() => setLocale(option)}
-              style={[styles.segmentItem, active && styles.segmentItemActive]}
-            >
-              <Text style={active ? styles.segmentTextActive : styles.segmentText}>
-                {LOCALE_SHORT_LABELS[option]}
-              </Text>
-            </Pressable>
-          );
-        })}
+      <View style={styles.header}>
+        <Text style={styles.brand}>{t.common.appName}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{t.form.title}</Text>
+          <Badge tone="warning">{t.header.guestMode}</Badge>
+        </View>
+        <View style={styles.localeRow}>
+          <SegmentedControl
+            size="sm"
+            label={t.header.languageLabel}
+            value={locale}
+            onChange={setLocale}
+            options={LOCALES.map((option) => ({
+              value: option,
+              label: LOCALE_SHORT_LABELS[option],
+            }))}
+          />
+        </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>{t.results.inputsUsed}</Text>
-        <Text style={styles.body}>
-          {t.results.basedOn(
-            inputs.current_age_years,
-            t.common.sexNoun(inputs.sex),
-            inputs.height_cm,
-            inputs.weight_kg,
+      <Section title={t.form.aboutYourChild}>
+        <View style={styles.stack}>
+          <Text style={styles.fieldLabel}>{t.form.sex}</Text>
+          <SegmentedControl
+            label={t.form.sex}
+            value={sex}
+            onChange={setSex}
+            options={[
+              { value: 1, label: t.common.male },
+              { value: 2, label: t.common.female },
+            ]}
+          />
+        </View>
+        <Field
+          label={t.form.currentAgeYears}
+          hint={t.form.currentAgeHint(MAX_MODEL_CURRENT_AGE)}
+        >
+          {() => (
+            <Input
+              keyboardType="decimal-pad"
+              value={currentAge}
+              onChangeText={setCurrentAge}
+            />
           )}
-        </Text>
-        <Text style={styles.body}>
-          {t.form.bmi}: {calculateBmi(inputs.weight_kg, inputs.height_cm).toFixed(1)}
-        </Text>
-      </View>
+        </Field>
+      </Section>
 
-      <Pressable
-        onPress={run}
-        disabled={loading}
-        style={[styles.button, loading && styles.buttonDisabled]}
-      >
-        {loading ? (
-          <ActivityIndicator color={tokens.semantic.textOnPrimary} />
-        ) : (
-          <Text style={styles.buttonText}>{t.form.submit}</Text>
-        )}
-      </Pressable>
-
-      {result && (
-        <View style={styles.card}>
-          <Text style={styles.label}>{t.results.predictedHeight}</Text>
-          <Text style={styles.stat}>{result.pred_height_cm.toFixed(1)} cm</Text>
-          <Text style={styles.caption}>
-            {t.results.modelLabel(result.model_version)}
-          </Text>
+      <Section title={t.form.currentMeasurements}>
+        <Field label={t.form.heightCm}>
+          {() => (
+            <Input keyboardType="decimal-pad" value={height} onChangeText={setHeight} />
+          )}
+        </Field>
+        <Field label={t.form.weightKg}>
+          {() => (
+            <Input keyboardType="decimal-pad" value={weight} onChangeText={setWeight} />
+          )}
+        </Field>
+        <View style={styles.bmiRow}>
+          <Text style={styles.bmiLabel}>{t.form.bmi}</Text>
+          <Text style={styles.bmiValue}>{bmi.toFixed(1)}</Text>
         </View>
-      )}
+      </Section>
 
-      {error && (
-        <View style={[styles.card, styles.cardError]}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Text style={styles.caption}>
-            Set EXPO_PUBLIC_API_BASE_URL in .env if this is a network error.
+      <Section title={t.form.predictionLegend}>
+        <Field label={t.form.predictAtAgeYears}>
+          {() => (
+            // Select instead of a number input, to exercise the sheet picker.
+            <Select
+              value={targetAge}
+              onChange={setTargetAge}
+              accessibilityLabel={t.form.predictAtAgeYears}
+              options={["16", "18", "20"].map((v) => ({ value: v, label: v }))}
+            />
+          )}
+        </Field>
+      </Section>
+
+      <Section title={t.form.ethnicityLegend} description={t.form.ethnicityHelp}>
+        <OptionGrid
+          label={t.form.ethnicityLegend}
+          options={ETHNICITY_VALUES.map((value) => ({
+            value,
+            label: t.ethnicity[value],
+          }))}
+          selected={ethnicities}
+          onToggle={(value: EthnicityValue) =>
+            setEthnicities((prev) =>
+              prev.includes(value)
+                ? prev.filter((entry) => entry !== value)
+                : [...prev, value],
+            )
+          }
+        />
+      </Section>
+
+      <Button size="lg" fullWidth loading={loading} onPress={run}>
+        {t.form.submit}
+      </Button>
+
+      {result ? (
+        <>
+          <Card tone="raised" padding="lg">
+            <Stat
+              label={t.results.predictedHeight}
+              value={result.pred_height_cm.toFixed(1)}
+              unit="cm"
+            />
+            <Text style={styles.model}>
+              {t.results.modelLabel(result.model_version)}
+            </Text>
+          </Card>
+
+          <Card padding="lg">
+            <GrowthChart
+              sex={sex}
+              observed={[
+                { ageYears: num(currentAge), heightCm: num(height) },
+              ]}
+              predicted={{
+                ageYears: result.target_age_years,
+                heightCm: result.pred_height_cm,
+              }}
+              labels={t.results.chart}
+            />
+          </Card>
+        </>
+      ) : null}
+
+      {error ? (
+        <Card tone="muted" padding="sm">
+          <Text style={styles.error}>{error}</Text>
+          <Text style={styles.hint}>
+            Set EXPO_PUBLIC_API_BASE_URL in .env — the simulator cannot reach your
+            Mac on localhost.
           </Text>
-        </View>
-      )}
+        </Card>
+      ) : null}
 
-      <Text style={styles.caption}>{t.common.disclaimer}</Text>
+      <Text style={styles.disclaimer}>{t.common.disclaimer}</Text>
     </ScrollView>
   );
 }
 
-// Styles read from the same token module that generates the web app's CSS
-// custom properties, so the two platforms cannot drift apart on colour, spacing
-// or radius. Numeric values are needed here, hence parseInt on the px tokens.
-const px = (value: string) => Number.parseInt(value, 10);
-
 const styles = StyleSheet.create({
   page: {
-    padding: px(tokens.space[5]),
-    gap: px(tokens.space[4]),
-    backgroundColor: tokens.semantic.canvas,
+    padding: theme.space[5],
+    gap: theme.space[4],
+    backgroundColor: theme.semantic.canvas,
   },
+  header: { gap: theme.space[2] },
   brand: {
-    fontSize: 13,
+    fontSize: fontSize.xs,
     fontWeight: "600",
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: tokens.color.primary[700],
+    color: theme.color.primary[700],
   },
-  heading: { fontSize: 28, fontWeight: "700", color: tokens.semantic.textPrimary },
-  body: { fontSize: 15, lineHeight: 22, color: tokens.semantic.textSecondary },
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
+  titleRow: { flexDirection: "row", alignItems: "center", gap: theme.space[3] },
+  title: {
+    fontSize: fontSize["3xl"],
+    fontWeight: "700",
+    color: theme.semantic.textPrimary,
+  },
+  localeRow: { width: 130 },
+  stack: { gap: theme.space[1] + 2 },
+  fieldLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: "500",
+    color: theme.semantic.textPrimary,
+  },
+  bmiRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: theme.space[2],
+    borderTopWidth: 1,
+    borderTopColor: theme.semantic.border,
+    paddingTop: theme.space[3],
+  },
+  bmiLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: "500",
     letterSpacing: 0.6,
     textTransform: "uppercase",
-    color: tokens.semantic.textSecondary,
+    color: theme.semantic.textSecondary,
   },
-  stat: { fontSize: 40, fontWeight: "700", color: tokens.semantic.textPrimary },
-  caption: { fontSize: 12, color: tokens.semantic.textMuted },
-  card: {
-    backgroundColor: tokens.semantic.surface,
-    borderColor: tokens.semantic.border,
-    borderWidth: 1,
-    borderRadius: px(tokens.radius.lg),
-    padding: px(tokens.space[5]),
-    gap: px(tokens.space[2]),
-  },
-  cardError: {
-    backgroundColor: tokens.color.danger[50],
-    borderColor: tokens.color.danger[600],
-  },
-  errorText: { fontSize: 14, color: tokens.color.danger[700] },
-  segment: {
-    flexDirection: "row",
-    gap: px(tokens.space[1]),
-    padding: px(tokens.space[1]),
-    borderRadius: px(tokens.radius.md),
-    borderWidth: 1,
-    borderColor: tokens.semantic.border,
-    backgroundColor: tokens.semantic.surfaceSunk,
-    alignSelf: "flex-start",
-  },
-  segmentItem: {
-    paddingHorizontal: px(tokens.space[4]),
-    paddingVertical: px(tokens.space[2]),
-    borderRadius: px(tokens.radius.sm),
-  },
-  segmentItemActive: { backgroundColor: tokens.color.primary[600] },
-  segmentText: { fontSize: 14, fontWeight: "500", color: tokens.semantic.textSecondary },
-  segmentTextActive: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: tokens.semantic.textOnPrimary,
-  },
-  button: {
-    height: px(tokens.controlHeight.lg),
-    borderRadius: px(tokens.radius.md),
-    backgroundColor: tokens.color.primary[600],
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: {
-    fontSize: 16,
+  bmiValue: {
+    fontSize: fontSize.lg,
     fontWeight: "600",
-    color: tokens.semantic.textOnPrimary,
+    color: theme.semantic.textPrimary,
+    fontVariant: ["tabular-nums"],
+  },
+  model: { fontSize: fontSize.xs, color: theme.semantic.textMuted },
+  error: { fontSize: fontSize.sm, color: theme.color.danger[700] },
+  hint: { fontSize: fontSize.xs, color: theme.semantic.textMuted },
+  disclaimer: {
+    fontSize: fontSize.xs,
+    textAlign: "center",
+    color: theme.semantic.textMuted,
   },
 });

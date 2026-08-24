@@ -1,3 +1,9 @@
+import {
+  isWithinModelDomain,
+  MAX_MODEL_CURRENT_AGE,
+  MAX_TARGET_AGE,
+} from "@notch/core";
+
 /**
  * Server-side client for the ML prediction backend (lab-surveys-backend on
  * Google Cloud).
@@ -64,6 +70,23 @@ export class ValidationError extends Error {
 }
 
 /**
+ * Rejects inputs the ML model cannot answer honestly.
+ *
+ * Separate from validateInputs, and applied only on the ML route, because the
+ * LLM route shares that validation and has no such limitation — it can reason
+ * about a 16-year-old perfectly well. The thresholds and the measurements behind
+ * them live in @notch/core so the native form can respect the same limits.
+ */
+export function assertWithinModelDomain(inputs: PredictionInputs): void {
+  if (!isWithinModelDomain(inputs.current_age_years)) {
+    throw new ValidationError(
+      `The model is only reliable for children up to age ${MAX_MODEL_CURRENT_AGE}. ` +
+        `Above that it has too little training data to give a trustworthy answer.`,
+    );
+  }
+}
+
+/**
  * Ported from `PredictionInputs.validate()` in packages/prediction.
  *
  * This has to live here now. The upstream turns every internal exception into
@@ -93,6 +116,11 @@ export function validateInputs(raw: Record<string, unknown>): PredictionInputs {
   }
   if (inputs.current_age_years < 0 || inputs.current_age_years > 18) {
     throw new ValidationError("current_age_years must be between 0 and 18");
+  }
+  if (inputs.target_age_years > MAX_TARGET_AGE) {
+    throw new ValidationError(
+      `target_age_years must be ${MAX_TARGET_AGE} or less`,
+    );
   }
   if (inputs.target_age_years <= inputs.current_age_years) {
     throw new ValidationError("target_age_years must be greater than current age");

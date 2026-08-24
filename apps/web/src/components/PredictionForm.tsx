@@ -16,7 +16,9 @@ import {
   ETHNICITY_VALUES,
   type EthnicityValue,
 } from "@notch/core";
+import { MAX_MODEL_CURRENT_AGE, MAX_TARGET_AGE } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
+
 import { displayError } from "@notch/core";
 import {
   Badge,
@@ -364,13 +366,16 @@ export function PredictionForm() {
                 />
               </div>
 
-              <Field label={t.form.currentAgeYears}>
+              <Field
+                label={t.form.currentAgeYears}
+                hint={t.form.currentAgeHint(MAX_MODEL_CURRENT_AGE)}
+              >
                 {({ id }) => (
                   <Input
                     id={id}
                     type="number"
                     min={0}
-                    max={18}
+                    max={MAX_MODEL_CURRENT_AGE}
                     step={0.5}
                     required
                     value={currentAge}
@@ -497,7 +502,7 @@ export function PredictionForm() {
                 id={id}
                 type="number"
                 min={minTargetAge}
-                max={25}
+                max={MAX_TARGET_AGE}
                 step={1}
                 required
                 value={targetAge}
@@ -506,7 +511,7 @@ export function PredictionForm() {
             )}
           </Field>
           <div className="flex gap-2">
-            {[15, 18, 21].map((age) => (
+            {[16, 18, 20].map((age) => (
               <Button
                 key={age}
                 type="button"

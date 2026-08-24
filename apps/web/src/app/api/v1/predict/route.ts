@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
+  assertWithinModelDomain,
   predict,
   UpstreamError,
   ValidationError,
@@ -27,6 +28,8 @@ export async function POST(request: Request) {
     // internal failures into a generic 500, so specific messages must originate
     // on this side to reach the user.
     const inputs = validateInputs((body ?? {}) as Record<string, unknown>);
+    // Applied here rather than in validateInputs, which the LLM route shares.
+    assertWithinModelDomain(inputs);
     const result = await predict(inputs);
 
     return NextResponse.json(result);

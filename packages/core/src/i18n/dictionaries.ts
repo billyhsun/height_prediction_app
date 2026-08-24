@@ -57,6 +57,8 @@ const en = {
     bornAndAge: (date: string, age: number) => `Born ${date} · age ${age} years`,
     sex: "Sex",
     currentAgeYears: "Current age (years)",
+    currentAgeHint: (maxAge: number) =>
+      `Up to age ${maxAge}. Beyond that the model has too little data to be reliable.`,
     currentMeasurements: "Current measurements",
     heightCm: "Height (cm)",
     weightKg: "Weight (kg)",
@@ -275,6 +277,8 @@ const zhCN: Dictionary = {
     bornAndAge: (date: string, age: number) => `出生日期 ${date} · ${age} 岁`,
     sex: "性别",
     currentAgeYears: "当前年龄（岁）",
+    currentAgeHint: (maxAge: number) =>
+      `最大 ${maxAge} 岁。超过该年龄，模型的数据不足，结果不可靠。`,
     currentMeasurements: "当前身体数据",
     heightCm: "身高（厘米）",
     weightKg: "体重（公斤）",

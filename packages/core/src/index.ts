@@ -25,6 +25,7 @@ export * from "./i18n/dictionaries";
 export * from "./age";
 export * from "./ethnicities";
 export * from "./child-profile";
+export * from "./model-domain";
 export * from "./prediction-session";
 
 // Transport and API clients

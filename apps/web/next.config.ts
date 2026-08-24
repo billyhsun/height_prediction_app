@@ -21,6 +21,11 @@ import type { NextConfig } from "next";
  * If a future rewrite is needed for `/api/*`, scope it to an exact path rather
  * than a wildcard that overlaps the app's own API routes.
  */
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  // @notch/core is shipped as TypeScript source rather than compiled output, so
+  // Next has to run it through its own pipeline. Keeping it uncompiled means one
+  // less build step and no stale-dist class of bug.
+  transpilePackages: ["@notch/core"],
+};
 
 export default nextConfig;

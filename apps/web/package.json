@@ -9,7 +9,8 @@
     "lint": "eslint",
     "vercel-build": "npm run tokens && next build",
     "db:ddl": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script",
-    "tokens": "node --experimental-strip-types scripts/build-tokens.mjs"
+    "tokens": "node --experimental-strip-types scripts/build-tokens.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@clerk/localizations": "^4.15.4",
@@ -17,7 +18,8 @@
     "@supabase/supabase-js": "^2.112.3",
     "next": "16.3.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "@notch/core": "*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

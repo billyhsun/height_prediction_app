@@ -1,3 +1,4 @@
+import { apiFetch } from "./http";
 export type PredictRequest = {
   sex: number;
   height_cm: number;
@@ -58,7 +59,7 @@ async function parseError(res: Response, fallback: string): Promise<string> {
 }
 
 export async function predict(data: PredictRequest): Promise<PredictResponse> {
-  const res = await fetch("/api/v1/predict", {
+  const res = await apiFetch("/api/v1/predict", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -80,7 +81,7 @@ export async function predict(data: PredictRequest): Promise<PredictResponse> {
 export async function predictLlm(
   data: PredictRequest & { mother_height_cm: number; father_height_cm: number },
 ): Promise<LlmPredictResponse> {
-  const res = await fetch("/api/v1/predict/llm", {
+  const res = await apiFetch("/api/v1/predict/llm", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

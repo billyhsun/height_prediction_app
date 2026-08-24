@@ -18,7 +18,7 @@ import path from "node:path";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const { tokens } = await import(
-  path.join(here, "../src/lib/design/tokens.ts")
+  path.join(here, "../../../packages/core/src/design/tokens.ts")
 );
 
 const lines = [];
@@ -71,7 +71,7 @@ function kebab(value) {
 }
 
 const css = `/* GENERATED FILE — DO NOT EDIT.
- * Source: src/lib/design/tokens.ts
+ * Source: packages/core/src/design/tokens.ts
  * Regenerate: npm run tokens
  */
 

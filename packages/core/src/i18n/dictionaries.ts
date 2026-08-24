@@ -1,4 +1,4 @@
-import type { Locale } from "@/lib/i18n/config";
+import type { Locale } from "./config";
 
 /**
  * English is the source of truth. `Dictionary` is derived from it, so every

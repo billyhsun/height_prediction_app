@@ -6,25 +6,25 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { PredictionResults } from "@/components/PredictionResults";
 import { useTranslations } from "@/lib/i18n/context";
-import { displayError } from "@/lib/request-error";
+import { displayError } from "@notch/core";
 import {
   loadPredictionSession,
   savePredictionSession,
   type PredictionSession,
-} from "@/lib/prediction-session";
+} from "@notch/core";
 import {
   hasParentHeights,
   predict,
   predictLlm,
   type PredictRequest,
-} from "@/lib/api";
+} from "@notch/core";
 import {
   fetchPredictionHistory,
   sessionFromSaved,
   type SavedPredictionDetail,
   type SavedPredictionSummary,
-} from "@/lib/saved-predictions";
-import type { ChartPoint } from "@/lib/design/chart";
+} from "@notch/core";
+import type { ChartPoint } from "@notch/core";
 
 function parseInputs(params: URLSearchParams): PredictRequest | null {
   const sex = Number(params.get("sex"));

@@ -5,8 +5,8 @@ import {
   dedupeByAge,
   linePath,
   type ChartPoint,
-} from "@/lib/design/chart";
-import { growthProjection } from "@/lib/design/growth-curve";
+} from "@notch/core";
+import { growthProjection } from "@notch/core";
 
 export type GrowthChartLabels = {
   title: string;

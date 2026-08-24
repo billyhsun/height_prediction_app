@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useClerk } from "@clerk/nextjs";
 
-import { deleteAccount } from "@/lib/account";
+import { deleteAccount } from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
-import { displayError } from "@/lib/request-error";
+import { displayError } from "@notch/core";
 
 export function AccountPageClient() {
   const t = useTranslations();

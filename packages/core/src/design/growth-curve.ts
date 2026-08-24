@@ -21,7 +21,7 @@
  * Pure functions, no DOM and no React, so React Native reuses this verbatim.
  */
 
-import type { ChartPoint } from "@/lib/design/chart";
+import type { ChartPoint } from "./chart";
 
 /**
  * Approximate median fraction of adult height attained, by age, from standard

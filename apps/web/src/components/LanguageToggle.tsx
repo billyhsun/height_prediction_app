@@ -1,6 +1,6 @@
 "use client";
 
-import { LOCALES, LOCALE_SHORT_LABELS } from "@/lib/i18n/config";
+import { LOCALES, LOCALE_SHORT_LABELS } from "@notch/core";
 import { SegmentedControl } from "@/components/ui";
 import { useI18n } from "@/lib/i18n/context";
 

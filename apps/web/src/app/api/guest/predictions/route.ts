@@ -5,7 +5,7 @@ import {
   isGuestCollectionEnabled,
   recordGuestPrediction,
 } from "@/lib/guest-collection";
-import type { PredictionSession } from "@/lib/prediction-session";
+import type { PredictionSession } from "@notch/core";
 
 /**
  * Records a prediction made without an account, when collection is enabled.

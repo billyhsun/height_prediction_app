@@ -14,9 +14,9 @@ import {
   DEFAULT_LOCALE,
   LOCALE_LANGUAGE_NAMES,
   type Locale,
-} from "@/lib/i18n/config";
-import { dictionaries } from "@/lib/i18n/dictionaries";
-import { sanitizeEthnicities } from "@/lib/ethnicities";
+} from "@notch/core";
+import { dictionaries } from "@notch/core";
+import { sanitizeEthnicities } from "@notch/core";
 
 /**
  * Overridable so the endpoint can be pointed at an Azure OpenAI deployment, a

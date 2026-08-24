@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireDbUser } from "@/lib/auth";
-import { toIsoString } from "@/lib/child-profile";
+import { toIsoString } from "@notch/core";
 import { getSupabase } from "@/lib/supabase";
 
 type RouteContext = { params: Promise<{ id: string }> };

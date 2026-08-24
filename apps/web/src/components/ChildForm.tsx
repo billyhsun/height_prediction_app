@@ -9,13 +9,13 @@ import {
   fetchChild,
   updateChild,
   type ChildInput,
-} from "@/lib/children";
+} from "@notch/core";
 import {
   ETHNICITY_VALUES,
   type EthnicityValue,
-} from "@/lib/ethnicities";
+} from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
-import { displayError } from "@/lib/request-error";
+import { displayError } from "@notch/core";
 
 type ChildFormProps = {
   childId?: string;

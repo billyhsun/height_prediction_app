@@ -1,0 +1,13 @@
+{
+  "name": "notch",
+  "private": true,
+  "description": "Notch — child growth tracking. Monorepo root.",
+  "workspaces": [
+    "apps/web",
+    "packages/core"
+  ],
+  "scripts": {
+    "web": "npm run dev --workspace web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import {
   fetchPredictionHistory,
   type SavedPredictionSummary,
-} from "@/lib/saved-predictions";
+} from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
-import { displayError } from "@/lib/request-error";
+import { displayError } from "@notch/core";
 
 export function HistoryPageClient() {
   const router = useRouter();

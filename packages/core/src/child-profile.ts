@@ -1,4 +1,4 @@
-import { sanitizeEthnicities } from "@/lib/ethnicities";
+import { sanitizeEthnicities } from "./ethnicities";
 
 export type ChildRow = {
   id: string;

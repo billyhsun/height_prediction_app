@@ -4,15 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { ageYearsFromDateOfBirth, formatDateOfBirth } from "@/lib/age";
+import { ageYearsFromDateOfBirth, formatDateOfBirth } from "@notch/core";
 import {
   deleteChild,
   fetchChildren,
   type ChildProfile,
-} from "@/lib/children";
-import { formatEthnicities } from "@/lib/ethnicities";
+} from "@notch/core";
+import { formatEthnicities } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
-import { displayError } from "@/lib/request-error";
+import { displayError } from "@notch/core";
 
 export function ChildrenPageClient() {
   const router = useRouter();

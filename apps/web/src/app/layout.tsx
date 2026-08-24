@@ -4,9 +4,9 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { enUS, zhCN } from "@clerk/localizations";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
-import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/config";
+import { LOCALE_COOKIE, resolveLocale } from "@notch/core";
 import { LocaleProvider } from "@/lib/i18n/context";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary } from "@notch/core";
 import "./globals.css";
 
 const geistSans = Geist({

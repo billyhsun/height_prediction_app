@@ -9,15 +9,15 @@ import {
   hasParentHeights,
   predict,
   predictLlm,
-} from "@/lib/api";
-import { ageYearsFromDateOfBirth, formatDateOfBirth } from "@/lib/age";
-import { fetchChildren, updateChild, type ChildProfile } from "@/lib/children";
+} from "@notch/core";
+import { ageYearsFromDateOfBirth, formatDateOfBirth } from "@notch/core";
+import { fetchChildren, updateChild, type ChildProfile } from "@notch/core";
 import {
   ETHNICITY_VALUES,
   type EthnicityValue,
-} from "@/lib/ethnicities";
+} from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
-import { displayError } from "@/lib/request-error";
+import { displayError } from "@notch/core";
 import {
   Badge,
   Button,
@@ -31,11 +31,11 @@ import {
 import {
   inputsToSearchParams,
   savePredictionSession,
-} from "@/lib/prediction-session";
+} from "@notch/core";
 import {
   reportGuestPrediction,
   savePredictionToAccount,
-} from "@/lib/saved-predictions";
+} from "@notch/core";
 
 const DEFAULTS = {
   sex: 1,

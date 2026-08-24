@@ -1,5 +1,5 @@
 import { getSupabase } from "@/lib/supabase";
-import { sanitizeEthnicities } from "@/lib/ethnicities";
+import { sanitizeEthnicities } from "@notch/core";
 
 /**
  * Collection of predictions run without an account.

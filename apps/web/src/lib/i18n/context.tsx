@@ -8,8 +8,8 @@ import {
   LOCALE_COOKIE,
   LOCALE_COOKIE_MAX_AGE,
   type Locale,
-} from "@/lib/i18n/config";
-import { getDictionary, type Dictionary } from "@/lib/i18n/dictionaries";
+} from "@notch/core";
+import { getDictionary, type Dictionary } from "@notch/core";
 
 type I18nValue = {
   locale: Locale;

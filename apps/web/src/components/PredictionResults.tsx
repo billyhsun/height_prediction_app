@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { calculateBmi } from "@/lib/api";
+import { calculateBmi } from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
 import { Badge, Button, Card, GrowthChart, Stat } from "@/components/ui";
-import type { ChartPoint } from "@/lib/design/chart";
+import type { ChartPoint } from "@notch/core";
 import {
   inputsToSearchParams,
   type PredictionSession,
-} from "@/lib/prediction-session";
+} from "@notch/core";
 
 type PredictionResultsProps = {
   session: PredictionSession;

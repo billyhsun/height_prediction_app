@@ -1,6 +1,7 @@
-import type { LlmPredictResponse, PredictRequest, PredictResponse } from "@/lib/api";
-import type { PredictionSession } from "@/lib/prediction-session";
-import { GenericRequestError } from "@/lib/request-error";
+import type { LlmPredictResponse, PredictRequest, PredictResponse } from "./api";
+import type { PredictionSession } from "./prediction-session";
+import { GenericRequestError } from "./request-error";
+import { apiFetch } from "./http";
 
 export type SavedPredictionSummary = {
   id: string;
@@ -31,7 +32,7 @@ export type SavedPredictionDetail = SavedPredictionSummary & {
 export async function savePredictionToAccount(
   session: PredictionSession,
 ): Promise<SavedPredictionSummary | null> {
-  const res = await fetch("/api/user/predictions", {
+  const res = await apiFetch("/api/user/predictions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(session),
@@ -61,7 +62,7 @@ export async function reportGuestPrediction(
   session: PredictionSession,
 ): Promise<void> {
   try {
-    await fetch("/api/guest/predictions", {
+    await apiFetch("/api/guest/predictions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(session),
@@ -72,7 +73,7 @@ export async function reportGuestPrediction(
 }
 
 export async function fetchPredictionHistory(): Promise<SavedPredictionSummary[]> {
-  const res = await fetch("/api/user/predictions");
+  const res = await apiFetch("/api/user/predictions");
   if (res.status === 401) return [];
   if (!res.ok) throw new GenericRequestError("GET /predictions failed", res.status);
   return res.json();

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { LlmError, predictHeightLlm } from "@/lib/llm-predictor";
-import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/config";
+import { LOCALE_COOKIE, resolveLocale } from "@notch/core";
 import { ValidationError, validateInputs } from "@/lib/prediction-api";
 
 /**

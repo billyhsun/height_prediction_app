@@ -1,0 +1,14 @@
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native build output (created by prebuild / EAS)
+/ios
+/android
+
+# Secrets — EXPO_PUBLIC_* values are baked into the bundle, so this must never
+# be committed even though the values are not server secrets.
+.env
+.env.local

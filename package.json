@@ -11,5 +11,35 @@
     "web": "npm run dev --workspace web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "ios": "npm run ios --workspace @notch/mobile"
+  },
+  "comments": {
+    "overrides": [
+      "Expo SDK 57 is built against exactly these versions (see expo/bundledNativeModules.json).",
+      "Most React Native consumers declare a peer range of '*', so npm is free to hoist a newer",
+      "React Native to the root while apps/mobile keeps its pinned copy nested. Two copies in one",
+      "tree is broken on its own, and it also breaks the Expo CLI specifically: the CLI resolves",
+      "react-native through plain Node require from the root, and RN 0.87 dropped the",
+      "'./rn-get-polyfills' subpath the CLI still imports, so bundling fails outright.",
+      "Pinning here keeps a single copy of each and keeps that copy the one Expo supports."
+    ]
+  },
+  "overrides": {
+    "react-native": "0.86.2",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "comments2": {
+    "dependencies": [
+      "Declared at the root, not only in apps/mobile, because @expo/cli is installed at the root",
+      "and reaches react-native through plain Node require from its own directory - which walks up",
+      "to the root, never sideways into a workspace. npm otherwise nests react-native under",
+      "apps/mobile (the only workspace declaring it) and the CLI cannot see it at all.",
+      "Versions must stay identical to apps/mobile's so the two dedupe to one copy."
+    ]
+  },
+  "dependencies": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.2"
   }
 }

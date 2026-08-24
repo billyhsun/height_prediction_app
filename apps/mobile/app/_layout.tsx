@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { configureApiBaseUrl, configureApiHeaders, tokens } from "@notch/core";
 
@@ -66,18 +67,28 @@ export default function RootLayout() {
   }
 
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <ApiBridge>
-        <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: tokens.semantic.surface },
-            headerTitleStyle: { color: tokens.semantic.textPrimary },
-            contentStyle: { backgroundColor: tokens.semantic.canvas },
-          }}
-        />
-      </ApiBridge>
-    </ClerkProvider>
+    <SafeAreaProvider>
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+        <ApiBridge>
+          <StatusBar style="dark" />
+          {/*
+            Header off by default. Every screen already opens with its own brand
+            and title block, so a native header would repeat it — and with nothing
+            set, expo-router falls back to the route's filename, which is how
+            "index" ended up on screen. Screens that want a header (a pushed
+            detail view with a back button) opt in via their own Stack.Screen.
+          */}
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              headerShadowVisible: false,
+              headerStyle: { backgroundColor: tokens.semantic.surface },
+              headerTitleStyle: { color: tokens.semantic.textPrimary },
+              contentStyle: { backgroundColor: tokens.semantic.canvas },
+            }}
+          />
+        </ApiBridge>
+      </ClerkProvider>
+    </SafeAreaProvider>
   );
 }

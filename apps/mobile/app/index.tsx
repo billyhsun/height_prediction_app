@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   DEFAULT_LOCALE,
@@ -40,6 +41,10 @@ import {
  * web's PredictionForm structure closely.
  */
 export default function Harness() {
+  // With the native header hidden, nothing else keeps content clear of the notch
+  // and the home indicator. Applied as content padding rather than a wrapping
+  // SafeAreaView so the scrollable region still runs edge to edge.
+  const insets = useSafeAreaInsets();
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   const [sex, setSex] = useState(1);
   const [currentAge, setCurrentAge] = useState("5");
@@ -77,7 +82,16 @@ export default function Harness() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.page}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[
+        styles.page,
+        {
+          paddingTop: theme.space[5] + insets.top,
+          paddingBottom: theme.space[5] + insets.bottom,
+        },
+      ]}
+    >
       <View style={styles.header}>
         <Text style={styles.brand}>{t.common.appName}</Text>
         <View style={styles.titleRow}>
@@ -223,10 +237,11 @@ export default function Harness() {
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: theme.semantic.canvas },
   page: {
-    padding: theme.space[5],
+    // Vertical padding is set inline, combined with the safe-area insets.
+    paddingHorizontal: theme.space[5],
     gap: theme.space[4],
-    backgroundColor: theme.semantic.canvas,
   },
   header: { gap: theme.space[2] },
   brand: {

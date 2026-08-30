@@ -5,6 +5,10 @@ const isProtectedRoute = createRouteMatcher([
   "/history(.*)",
   "/children(.*)",
   "/account(.*)",
+  // Reached straight after sign-up, and it writes to the account, so it needs a
+  // session. Note this only requires being signed in — it does not force anyone
+  // *to* the page, which is what keeps the step genuinely skippable.
+  "/onboarding(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

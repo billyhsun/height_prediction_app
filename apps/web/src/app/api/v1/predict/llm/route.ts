@@ -2,7 +2,13 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { LlmError, predictHeightLlm } from "@/lib/llm-predictor";
-import { LOCALE_COOKIE, resolveLocale } from "@notch/core";
+import {
+  isValidParentHeight,
+  isValidParentWeight,
+  LOCALE_COOKIE,
+  PARENT_LIMITS,
+  resolveLocale,
+} from "@notch/core";
 import { ValidationError, validateInputs } from "@/lib/prediction-api";
 
 /**
@@ -33,10 +39,27 @@ export async function POST(request: Request) {
       ["mother_height_cm", motherHeight],
       ["father_height_cm", fatherHeight],
     ] as const) {
-      if (!Number.isFinite(value) || value < 120 || value > 220) {
-        throw new ValidationError(`${label} must be between 120 and 220`);
+      if (!isValidParentHeight(value)) {
+        throw new ValidationError(
+          `${label} must be between ${PARENT_LIMITS.heightCm.min} and ${PARENT_LIMITS.heightCm.max}`,
+        );
       }
     }
+
+    // Weights are genuinely optional, so absent is fine but present-and-nonsense
+    // is not: a value out of range is a unit mistake worth rejecting rather than
+    // quietly feeding to the model.
+    const parentWeight = (key: "mother_weight_kg" | "father_weight_kg") => {
+      const value = raw[key];
+      if (value === undefined || value === null || value === "") return undefined;
+      const parsed = Number(value);
+      if (!isValidParentWeight(parsed)) {
+        throw new ValidationError(
+          `${key} must be between ${PARENT_LIMITS.weightKg.min} and ${PARENT_LIMITS.weightKg.max}`,
+        );
+      }
+      return parsed;
+    };
 
     // Taken from the cookie rather than the request body so the LLM's language
     // follows the same source of truth as <html lang>, the page title and
@@ -49,6 +72,8 @@ export async function POST(request: Request) {
       ...base,
       mother_height_cm: motherHeight,
       father_height_cm: fatherHeight,
+      mother_weight_kg: parentWeight("mother_weight_kg"),
+      father_weight_kg: parentWeight("father_weight_kg"),
       ethnicities: raw.ethnicities,
       locale,
     });

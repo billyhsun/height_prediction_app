@@ -8,9 +8,18 @@ datasource db {
 }
 
 model User {
-  id          String       @id @default(cuid())
-  clerkId     String       @unique
-  email       String?
+  id      String  @id @default(cuid())
+  clerkId String  @unique
+  email   String?
+
+  // Parent measurements belong to the account: they are the same for every
+  // child of one family and barely change. Child carries its own copies as an
+  // optional override for cases where these do not apply.
+  motherHeightCm Float?
+  fatherHeightCm Float?
+  motherWeightKg Float?
+  fatherWeightKg Float?
+
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   children    Child[]

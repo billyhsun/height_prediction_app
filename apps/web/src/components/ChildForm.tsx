@@ -14,6 +14,11 @@ import {
   ETHNICITY_VALUES,
   type EthnicityValue,
 } from "@notch/core";
+import {
+  fetchParentDefaults,
+  PARENT_LIMITS,
+  type ParentDefaults,
+} from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
 import { displayError } from "@notch/core";
 
@@ -38,6 +43,9 @@ export function ChildForm({ childId }: ChildFormProps) {
   const [form, setForm] = useState<ChildInput>(EMPTY);
   const [motherHeight, setMotherHeight] = useState("");
   const [fatherHeight, setFatherHeight] = useState("");
+  const [parentDefaults, setParentDefaults] = useState<ParentDefaults | null>(
+    null,
+  );
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +76,16 @@ export function ChildForm({ childId }: ChildFormProps) {
     // used for a fallback message here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [childId]);
+
+  useEffect(() => {
+    fetchParentDefaults()
+      .then(setParentDefaults)
+      .catch(() => {});
+  }, []);
+
+  const hasAccountHeights =
+    parentDefaults?.motherHeightCm != null ||
+    parentDefaults?.fatherHeightCm != null;
 
   function toggleEthnicity(value: EthnicityValue) {
     setForm((prev) => {
@@ -222,8 +240,17 @@ export function ChildForm({ childId }: ChildFormProps) {
           <legend className="px-1 text-sm font-medium text-text-primary">
             {t.childForm.parentHeightsLegend}
           </legend>
+          {/*
+            These are an override, not the primary place to enter parent
+            heights — that is the account, asked once at sign-up. Left blank,
+            a child inherits the account value, so the account figure is shown
+            as the placeholder rather than filled in: prefilling would silently
+            convert "inherit" into a fixed copy on the next save.
+          */}
           <p className="text-xs text-text-muted">
-            {t.childForm.parentHeightsHelp}
+            {hasAccountHeights
+              ? t.childForm.parentHeightsOverrideHelp
+              : t.childForm.parentHeightsHelp}
           </p>
 
           <label className="block space-y-1">
@@ -232,12 +259,18 @@ export function ChildForm({ childId }: ChildFormProps) {
             </span>
             <input
               type="number"
-              min={120}
-              max={220}
+              min={PARENT_LIMITS.heightCm.min}
+              max={PARENT_LIMITS.heightCm.max}
               step={0.1}
               value={motherHeight}
               onChange={(e) => setMotherHeight(e.target.value)}
-              placeholder={t.common.egPlaceholder("165")}
+              placeholder={
+                parentDefaults?.motherHeightCm != null
+                  ? t.childForm.accountDefaultPlaceholder(
+                      parentDefaults.motherHeightCm,
+                    )
+                  : t.common.egPlaceholder("165")
+              }
               className="w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </label>
@@ -248,12 +281,18 @@ export function ChildForm({ childId }: ChildFormProps) {
             </span>
             <input
               type="number"
-              min={120}
-              max={220}
+              min={PARENT_LIMITS.heightCm.min}
+              max={PARENT_LIMITS.heightCm.max}
               step={0.1}
               value={fatherHeight}
               onChange={(e) => setFatherHeight(e.target.value)}
-              placeholder={t.common.egPlaceholder("178")}
+              placeholder={
+                parentDefaults?.fatherHeightCm != null
+                  ? t.childForm.accountDefaultPlaceholder(
+                      parentDefaults.fatherHeightCm,
+                    )
+                  : t.common.egPlaceholder("178")
+              }
               className="w-full rounded-md border border-border px-3 py-2 text-sm"
             />
           </label>

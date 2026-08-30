@@ -13,10 +13,18 @@
 -- 1. Tables (generated from prisma/schema.prisma via `prisma migrate diff`)
 -- ---------------------------------------------------------------------------
 
+-- Parent height and weight live on the account, not the child: they describe the
+-- parents, they are the same for every child of one family, and they barely
+-- change. "Child" keeps its own parent columns as an optional per-child
+-- override, for blended families where the account default does not apply.
 CREATE TABLE IF NOT EXISTS "User" (
     "id" TEXT NOT NULL,
     "clerkId" TEXT NOT NULL,
     "email" TEXT,
+    "motherHeightCm" DOUBLE PRECISION,
+    "fatherHeightCm" DOUBLE PRECISION,
+    "motherWeightKg" DOUBLE PRECISION,
+    "fatherWeightKg" DOUBLE PRECISION,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
@@ -87,6 +95,10 @@ CREATE TABLE IF NOT EXISTS "GuestPrediction" (
 ALTER TABLE "Child" ADD COLUMN IF NOT EXISTS "ethnicities" TEXT[] DEFAULT ARRAY[]::TEXT[];
 ALTER TABLE "Child" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
 ALTER TABLE "Prediction" ADD COLUMN IF NOT EXISTS "childId" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "motherHeightCm" DOUBLE PRECISION;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "fatherHeightCm" DOUBLE PRECISION;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "motherWeightKg" DOUBLE PRECISION;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "fatherWeightKg" DOUBLE PRECISION;
 
 -- ---------------------------------------------------------------------------
 -- 2. Indexes and foreign keys

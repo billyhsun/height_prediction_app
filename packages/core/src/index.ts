@@ -33,5 +33,6 @@ export * from "./http";
 export * from "./request-error";
 export * from "./api";
 export * from "./children";
+export * from "./parent-profile";
 export * from "./saved-predictions";
 export * from "./account";

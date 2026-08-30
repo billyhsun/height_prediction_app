@@ -7,6 +7,10 @@ export type PredictRequest = {
   target_age_years: number;
   mother_height_cm?: number;
   father_height_cm?: number;
+  /** Used by the LLM predictor only. The SVR model's feature set is fixed and
+   *  has no parental inputs, so the ML route ignores these. */
+  mother_weight_kg?: number;
+  father_weight_kg?: number;
   ethnicities?: string[];
 };
 

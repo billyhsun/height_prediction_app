@@ -76,6 +76,12 @@ export function inputsToSearchParams(inputs: PredictRequest): string {
   if (inputs.father_height_cm) {
     params.set("father_height_cm", String(inputs.father_height_cm));
   }
+  if (inputs.mother_weight_kg) {
+    params.set("mother_weight_kg", String(inputs.mother_weight_kg));
+  }
+  if (inputs.father_weight_kg) {
+    params.set("father_weight_kg", String(inputs.father_weight_kg));
+  }
   return params.toString();
 }
 

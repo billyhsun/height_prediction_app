@@ -13,6 +13,13 @@ import {
 import { ageYearsFromDateOfBirth, formatDateOfBirth } from "@notch/core";
 import { fetchChildren, updateChild, type ChildProfile } from "@notch/core";
 import {
+  fetchParentDefaults,
+  isParentDefaultsEmpty,
+  PARENT_LIMITS,
+  resolveParentHeights,
+  type ParentDefaults,
+} from "@notch/core";
+import {
   ETHNICITY_VALUES,
   type EthnicityValue,
 } from "@notch/core";
@@ -63,8 +70,12 @@ function readOptionalNumber(params: URLSearchParams, key: string): number | unde
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
+const toField = (value: number | null): string =>
+  value != null ? String(value) : "";
+
 function applyChildProfile(
   child: ChildProfile,
+  accountDefaults: ParentDefaults | null,
   setters: {
     setSex: (v: number) => void;
     setCurrentAge: (v: number) => void;
@@ -75,12 +86,14 @@ function applyChildProfile(
 ) {
   setters.setSex(child.sex);
   setters.setCurrentAge(ageYearsFromDateOfBirth(child.dateOfBirth));
-  setters.setMotherHeight(
-    child.motherHeightCm != null ? String(child.motherHeightCm) : "",
-  );
-  setters.setFatherHeight(
-    child.fatherHeightCm != null ? String(child.fatherHeightCm) : "",
-  );
+
+  // The child's own parent heights win where set, because those fields exist
+  // for the families the account default does not describe. Where the child has
+  // none, the account value fills in rather than blanking a field the user
+  // already answered once at sign-up.
+  const parents = resolveParentHeights(child, accountDefaults);
+  setters.setMotherHeight(toField(parents.motherHeightCm));
+  setters.setFatherHeight(toField(parents.fatherHeightCm));
   setters.setEthnicities(child.ethnicities);
 }
 
@@ -117,7 +130,18 @@ export function PredictionForm() {
     const value = readOptionalNumber(searchParams, "father_height_cm");
     return value !== undefined ? String(value) : DEFAULTS.father_height_cm;
   });
+  const [motherWeight, setMotherWeight] = useState(() => {
+    const value = readOptionalNumber(searchParams, "mother_weight_kg");
+    return value !== undefined ? String(value) : "";
+  });
+  const [fatherWeight, setFatherWeight] = useState(() => {
+    const value = readOptionalNumber(searchParams, "father_weight_kg");
+    return value !== undefined ? String(value) : "";
+  });
   const [ethnicities, setEthnicities] = useState<string[]>([]);
+  const [parentDefaults, setParentDefaults] = useState<ParentDefaults | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -127,22 +151,48 @@ export function PredictionForm() {
   );
   const profileLocked = selectedChild !== null;
 
+  const usingAccountDefaults =
+    parentDefaults !== null && !isParentDefaultsEmpty(parentDefaults);
+
   useEffect(() => {
     fetchChildren()
       .then(setChildren)
       .catch(() => {});
   }, []);
 
+  // Returns empty defaults rather than throwing when signed out, so a guest
+  // simply gets blank fields.
+  useEffect(() => {
+    fetchParentDefaults()
+      .then(setParentDefaults)
+      .catch(() => {});
+  }, []);
+
+  /**
+   * Seeds the parent fields from the account once the defaults arrive.
+   *
+   * Only fills what is still blank, so a value supplied in the URL or already
+   * typed is never overwritten. Runs once per defaults load rather than on every
+   * keystroke, which is what lets a user clear a field and have it stay clear.
+   */
+  useEffect(() => {
+    if (!parentDefaults) return;
+    setMotherHeight((prev) => prev || toField(parentDefaults.motherHeightCm));
+    setFatherHeight((prev) => prev || toField(parentDefaults.fatherHeightCm));
+    setMotherWeight((prev) => prev || toField(parentDefaults.motherWeightKg));
+    setFatherWeight((prev) => prev || toField(parentDefaults.fatherWeightKg));
+  }, [parentDefaults]);
+
   useEffect(() => {
     if (!selectedChild) return;
-    applyChildProfile(selectedChild, {
+    applyChildProfile(selectedChild, parentDefaults, {
       setSex,
       setCurrentAge,
       setMotherHeight,
       setFatherHeight,
       setEthnicities,
     });
-  }, [selectedChild]);
+  }, [selectedChild, parentDefaults]);
 
   function toggleEthnicity(value: EthnicityValue) {
     setEthnicities((prev) =>
@@ -186,6 +236,9 @@ export function PredictionForm() {
       target_age_years: targetAge,
       mother_height_cm: motherHeightCm,
       father_height_cm: fatherHeightCm,
+      // Read by the LLM predictor only — the SVR model has no parental features.
+      mother_weight_kg: motherWeight ? Number(motherWeight) : undefined,
+      father_weight_kg: fatherWeight ? Number(fatherWeight) : undefined,
       ethnicities: ethnicities.length > 0 ? ethnicities : undefined,
     };
 
@@ -429,7 +482,7 @@ export function PredictionForm() {
         </Section>
 
         <Section
-          title={t.form.parentHeightsLegend}
+          title={t.form.parentsLegend}
           description={
             <>
               {t.form.parentHeightsHelp}
@@ -441,6 +494,22 @@ export function PredictionForm() {
                     : t.form.parentHeightsWillSave}
                 </>
               )}
+              {/* Says where the numbers came from, so a prefilled field does not
+                  look like something the user typed and forgot. */}
+              {usingAccountDefaults && (
+                <>
+                  {" "}
+                  {t.form.parentsFromAccount}{" "}
+                  <SignedIn>
+                    <Link
+                      href="/account"
+                      className="underline underline-offset-2"
+                    >
+                      {t.form.parentsEditOnAccount}
+                    </Link>
+                  </SignedIn>
+                </>
+              )}
             </>
           }
         >
@@ -450,8 +519,8 @@ export function PredictionForm() {
                 <Input
                   id={id}
                   type="number"
-                  min={120}
-                  max={220}
+                  min={PARENT_LIMITS.heightCm.min}
+                  max={PARENT_LIMITS.heightCm.max}
                   step={0.1}
                   value={motherHeight}
                   onChange={(e) => setMotherHeight(e.target.value)}
@@ -464,12 +533,40 @@ export function PredictionForm() {
                 <Input
                   id={id}
                   type="number"
-                  min={120}
-                  max={220}
+                  min={PARENT_LIMITS.heightCm.min}
+                  max={PARENT_LIMITS.heightCm.max}
                   step={0.1}
                   value={fatherHeight}
                   onChange={(e) => setFatherHeight(e.target.value)}
                   placeholder={t.common.egPlaceholder("178")}
+                />
+              )}
+            </Field>
+            <Field label={t.form.mothersWeightKg} hint={t.form.parentWeightHelp}>
+              {({ id }) => (
+                <Input
+                  id={id}
+                  type="number"
+                  min={PARENT_LIMITS.weightKg.min}
+                  max={PARENT_LIMITS.weightKg.max}
+                  step={0.1}
+                  value={motherWeight}
+                  onChange={(e) => setMotherWeight(e.target.value)}
+                  placeholder={t.common.egPlaceholder("60")}
+                />
+              )}
+            </Field>
+            <Field label={t.form.fathersWeightKg} hint={t.form.parentWeightHelp}>
+              {({ id }) => (
+                <Input
+                  id={id}
+                  type="number"
+                  min={PARENT_LIMITS.weightKg.min}
+                  max={PARENT_LIMITS.weightKg.max}
+                  step={0.1}
+                  value={fatherWeight}
+                  onChange={(e) => setFatherWeight(e.target.value)}
+                  placeholder={t.common.egPlaceholder("82")}
                 />
               )}
             </Field>

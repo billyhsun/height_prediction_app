@@ -63,15 +63,21 @@ const en = {
     heightCm: "Height (cm)",
     weightKg: "Weight (kg)",
     bmi: "BMI",
+    parentsLegend: "Parents (optional)",
     parentHeightsLegend: "Parent heights (optional)",
     parentHeightsHelp:
-      "Used for the LLM prediction only. Both are required if you fill one in.",
+      "Used for the LLM prediction only. Both heights are required if you fill one in.",
     parentHeightsAutoFilled:
       "Auto-filled from profile — edits are saved when you run a prediction.",
     parentHeightsWillSave:
       "Saved to the child profile when you run a prediction.",
+    parentsFromAccount: "Filled in from your account.",
+    parentsEditOnAccount: "Change them",
+    parentWeightHelp: "Optional. Adds parental build to the LLM estimate.",
     mothersHeightCm: "Mother's height (cm)",
     fathersHeightCm: "Father's height (cm)",
+    mothersWeightKg: "Mother's weight (kg)",
+    fathersWeightKg: "Father's weight (kg)",
     ethnicityLegend: "Ethnicity (optional)",
     ethnicityHelp: "Select all that apply. Used for LLM predictions only.",
     ethnicityWillSave:
@@ -99,6 +105,9 @@ const en = {
     parentHeightsLegend: "Parent heights (optional)",
     parentHeightsHelp:
       "Saved on the profile and auto-filled for LLM predictions.",
+    parentHeightsOverrideHelp:
+      "Leave blank to use the parent heights on your account. Fill these in only if they differ for this child.",
+    accountDefaultPlaceholder: (cm: number) => `${cm} (from your account)`,
     mothersHeightCm: "Mother's height (cm)",
     fathersHeightCm: "Father's height (cm)",
     bothParentHeightsRequired:
@@ -208,6 +217,35 @@ const en = {
     failed: "Could not delete your account",
   },
 
+  /** The account-level parent measurements, shared by onboarding and account. */
+  parents: {
+    legend: "Parent details",
+    accountHelp:
+      "Used to fill in the prediction form. Adult height doesn't change, so this is asked once. All fields are optional.",
+    mothersHeightCm: "Mother's height (cm)",
+    fathersHeightCm: "Father's height (cm)",
+    mothersWeightKg: "Mother's weight (kg)",
+    fathersWeightKg: "Father's weight (kg)",
+    optionalPlaceholder: "Optional",
+    save: "Save",
+    saving: "Saving…",
+    saved: "Saved",
+    failedToSave: "Could not save your details",
+    heightOutOfRange: (min: number, max: number) =>
+      `Height must be between ${min} and ${max} cm.`,
+    weightOutOfRange: (min: number, max: number) =>
+      `Weight must be between ${min} and ${max} kg.`,
+  },
+
+  onboarding: {
+    title: "A couple of details",
+    subtitle:
+      "Parent height and weight help with the LLM prediction. Enter them once and every prediction is pre-filled. You can skip this and add them later.",
+    saveAndContinue: "Save and continue",
+    skip: "Skip for now",
+    editLater: "You can change these any time from your account page.",
+  },
+
   ethnicity: {
     east_asian: "East Asian",
     south_asian: "South Asian",
@@ -283,13 +321,19 @@ const zhCN: Dictionary = {
     heightCm: "身高（厘米）",
     weightKg: "体重（公斤）",
     bmi: "BMI",
+    parentsLegend: "父母信息（可选）",
     parentHeightsLegend: "父母身高（可选）",
     parentHeightsHelp:
-      "仅用于大语言模型预测。填写其中一项时，两项都需填写。",
+      "仅用于大语言模型预测。填写其中一项身高时，两项都需填写。",
     parentHeightsAutoFilled: "已根据档案自动填写——运行预测时会保存修改。",
     parentHeightsWillSave: "运行预测时会保存到孩子档案。",
+    parentsFromAccount: "已根据账户信息填写。",
+    parentsEditOnAccount: "修改",
+    parentWeightHelp: "可选。为大语言模型预测提供父母体型参考。",
     mothersHeightCm: "母亲身高（厘米）",
     fathersHeightCm: "父亲身高（厘米）",
+    mothersWeightKg: "母亲体重（公斤）",
+    fathersWeightKg: "父亲体重（公斤）",
     ethnicityLegend: "族裔（可选）",
     ethnicityHelp: "可多选。仅用于大语言模型预测。",
     ethnicityWillSave: "运行预测时会保存到孩子档案。",
@@ -314,6 +358,9 @@ const zhCN: Dictionary = {
     ethnicityHelp: "可多选。仅用于大语言模型预测。",
     parentHeightsLegend: "父母身高（可选）",
     parentHeightsHelp: "保存在档案中，并自动用于大语言模型预测。",
+    parentHeightsOverrideHelp:
+      "留空则使用账户中的父母身高。仅当这个孩子的情况不同时才需填写。",
+    accountDefaultPlaceholder: (cm: number) => `${cm}（来自账户）`,
     mothersHeightCm: "母亲身高（厘米）",
     fathersHeightCm: "父亲身高（厘米）",
     bothParentHeightsRequired: "请同时填写父母双方的身高，或两项都留空。",
@@ -414,6 +461,34 @@ const zhCN: Dictionary = {
     deleteButton: "删除我的账户",
     deleting: "正在删除…",
     failed: "无法删除您的账户",
+  },
+
+  parents: {
+    legend: "父母信息",
+    accountHelp:
+      "用于自动填写预测表单。成人身高不会变化，因此只需填写一次。所有项均为可选。",
+    mothersHeightCm: "母亲身高（厘米）",
+    fathersHeightCm: "父亲身高（厘米）",
+    mothersWeightKg: "母亲体重（公斤）",
+    fathersWeightKg: "父亲体重（公斤）",
+    optionalPlaceholder: "可选",
+    save: "保存",
+    saving: "保存中…",
+    saved: "已保存",
+    failedToSave: "无法保存您的信息",
+    heightOutOfRange: (min: number, max: number) =>
+      `身高需在 ${min} 至 ${max} 厘米之间。`,
+    weightOutOfRange: (min: number, max: number) =>
+      `体重需在 ${min} 至 ${max} 公斤之间。`,
+  },
+
+  onboarding: {
+    title: "补充几项信息",
+    subtitle:
+      "父母的身高和体重有助于大语言模型预测。填写一次后，每次预测都会自动填入。您也可以跳过，稍后再补充。",
+    saveAndContinue: "保存并继续",
+    skip: "暂时跳过",
+    editLater: "您可以随时在账户页面修改这些信息。",
   },
 
   ethnicity: {

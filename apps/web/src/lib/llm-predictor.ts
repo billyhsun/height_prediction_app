@@ -39,6 +39,11 @@ export type LlmPredictionInputs = {
   target_age_years: number;
   mother_height_cm: number;
   father_height_cm: number;
+  /** Optional, unlike the heights: parental build is a weaker and more variable
+   *  signal than parental height, so it informs the estimate when supplied and
+   *  is simply absent otherwise. */
+  mother_weight_kg?: number;
+  father_weight_kg?: number;
   ethnicities?: unknown;
   /** Language for the generated `reasoning`. Defaults to English. */
   locale?: Locale;
@@ -100,6 +105,14 @@ export function buildLlmPrompt(
   const ethnicities = formatEthnicities(inputs.ethnicities);
   const ethnicityLine = ethnicities ? `- Ethnicity: ${ethnicities}\n` : "";
 
+  // Each parent's weight is stated only when known, and paired with a BMI so the
+  // number carries build rather than mass alone — 80 kg means something very
+  // different at 160 cm than at 190 cm.
+  const parentBuild = (heightCm: number, weightKg: number | undefined) =>
+    weightKg
+      ? ` (weight ${weightKg} kg, BMI ${(weightKg / (heightCm / 100) ** 2).toFixed(1)})`
+      : "";
+
   return `Estimate a child's future height for an educational app.
 
 Child:
@@ -111,11 +124,12 @@ Child:
 - Target age: ${inputs.target_age_years} years
 ${ethnicityLine}
 Parents:
-- Mother height: ${inputs.mother_height_cm} cm
-- Father height: ${inputs.father_height_cm} cm
+- Mother height: ${inputs.mother_height_cm} cm${parentBuild(inputs.mother_height_cm, inputs.mother_weight_kg)}
+- Father height: ${inputs.father_height_cm} cm${parentBuild(inputs.father_height_cm, inputs.father_weight_kg)}
 - Mid-parental height (Tanner): ${mph.toFixed(1)} cm
 
 Use the child's current measurements, parent heights, ethnicity (if provided), and typical growth patterns.
+Parental build, where given, is a secondary signal only: treat mid-parental height as the primary genetic anchor and do not let parental weight move the estimate far from it.
 Return JSON only with:
 - pred_height_cm: predicted height in cm at target age (number)
 - reasoning: 1-2 sentences explaining the estimate (string)

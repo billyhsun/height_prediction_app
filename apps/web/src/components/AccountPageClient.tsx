@@ -6,6 +6,7 @@ import { useClerk } from "@clerk/nextjs";
 import { deleteAccount } from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
 import { displayError } from "@notch/core";
+import { ParentDefaultsForm } from "@/components/ParentDefaultsForm";
 
 export function AccountPageClient() {
   const t = useTranslations();
@@ -42,6 +43,22 @@ export function AccountPageClient() {
         </h1>
         <p className="text-sm text-text-secondary">{t.account.subtitle}</p>
       </header>
+
+      {/*
+        Collected at sign-up, but that step is skippable and people move house,
+        remeasure, or simply change their mind — so the same values have to be
+        reachable afterwards. Placed above the danger zone so the destructive
+        control stays last on the page.
+      */}
+      <section className="space-y-4 rounded-lg border border-border bg-surface p-5">
+        <div className="space-y-1">
+          <h2 className="text-sm font-medium text-text-primary">
+            {t.parents.legend}
+          </h2>
+          <p className="text-sm text-text-secondary">{t.parents.accountHelp}</p>
+        </div>
+        <ParentDefaultsForm />
+      </section>
 
       <section className="space-y-4 rounded-lg border border-danger-600/20 bg-surface p-5">
         <h2 className="text-sm font-medium text-danger-700">

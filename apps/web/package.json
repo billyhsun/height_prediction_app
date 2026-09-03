@@ -12,6 +12,26 @@
     "tokens": "node --experimental-strip-types scripts/build-tokens.mjs",
     "typecheck": "tsc --noEmit"
   },
+  "comments": {
+    "optionalDependencies": [
+      "Vercel builds on linux/x64/glibc. npm records a platform binary in the lockfile only",
+      "when it resolves the tree on that platform, so a lockfile refreshed on a developer's",
+      "Mac carries the darwin-arm64 binaries and nothing else -- and `npm ci` on the build",
+      "machine then installs no binary at all. lightningcss is simply the first to notice,",
+      "throwing MODULE_NOT_FOUND out of its native loader while compiling globals.css.",
+      "Declaring the linux binaries below forces them into the lockfile without re-resolving",
+      "anything else. Each carries os/cpu metadata, so npm skips them on macOS and they cost",
+      "local installs nothing. Versions must match the package that owns each binary:",
+      "lightningcss is pinned by @tailwindcss/node, oxide by tailwindcss, swc and sharp by",
+      "next. Bump each one together with its parent."
+    ]
+  },
+  "optionalDependencies": {
+    "lightningcss-linux-x64-gnu": "1.32.0",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.3",
+    "@next/swc-linux-x64-gnu": "16.3.0",
+    "@img/sharp-linux-x64": "0.35.3"
+  },
   "dependencies": {
     "@clerk/localizations": "^4.15.4",
     "@clerk/nextjs": "^6.12.0",

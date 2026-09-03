@@ -23,6 +23,10 @@ const en = {
     sexNoun: (sex: number): string => (sex === 1 ? "male" : "female"),
     disclaimer: "For informational purposes only. Not medical advice.",
     years: (n: number) => `${n} years`,
+    /** Compact because it appears inline in chips and list rows. Months are
+     *  dropped at a whole number of years rather than rendered as "0m". */
+    ageYearsMonths: (years: number, months: number): string =>
+      months === 0 ? `${years}y` : `${years}y ${months}m`,
     /** Joins inline lists; Chinese uses the ideographic comma. */
     listSeparator: ", ",
     egPlaceholder: (value: string) => `e.g. ${value}`,
@@ -54,11 +58,31 @@ const en = {
     addAChild: "Add a child",
     toAutoFill: "to auto-fill the form.",
     aboutYourChild: "About your child",
-    bornAndAge: (date: string, age: number) => `Born ${date} · age ${age} years`,
+    /** `age` arrives preformatted from common.ageYearsMonths — the caller knows
+     *  the breakdown, and passing a number here would force this string to
+     *  re-derive it. */
+    bornAndAge: (date: string, age: string) => `Born ${date} · age ${age}`,
     sex: "Sex",
+
+    ageEntryLabel: "How to enter age",
+    ageModeYearsMonths: "Age",
+    ageModeDateOfBirth: "Date of birth",
     currentAgeYears: "Current age (years)",
+    currentAgeYearsPart: "Years",
+    currentAgeMonthsPart: "Months",
     currentAgeHint: (maxAge: number) =>
       `Up to age ${maxAge}. Beyond that the model has too little data to be reliable.`,
+    dateOfBirthLabel: "Date of birth",
+    dateOfBirthHint: "Age is worked out from this date, to the month.",
+    ageResolved: (age: string) => `That is ${age} today.`,
+    dateOfBirthRequired:
+      "Enter a date of birth, or switch to entering age directly.",
+    dateOfBirthInvalid: "Enter a real date that is not in the future.",
+    ageTooOld: (maxAge: number) =>
+      `This child is over ${maxAge}, which is past what the model can predict from.`,
+    monthsOutOfRange: "Months must be between 0 and 11.",
+    childAgeNotSaved:
+      "Age applies to this prediction only — it is not saved back to the profile.",
     currentMeasurements: "Current measurements",
     heightCm: "Height (cm)",
     weightKg: "Weight (kg)",
@@ -131,7 +155,7 @@ const en = {
       "Delete this child profile? Saved predictions will be kept.",
     failedToLoad: "Failed to load children",
     failedToDelete: "Failed to delete child",
-    bornAndAge: (date: string, age: number) => `born ${date} · age ${age}`,
+    bornAndAge: (date: string, age: string) => `born ${date} · age ${age}`,
     parentsLabel: "Parents:",
     motherHeight: (cm: number) => `mother ${cm} cm`,
     fatherHeight: (cm: number) => `father ${cm} cm`,
@@ -283,6 +307,8 @@ const zhCN: Dictionary = {
     sexNoun: (sex: number) => (sex === 1 ? "男孩" : "女孩"),
     disclaimer: "仅供参考，不构成医疗建议。",
     years: (n: number) => `${n} 岁`,
+    ageYearsMonths: (years: number, months: number): string =>
+      months === 0 ? `${years} 岁` : `${years} 岁 ${months} 个月`,
     listSeparator: "、",
     egPlaceholder: (value: string) => `例如 ${value}`,
   },
@@ -312,11 +338,26 @@ const zhCN: Dictionary = {
     addAChild: "添加孩子",
     toAutoFill: "以自动填写表单。",
     aboutYourChild: "孩子信息",
-    bornAndAge: (date: string, age: number) => `出生日期 ${date} · ${age} 岁`,
+    bornAndAge: (date: string, age: string) => `出生日期 ${date} · ${age}`,
     sex: "性别",
+
+    ageEntryLabel: "年龄输入方式",
+    ageModeYearsMonths: "年龄",
+    ageModeDateOfBirth: "出生日期",
     currentAgeYears: "当前年龄（岁）",
+    currentAgeYearsPart: "岁",
+    currentAgeMonthsPart: "个月",
     currentAgeHint: (maxAge: number) =>
       `最大 ${maxAge} 岁。超过该年龄，模型的数据不足，结果不可靠。`,
+    dateOfBirthLabel: "出生日期",
+    dateOfBirthHint: "系统会根据该日期精确到月计算年龄。",
+    ageResolved: (age: string) => `今天是 ${age}。`,
+    dateOfBirthRequired: "请填写出生日期，或改为直接输入年龄。",
+    dateOfBirthInvalid: "请输入真实且不晚于今天的日期。",
+    ageTooOld: (maxAge: number) =>
+      `该孩子已超过 ${maxAge} 岁，超出模型可预测的范围。`,
+    monthsOutOfRange: "月份需在 0 至 11 之间。",
+    childAgeNotSaved: "此处的年龄仅用于本次预测，不会保存到档案。",
     currentMeasurements: "当前身体数据",
     heightCm: "身高（厘米）",
     weightKg: "体重（公斤）",
@@ -381,7 +422,7 @@ const zhCN: Dictionary = {
     confirmDelete: "确定删除该孩子档案吗？已保存的预测记录会保留。",
     failedToLoad: "加载孩子列表失败",
     failedToDelete: "删除孩子失败",
-    bornAndAge: (date: string, age: number) => `出生日期 ${date} · ${age} 岁`,
+    bornAndAge: (date: string, age: string) => `出生日期 ${date} · ${age}`,
     parentsLabel: "父母：",
     motherHeight: (cm: number) => `母亲 ${cm} 厘米`,
     fatherHeight: (cm: number) => `父亲 ${cm} 厘米`,

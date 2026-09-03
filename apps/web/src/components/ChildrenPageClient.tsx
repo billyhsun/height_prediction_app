@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { ageYearsFromDateOfBirth, formatDateOfBirth } from "@notch/core";
+import { ageBreakdownFromDateOfBirth, formatDateOfBirth } from "@notch/core";
 import {
   deleteChild,
   fetchChildren,
@@ -74,7 +74,7 @@ export function ChildrenPageClient() {
       ) : (
         <ul className="space-y-3">
           {children.map((child) => {
-            const age = ageYearsFromDateOfBirth(child.dateOfBirth);
+            const age = ageBreakdownFromDateOfBirth(child.dateOfBirth);
             return (
               <li
                 key={child.id}
@@ -89,7 +89,7 @@ export function ChildrenPageClient() {
                       {child.sex === 1 ? t.common.male : t.common.female} ·{" "}
                       {t.children.bornAndAge(
                         formatDateOfBirth(child.dateOfBirth, locale),
-                        age,
+                        t.common.ageYearsMonths(age.years, age.months),
                       )}
                     </p>
                     {(child.motherHeightCm || child.fatherHeightCm) && (

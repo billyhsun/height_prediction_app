@@ -8,8 +8,13 @@ import {
   LOCALES,
   LOCALE_SHORT_LABELS,
   MAX_MODEL_CURRENT_AGE,
+  MONTHS_PER_YEAR,
+  ageBreakdownFromDateOfBirth,
+  ageYearsFromDateOfBirth,
+  ageYearsFromYearsMonths,
   calculateBmi,
   getDictionary,
+  isValidDateOfBirth,
   predict,
   type EthnicityValue,
   type Locale,
@@ -32,6 +37,27 @@ import {
   theme,
 } from "@/components/ui";
 
+type AgeMode = "years-months" | "dob";
+type DobParts = { year: string; month: string; day: string };
+
+const pad = (value: string) => value.padStart(2, "0");
+const dobToIso = (dob: DobParts) =>
+  `${dob.year}-${pad(dob.month)}-${pad(dob.day)}`;
+
+/** Days in a month, so February and the 30-day months cannot offer a 31st. */
+function daysInMonth(year: string, month: string): number {
+  const y = Number(year);
+  const m = Number(month);
+  if (!y || !m) return 31;
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
+const range = (from: number, to: number) =>
+  Array.from({ length: to - from + 1 }, (_, i) => String(from + i));
+
+const optionsOf = (values: string[]) =>
+  values.map((value) => ({ value, label: value }));
+
 /**
  * Development harness, not the shipping screen.
  *
@@ -47,7 +73,14 @@ export default function Harness() {
   const insets = useSafeAreaInsets();
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   const [sex, setSex] = useState(1);
-  const [currentAge, setCurrentAge] = useState("5");
+  const [ageMode, setAgeMode] = useState<AgeMode>("years-months");
+  const [ageYears, setAgeYears] = useState("5");
+  const [ageMonths, setAgeMonths] = useState("0");
+  const [dob, setDob] = useState<DobParts>(() => ({
+    year: String(new Date().getFullYear() - 5),
+    month: "1",
+    day: "1",
+  }));
   const [height, setHeight] = useState("110");
   const [weight, setWeight] = useState("20");
   const [targetAge, setTargetAge] = useState("18");
@@ -60,6 +93,22 @@ export default function Harness() {
   const num = (value: string) => Number(value) || 0;
   const bmi = num(height) > 0 ? calculateBmi(num(weight), num(height)) : 0;
 
+  const dobIso = dobToIso(dob);
+  const dobIsUsable = ageMode === "dob" && isValidDateOfBirth(dobIso);
+
+  // Same derivation as the web form: whichever mode is active produces the
+  // decimal years the API takes, and nothing else in the screen reads the raw
+  // fields.
+  const currentAge = dobIsUsable
+    ? ageYearsFromDateOfBirth(dobIso)
+    : ageYearsFromYearsMonths({
+        years: num(ageYears),
+        months: num(ageMonths),
+      });
+  const ageBreakdown = dobIsUsable
+    ? ageBreakdownFromDateOfBirth(dobIso)
+    : { years: num(ageYears), months: num(ageMonths) };
+
   async function run() {
     setLoading(true);
     setError(null);
@@ -70,7 +119,7 @@ export default function Harness() {
           sex,
           height_cm: num(height),
           weight_kg: num(weight),
-          current_age_years: num(currentAge),
+          current_age_years: currentAge,
           target_age_years: num(targetAge),
         }),
       );
@@ -125,18 +174,123 @@ export default function Harness() {
             ]}
           />
         </View>
-        <Field
-          label={t.form.currentAgeYears}
-          hint={t.form.currentAgeHint(MAX_MODEL_CURRENT_AGE)}
-        >
-          {() => (
-            <Input
-              keyboardType="decimal-pad"
-              value={currentAge}
-              onChangeText={setCurrentAge}
-            />
-          )}
-        </Field>
+        <View style={styles.stack}>
+          <Text style={styles.fieldLabel}>{t.form.ageEntryLabel}</Text>
+          <SegmentedControl
+            label={t.form.ageEntryLabel}
+            value={ageMode}
+            onChange={setAgeMode}
+            options={[
+              { value: "years-months" as AgeMode, label: t.form.ageModeYearsMonths },
+              { value: "dob" as AgeMode, label: t.form.ageModeDateOfBirth },
+            ]}
+          />
+        </View>
+
+        {ageMode === "dob" ? (
+          <Field label={t.form.dateOfBirthLabel} hint={t.form.dateOfBirthHint}>
+            {() => (
+              /*
+               * Three sheet pickers rather than a native date picker.
+               * @react-native-community/datetimepicker would pull in a native
+               * module the Expo Go client would have to ship, and it has no
+               * react-native-web implementation — which is what scripts/
+               * verify-ui.mjs renders the tree with, so the smoke test would go
+               * blind on this screen. Select is already the project's answer to
+               * "there is no native <select>", and it costs nothing here.
+               */
+              <View style={styles.dobRow}>
+                <View style={styles.dobYear}>
+                  <Select
+                    value={dob.year}
+                    onChange={(year) => setDob((prev) => ({ ...prev, year }))}
+                    accessibilityLabel={t.form.dateOfBirthLabel}
+                    options={optionsOf(
+                      range(
+                        new Date().getFullYear() - MAX_MODEL_CURRENT_AGE,
+                        new Date().getFullYear(),
+                      ).reverse(),
+                    )}
+                  />
+                </View>
+                <View style={styles.dobPart}>
+                  <Select
+                    value={dob.month}
+                    onChange={(month) =>
+                      setDob((prev) => ({
+                        ...prev,
+                        month,
+                        // Clamp the day, or switching to February would leave a
+                        // 31st selected and produce an invalid date.
+                        day: String(
+                          Math.min(
+                            Number(prev.day),
+                            daysInMonth(prev.year, month),
+                          ),
+                        ),
+                      }))
+                    }
+                    accessibilityLabel={t.form.currentAgeMonthsPart}
+                    options={optionsOf(range(1, MONTHS_PER_YEAR))}
+                  />
+                </View>
+                <View style={styles.dobPart}>
+                  <Select
+                    value={dob.day}
+                    onChange={(day) => setDob((prev) => ({ ...prev, day }))}
+                    accessibilityLabel={t.form.dateOfBirthLabel}
+                    options={optionsOf(
+                      range(1, daysInMonth(dob.year, dob.month)),
+                    )}
+                  />
+                </View>
+              </View>
+            )}
+          </Field>
+        ) : (
+          // The hint sits under the pair, not on the Years field: as a
+          // per-field hint it wraps and drops the Years input a row below
+          // Months. Same reasoning as the web form.
+          <View style={styles.stack}>
+            <View style={styles.ageRow}>
+              <View style={styles.agePart}>
+                <Field label={t.form.currentAgeYearsPart}>
+                  {() => (
+                    <Input
+                      keyboardType="number-pad"
+                      value={ageYears}
+                      onChangeText={setAgeYears}
+                    />
+                  )}
+                </Field>
+              </View>
+              <View style={styles.agePart}>
+                <Field label={t.form.currentAgeMonthsPart}>
+                  {() => (
+                    <Input
+                      keyboardType="number-pad"
+                      value={ageMonths}
+                      onChangeText={setAgeMonths}
+                    />
+                  )}
+                </Field>
+              </View>
+            </View>
+            <Text style={styles.ageHint}>
+              {t.form.currentAgeHint(MAX_MODEL_CURRENT_AGE)}
+            </Text>
+          </View>
+        )}
+
+        {/* Only in date mode, where the resulting age is otherwise invisible.
+            In age mode it would just read back the two fields above it. */}
+        {dobIsUsable ? (
+          <Text style={styles.ageEcho}>
+            {t.form.ageResolved(
+              t.common.ageYearsMonths(ageBreakdown.years, ageBreakdown.months),
+            )}
+          </Text>
+        ) : null}
       </Section>
 
       <Section title={t.form.currentMeasurements}>
@@ -208,9 +362,7 @@ export default function Harness() {
           <Card padding="lg">
             <GrowthChart
               sex={sex}
-              observed={[
-                { ageYears: num(currentAge), heightCm: num(height) },
-              ]}
+              observed={[{ ageYears: currentAge, heightCm: num(height) }]}
               predicted={{
                 ageYears: result.target_age_years,
                 heightCm: result.pred_height_cm,
@@ -259,6 +411,19 @@ const styles = StyleSheet.create({
   },
   localeRow: { width: 130 },
   stack: { gap: theme.space[1] + 2 },
+  ageRow: { flexDirection: "row", gap: theme.space[3] },
+  agePart: { flex: 1 },
+  dobRow: { flexDirection: "row", gap: theme.space[2] },
+  // Years are four digits and the sheet row shows the full value, so the year
+  // column needs the extra width the other two do not.
+  dobYear: { flex: 1.4 },
+  dobPart: { flex: 1 },
+  ageEcho: { fontSize: fontSize.xs, color: theme.semantic.textSecondary },
+  ageHint: {
+    fontSize: fontSize.xs,
+    lineHeight: 18,
+    color: theme.semantic.textSecondary,
+  },
   fieldLabel: {
     fontSize: fontSize.sm,
     fontWeight: "500",

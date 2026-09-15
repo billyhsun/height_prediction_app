@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS "Prediction" (
     "llmReasoning" TEXT,
     "llmMidParentalHeight" DOUBLE PRECISION,
     "llmModel" TEXT,
+    "llmStatureBand" TEXT,
+    "llmGuidance" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Prediction_pkey" PRIMARY KEY ("id")
 );
@@ -99,6 +101,12 @@ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "motherHeightCm" DOUBLE PRECISION;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "fatherHeightCm" DOUBLE PRECISION;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "motherWeightKg" DOUBLE PRECISION;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "fatherWeightKg" DOUBLE PRECISION;
+-- How the child's height compared with peers at the time of the prediction, and
+-- the suggestions shown with it. Both are LLM output and both are nullable:
+-- rows saved before this shipped have neither, and an average child has no
+-- guidance by design.
+ALTER TABLE "Prediction" ADD COLUMN IF NOT EXISTS "llmStatureBand" TEXT;
+ALTER TABLE "Prediction" ADD COLUMN IF NOT EXISTS "llmGuidance" TEXT;
 
 -- ---------------------------------------------------------------------------
 -- 2. Indexes and foreign keys

@@ -109,6 +109,13 @@ model Prediction {
   llmReasoning          String?
   llmMidParentalHeight  Float?
   llmModel              String?
+  /// One of "below_average" | "average" | "above_average". Stored as free text
+  /// rather than an enum so that widening the scale later is a code change
+  /// rather than a migration; readers validate with isStatureBand().
+  llmStatureBand        String?
+  /// Present only when the band was not "average" — see the guidance rules in
+  /// llm-predictor.ts. Null on rows saved before the field existed.
+  llmGuidance           String?
 
   createdAt       DateTime @default(now())
 

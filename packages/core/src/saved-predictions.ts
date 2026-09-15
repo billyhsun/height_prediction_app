@@ -1,4 +1,5 @@
 import type { LlmPredictResponse, PredictRequest, PredictResponse } from "./api";
+import { isStatureBand } from "./api";
 import type { PredictionSession } from "./prediction-session";
 import { GenericRequestError } from "./request-error";
 import { apiFetch } from "./http";
@@ -27,6 +28,10 @@ export type SavedPredictionDetail = SavedPredictionSummary & {
   llmReasoning: string | null;
   llmMidParentalHeight: number | null;
   llmModel: string | null;
+  /** Free text in the database; validated on the way out, since nothing stops a
+   *  row holding a band this version of the app does not know. */
+  llmStatureBand: string | null;
+  llmGuidance: string | null;
 };
 
 export async function savePredictionToAccount(
@@ -109,6 +114,13 @@ export function sessionFromSaved(
           target_age_years: detail.targetAgeYears,
           model_version: "llm-v1",
           model: detail.llmModel ?? "",
+          // Undefined rather than null for both: the response type treats these
+          // as absent-or-present, and rows saved before the columns existed are
+          // genuinely absent rather than known-empty.
+          stature_band: isStatureBand(detail.llmStatureBand)
+            ? detail.llmStatureBand
+            : undefined,
+          guidance: detail.llmGuidance ?? undefined,
         }
       : null;
 

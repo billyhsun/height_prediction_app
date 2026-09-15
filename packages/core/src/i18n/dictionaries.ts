@@ -41,6 +41,45 @@ const en = {
     languageLabel: "Language",
   },
 
+  /**
+   * The native apps build their own sign-in screens on Clerk's hooks, so unlike
+   * the web — where Clerk's prebuilt components ship their own copy — these
+   * strings have to exist here.
+   */
+  auth: {
+    signInTitle: "Welcome back",
+    signInSubtitle: "Sign in to save your predictions and keep a history for each child.",
+    signUpTitle: "Create an account",
+    signUpSubtitle: "Keep every prediction and follow each child's growth over time.",
+    emailLabel: "Email",
+    emailPlaceholder: "you@example.com",
+    passwordLabel: "Password",
+    passwordPlaceholder: "At least 8 characters",
+    signInAction: "Sign in",
+    signUpAction: "Create account",
+    verifyTitle: "Check your email",
+    verifySubtitle: (email: string) => `Enter the code we sent to ${email}.`,
+    codeLabel: "Verification code",
+    codePlaceholder: "123456",
+    verifyAction: "Verify email",
+    resend: "Send a new code",
+    resent: "New code sent",
+    noAccountPrompt: "No account yet?",
+    noAccountAction: "Create one",
+    haveAccountPrompt: "Already have an account?",
+    haveAccountAction: "Sign in",
+    continueAsGuest: "Continue without an account",
+    signOut: "Sign out",
+    missingCredentials: "Enter your email and password.",
+    missingCode: "Enter the code from your email.",
+    signInFailed: "Could not sign you in. Check your details and try again.",
+    signUpFailed: "Could not create your account.",
+    verifyFailed: "That code was not accepted. Check it and try again.",
+    /** Password reset, MFA and SSO are not built into the native flow yet. */
+    unsupportedStep:
+      "This account needs a step the app can't handle yet. Please sign in on the web to continue.",
+  },
+
   form: {
     title: "Growth prediction",
     subtitle:
@@ -108,6 +147,15 @@ const en = {
       "Saved to the child profile when you run a prediction.",
     predictionLegend: "Prediction",
     predictAtAgeYears: "Predict at age (years)",
+    /** Native has no <input type="number">, so the bounds HTML enforced on the
+     *  web are checked in code and reported with these. Age is not among them:
+     *  the two entry modes have their own messages, shared with the web. */
+    heightOutOfRange: (min: number, max: number) =>
+      `Height must be between ${min} and ${max} cm.`,
+    weightOutOfRange: (min: number, max: number) =>
+      `Weight must be between ${min} and ${max} kg.`,
+    targetAgeOutOfRange: (min: number, max: number) =>
+      `Target age must be between ${min} and ${max} years.`,
     bothParentHeightsRequired:
       "Please enter both mother and father heights, or leave both blank.",
     llmFailed: "LLM prediction failed",
@@ -322,6 +370,38 @@ const zhCN: Dictionary = {
     languageLabel: "语言",
   },
 
+  auth: {
+    signInTitle: "欢迎回来",
+    signInSubtitle: "登录后即可保存预测结果，并为每个孩子保留历史记录。",
+    signUpTitle: "创建账户",
+    signUpSubtitle: "保存每一次预测，持续记录孩子的成长。",
+    emailLabel: "邮箱",
+    emailPlaceholder: "you@example.com",
+    passwordLabel: "密码",
+    passwordPlaceholder: "至少 8 个字符",
+    signInAction: "登录",
+    signUpAction: "创建账户",
+    verifyTitle: "查收邮件",
+    verifySubtitle: (email: string) => `请输入我们发送到 ${email} 的验证码。`,
+    codeLabel: "验证码",
+    codePlaceholder: "123456",
+    verifyAction: "验证邮箱",
+    resend: "重新发送验证码",
+    resent: "验证码已重新发送",
+    noAccountPrompt: "还没有账户？",
+    noAccountAction: "立即注册",
+    haveAccountPrompt: "已有账户？",
+    haveAccountAction: "登录",
+    continueAsGuest: "不登录，继续使用",
+    signOut: "退出登录",
+    missingCredentials: "请输入邮箱和密码。",
+    missingCode: "请输入邮件中的验证码。",
+    signInFailed: "登录失败。请检查信息后重试。",
+    signUpFailed: "无法创建账户。",
+    verifyFailed: "验证码无效。请检查后重试。",
+    unsupportedStep: "该账户需要应用暂不支持的验证步骤。请在网页版登录。",
+  },
+
   form: {
     title: "成长预测",
     subtitle:
@@ -380,6 +460,12 @@ const zhCN: Dictionary = {
     ethnicityWillSave: "运行预测时会保存到孩子档案。",
     predictionLegend: "预测",
     predictAtAgeYears: "预测年龄（岁）",
+    heightOutOfRange: (min: number, max: number) =>
+      `身高需在 ${min} 至 ${max} 厘米之间。`,
+    weightOutOfRange: (min: number, max: number) =>
+      `体重需在 ${min} 至 ${max} 公斤之间。`,
+    targetAgeOutOfRange: (min: number, max: number) =>
+      `目标年龄需在 ${min} 至 ${max} 岁之间。`,
     bothParentHeightsRequired: "请同时填写父亲和母亲的身高，或两项都留空。",
     llmFailed: "大语言模型预测失败",
     somethingWentWrong: "出现错误",

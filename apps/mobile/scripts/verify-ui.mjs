@@ -121,6 +121,21 @@ function startProxy(distDir) {
   return new Promise((r) => server.listen(PROXY_PORT, () => r(server)));
 }
 
+/**
+ * A guest's save attempt answering 401 is the design, not a fault.
+ *
+ * `savePredictionToAccount` identifies a guest *by* the 401 and falls back to
+ * `reportGuestPrediction`; both platforms do this on every signed-out
+ * prediction. The browser logs any 401 response as a console error regardless,
+ * so it has to be excluded by hand or the console check can never be green
+ * while signed out.
+ */
+function isExpectedGuest401(entry) {
+  return (
+    entry.text.includes("401") && (entry.url ?? "").includes("/api/user/")
+  );
+}
+
 /** Thin CDP client over Node's built-in WebSocket. */
 async function connectCdp() {
   const list = await (await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`)).json();
@@ -139,7 +154,8 @@ async function connectCdp() {
       msg.error ? reject(new Error(JSON.stringify(msg.error))) : res(msg.result);
     } else if (
       msg.method === "Log.entryAdded" &&
-      msg.params.entry.level === "error"
+      msg.params.entry.level === "error" &&
+      !isExpectedGuest401(msg.params.entry)
     ) {
       consoleErrors.push(msg.params.entry.text);
     }
@@ -271,6 +287,29 @@ async function main() {
       await sleep(700);
     };
 
+    /**
+     * Sets a controlled TextInput, found by what it currently holds.
+     *
+     * react-native-web renders TextInput as a real <input>, but React owns its
+     * value — assigning to `.value` is silently reverted on the next render. The
+     * native setter plus a bubbled input event is what React's own listener
+     * recognises as a user edit.
+     */
+    const setInput = async (current, next) => {
+      const ok = await evaluate(`(() => {
+        const el = [...document.querySelectorAll('input')]
+          .find(i => i.value === ${JSON.stringify(current)});
+        if (!el) return false;
+        const setter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype, 'value').set;
+        setter.call(el, ${JSON.stringify(next)});
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        return true;
+      })()`);
+      if (!ok) throw new Error(`no input holding ${JSON.stringify(current)}`);
+      await sleep(400);
+    };
+
     await click("中文");
     check(
       "locale toggle renders Simplified Chinese",
@@ -282,23 +321,48 @@ async function main() {
       await evaluate(`document.body.innerText.includes('Get prediction')`),
     );
 
-    // Modal-based Select: the sheet should add option rows that were not there.
-    const rowsBefore = await evaluate(`[...document.querySelectorAll('div')]
-      .filter(e => ['16','18','20'].includes(e.textContent.trim())
-                   && !e.children.length && e.getBoundingClientRect().width > 0).length`);
-    await click("18");
-    const rowsAfter = await evaluate(`[...document.querySelectorAll('div')]
-      .filter(e => ['16','18','20'].includes(e.textContent.trim())
-                   && !e.children.length && e.getBoundingClientRect().width > 0).length`);
-    check("Select opens its modal sheet", rowsAfter > rowsBefore,
-      `${rowsBefore} -> ${rowsAfter} option rows`);
-    // Dismiss by tapping the backdrop, well above the sheet.
-    for (const type of ["mousePressed", "mouseReleased"]) {
-      await send("Input.dispatchMouseEvent", {
-        type, x: VIEWPORT.width / 2, y: 40, button: "left", clickCount: 1,
-      });
-    }
-    await sleep(700);
+    // --- the sign-in route, and the way back out of it ---
+    await click("Sign in");
+    check(
+      "sign-in screen renders",
+      await evaluate(
+        `['Welcome back', 'Email', 'Password']` +
+          `.every(s => document.body.innerText.includes(s))`,
+      ),
+    );
+    await click("Continue without an account");
+    check(
+      "guest escape hatch returns to the form",
+      await evaluate(`document.body.innerText.includes('Get prediction')`),
+    );
+
+    // Age entry has two modes, and the date one is three sheet pickers rather
+    // than a native date picker. Switching to it should resolve a real age.
+    await click("Date of birth");
+    check(
+      "date-of-birth mode resolves an age",
+      await evaluate(`/That is .*(y|\\d)/.test(document.body.innerText)`),
+      (await evaluate(`(document.body.innerText.match(/That is [^\\n]*/) || [])[0]`)) ?? "no echo",
+    );
+    await click("Age");
+    check(
+      "switching back restores the years and months fields",
+      await evaluate(
+        `document.body.innerText.includes('Years') &&` +
+          ` document.body.innerText.includes('Months')`,
+      ),
+    );
+
+    // Quick target-age buttons write through to the age field. (The Select
+    // primitive is no longer on this screen — it now picks a saved child, which
+    // only exists when signed in, so it is not covered here.)
+    await click("16");
+    check(
+      "quick target-age button sets the field",
+      await evaluate(
+        `[...document.querySelectorAll('input')].some(i => i.value === '16')`,
+      ),
+    );
 
     // OptionGrid: assert the rendered state, since react-native-web does not
     // emit aria-checked for a Pressable with accessibilityRole="checkbox".
@@ -320,11 +384,33 @@ async function main() {
       `tick ${gridBefore?.tick} -> ${gridAfter?.tick}, bg ${gridAfter?.bg}`,
     );
 
-    // --- the real API round-trip ---
+    // Start recording requests before the first submit, so the rejected one is
+    // measured by what it did NOT send.
     await evaluate(
       `window.__net = []; (() => { const f = window.fetch;` +
         ` window.fetch = (...a) => { window.__net.push(String(a[0])); return f(...a); }; })()`,
     );
+
+    /**
+     * The bounds `<input type="number" min max>` enforces for the web, which the
+     * native form has to check itself. Worth a check here precisely because it
+     * is hand-written on this platform and free on the other.
+     */
+    await setInput("110", "900");
+    await click("Get prediction");
+    const rejected = await evaluate(`({
+      message: document.body.innerText.includes('Height must be between'),
+      requests: window.__net.filter(u => u.includes('/api/v1/predict')).length,
+      stillOnForm: document.body.innerText.includes('Get prediction'),
+    })`);
+    check(
+      "out-of-range height is rejected before any request",
+      rejected.message && rejected.requests === 0 && rejected.stillOnForm,
+      `error shown ${rejected.message}, ${rejected.requests} predict calls`,
+    );
+    await setInput("900", "110");
+
+    // --- the real API round-trip, through to the results screen ---
     await click("Get prediction");
     const predicted = await (async () => {
       const deadline = Date.now() + 30_000;
@@ -349,6 +435,9 @@ async function main() {
     check("calls the prediction API",
       predicted.requests.some((u) => u.includes("/api/v1/predict")),
       predicted.requests.join(", ") || "no requests seen");
+    check("navigates to the results screen",
+      await evaluate(`location.pathname === '/results'`),
+      await evaluate(`location.pathname`));
     check("renders a predicted height", !!predicted.height,
       predicted.height ? `${predicted.height} cm` : "none");
     check("growth chart draws its projection", predicted.paths >= 1,

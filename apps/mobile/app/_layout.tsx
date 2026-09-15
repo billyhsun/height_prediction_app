@@ -8,6 +8,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { configureApiBaseUrl, configureApiHeaders, tokens } from "@notch/core";
 
+import { LocaleProvider, useTranslations } from "@/components/i18n";
+
 /**
  * Clerk needs somewhere durable to keep the session. On the web that is a
  * cookie; here it is the iOS keychain via expo-secure-store, so a user stays
@@ -82,6 +84,42 @@ function ApiBridge({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * The navigator, split out because it reads translated titles and so has to sit
+ * inside LocaleProvider.
+ *
+ * Headers stay off by default: every screen already opens with its own brand and
+ * title block, so a native header would repeat it — and with nothing set,
+ * expo-router falls back to the route's filename, which is how "index" ended up
+ * on screen. The two auth routes opt in, because a pushed screen with no header
+ * has no visible way back.
+ */
+function AppStack() {
+  const t = useTranslations();
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: tokens.semantic.surface },
+        headerTitleStyle: { color: tokens.semantic.textPrimary },
+        headerTintColor: tokens.color.primary[700],
+        contentStyle: { backgroundColor: tokens.semantic.canvas },
+      }}
+    >
+      <Stack.Screen
+        name="sign-in"
+        options={{ headerShown: true, title: t.header.signIn }}
+      />
+      <Stack.Screen
+        name="sign-up"
+        options={{ headerShown: true, title: t.header.signUp }}
+      />
+    </Stack>
+  );
+}
+
 export default function RootLayout() {
   const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -95,25 +133,12 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-        <ApiBridge>
-          <StatusBar style="dark" />
-          {/*
-            Header off by default. Every screen already opens with its own brand
-            and title block, so a native header would repeat it — and with nothing
-            set, expo-router falls back to the route's filename, which is how
-            "index" ended up on screen. Screens that want a header (a pushed
-            detail view with a back button) opt in via their own Stack.Screen.
-          */}
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              headerShadowVisible: false,
-              headerStyle: { backgroundColor: tokens.semantic.surface },
-              headerTitleStyle: { color: tokens.semantic.textPrimary },
-              contentStyle: { backgroundColor: tokens.semantic.canvas },
-            }}
-          />
-        </ApiBridge>
+        <LocaleProvider>
+          <ApiBridge>
+            <StatusBar style="dark" />
+            <AppStack />
+          </ApiBridge>
+        </LocaleProvider>
       </ClerkProvider>
     </SafeAreaProvider>
   );

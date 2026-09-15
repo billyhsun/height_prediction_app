@@ -33,7 +33,7 @@ import {
   ETHNICITY_VALUES,
   type EthnicityValue,
 } from "@notch/core";
-import { MAX_MODEL_CURRENT_AGE, MAX_TARGET_AGE } from "@notch/core";
+import { CHILD_LIMITS, MAX_MODEL_CURRENT_AGE, MAX_TARGET_AGE } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
 
 import { displayError } from "@notch/core";
@@ -669,8 +669,8 @@ export function PredictionForm() {
                 <Input
                   id={id}
                   type="number"
-                  min={40}
-                  max={220}
+                  min={CHILD_LIMITS.heightCm.min}
+                  max={CHILD_LIMITS.heightCm.max}
                   step={0.1}
                   required
                   value={heightCm}
@@ -683,8 +683,8 @@ export function PredictionForm() {
                 <Input
                   id={id}
                   type="number"
-                  min={2}
-                  max={150}
+                  min={CHILD_LIMITS.weightKg.min}
+                  max={CHILD_LIMITS.weightKg.max}
                   step={0.1}
                   required
                   value={weightKg}

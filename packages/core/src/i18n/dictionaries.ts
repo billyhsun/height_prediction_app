@@ -247,6 +247,19 @@ const en = {
     midParental: (cm: string, model: string) =>
       `Mid-parental height: ${cm} cm · Model: ${model}`,
     llmUnavailable: "LLM prediction unavailable",
+    /** How the current height compares with peers of the same age and sex.
+     *  None of the three bands is a finding — see StatureBand in api.ts. */
+    statureLabel: "Height for age",
+    stature: {
+      below_average: "Below average",
+      average: "Average",
+      above_average: "Above average",
+    },
+    statureCaveat:
+      "Compared with other children the same age and sex. Healthy children vary widely.",
+    guidanceHeading: "Suggestions",
+    guidanceDisclaimer:
+      "General information only. Speak to your pediatrician about any concerns.",
     /** Only shown if the model returns no reasoning text at all. */
     llmFallbackReasoning:
       "Estimate based on child measurements and parent heights.",
@@ -551,6 +564,15 @@ const zhCN: Dictionary = {
     midParental: (cm: string, model: string) =>
       `父母平均身高：${cm} 厘米 · 模型：${model}`,
     llmUnavailable: "大语言模型预测不可用",
+    statureLabel: "同龄身高对比",
+    stature: {
+      below_average: "低于平均",
+      average: "处于平均水平",
+      above_average: "高于平均",
+    },
+    statureCaveat: "与同龄同性别的孩子相比。健康儿童之间差异很大。",
+    guidanceHeading: "建议",
+    guidanceDisclaimer: "仅供一般参考。如有疑虑，请咨询儿科医生。",
     llmFallbackReasoning: "该估算基于孩子的身体数据和父母身高。",
     addParentHeightsHint:
       "在表单中填写父母身高，即可获得独立的大语言模型身高预测。",

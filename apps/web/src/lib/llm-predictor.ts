@@ -17,6 +17,7 @@ import {
 } from "@notch/core";
 import { dictionaries } from "@notch/core";
 import { sanitizeEthnicities } from "@notch/core";
+import { isStatureBand, type StatureBand } from "@notch/core";
 
 /**
  * Overridable so the endpoint can be pointed at an Azure OpenAI deployment, a
@@ -60,6 +61,11 @@ export type LlmPredictionResult = {
    *  reader can tell, since the wording is not re-generated when the UI language
    *  changes later. */
   reasoning_locale: Locale;
+  /** Undefined when the model returned nothing recognisable. */
+  stature_band?: StatureBand;
+  /** Empty when the child's height is unremarkable for their age, which is the
+   *  common case — the field exists to be absent most of the time. */
+  guidance?: string;
 };
 
 export class LlmError extends Error {
@@ -133,10 +139,21 @@ Parental build, where given, is a secondary signal only: treat mid-parental heig
 Return JSON only with:
 - pred_height_cm: predicted height in cm at target age (number)
 - reasoning: 1-2 sentences explaining the estimate (string)
+- stature_band: how the child's CURRENT height of ${inputs.height_cm} cm compares with other ${sexLabel} children aged ${inputs.current_age_years}, against a standard growth reference (WHO or CDC). Exactly one of "below_average", "average", or "above_average" (string). Use "average" for roughly the middle 80% of children — that is the usual answer. Judge current height for current age only; do not use the predicted adult height.
+- guidance: 1-2 sentences of general, everyday suggestions (string)
 
-Write the "reasoning" value in ${language}. The JSON keys stay exactly as named
-above in English; only the reasoning text is translated. Use units and number
-formatting natural to ${language}.
+Rules for "guidance":
+- Return an empty string when stature_band is "average". Most children need nothing here.
+- Otherwise keep it general and non-clinical: sleep, balanced nutrition, physical activity.
+- Where the child is well outside the usual range, say that a pediatrician can check whether the pattern is worth following up. Growth varies enormously between healthy children, so say so.
+- Never diagnose, never name a condition, and never suggest medication, supplements, hormones, or any treatment.
+- Being above or below average is not in itself a problem. Do not imply otherwise, and do not alarm the reader.
+
+Write the "reasoning" and "guidance" values in ${language}. The JSON keys stay
+exactly as named above in English, and "stature_band" keeps one of its three
+English values — those are identifiers, not prose, and the app supplies its own
+translated label for the band. Only the reader-facing text is translated. Use
+units and number formatting natural to ${language}.
 `;
 }
 
@@ -205,7 +222,12 @@ export async function predictHeightLlm(
     throw new LlmError("The LLM returned an empty response", 502);
   }
 
-  let parsed: { pred_height_cm?: unknown; reasoning?: unknown };
+  let parsed: {
+    pred_height_cm?: unknown;
+    reasoning?: unknown;
+    stature_band?: unknown;
+    guidance?: unknown;
+  };
   try {
     parsed = JSON.parse(content);
   } catch {
@@ -218,6 +240,22 @@ export async function predictHeightLlm(
   }
 
   const reasoning = String(parsed.reasoning ?? "").trim();
+
+  // Dropped rather than defaulted when unrecognised: showing no band is honest,
+  // whereas defaulting to "average" would state something the model did not say.
+  const statureBand = isStatureBand(parsed.stature_band)
+    ? parsed.stature_band
+    : undefined;
+
+  // Guidance rides on the band and never appears without one: suppressed for an
+  // average child even if the model wrote something anyway, and suppressed when
+  // the band was unusable, since advice with no stated assessment behind it is
+  // exactly what this feature should not produce.
+  const guidanceText = String(parsed.guidance ?? "").trim();
+  const guidance =
+    guidanceText && statureBand && statureBand !== "average"
+      ? guidanceText
+      : undefined;
 
   const locale = inputs.locale ?? DEFAULT_LOCALE;
 
@@ -232,5 +270,7 @@ export async function predictHeightLlm(
     model_version: "llm-v1",
     model,
     reasoning_locale: locale,
+    stature_band: statureBand,
+    guidance,
   };
 }

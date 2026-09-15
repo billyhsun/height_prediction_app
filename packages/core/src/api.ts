@@ -22,6 +22,29 @@ export type PredictResponse = {
   model_version: string;
 };
 
+/**
+ * How the child's CURRENT height compares with others of the same age and sex.
+ *
+ * Three coarse bands rather than a percentile on purpose. The figure comes from
+ * an LLM reading a growth reference, not from a clinical calculation against
+ * LMS tables, and a number like "34th percentile" would claim a precision that
+ * origin cannot support. A band is what the estimate can actually carry.
+ *
+ * None of the three is a finding: most children are not exactly average, and
+ * both tails are ordinary. The UI colours them accordingly.
+ */
+export type StatureBand = "below_average" | "average" | "above_average";
+
+const STATURE_BANDS: readonly string[] = [
+  "below_average",
+  "average",
+  "above_average",
+];
+
+export function isStatureBand(value: unknown): value is StatureBand {
+  return typeof value === "string" && STATURE_BANDS.includes(value);
+}
+
 export type LlmPredictResponse = {
   pred_height_cm: number;
   reasoning: string;
@@ -32,6 +55,12 @@ export type LlmPredictResponse = {
   /** Language the reasoning was generated in. Absent on predictions saved
    *  before the LLM was made locale-aware. */
   reasoning_locale?: string;
+  /** Absent when the model did not return a usable band, and on any prediction
+   *  reloaded from the account — there is no column for it yet. */
+  stature_band?: StatureBand;
+  /** Non-clinical suggestions, present only when the model judged the child's
+   *  height far enough from average to warrant them. Empty otherwise. */
+  guidance?: string;
 };
 
 export function calculateBmi(weightKg: number, heightCm: number): number {

@@ -159,6 +159,45 @@ export function PredictionResults({
               <p className="text-sm leading-relaxed text-text-primary">
                 {llmResult.reasoning}
               </p>
+
+              {/* Neither tail is coloured as a problem: most children are not
+                  exactly average, and both ends of the range are ordinary. */}
+              {llmResult.stature_band && (
+                <div className="flex flex-col gap-1.5 border-t border-accent-200 pt-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium tracking-wide text-text-secondary uppercase">
+                      {t.results.statureLabel}
+                    </span>
+                    <Badge
+                      tone={
+                        llmResult.stature_band === "average"
+                          ? "neutral"
+                          : "accent"
+                      }
+                    >
+                      {t.results.stature[llmResult.stature_band]}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-text-secondary">
+                    {t.results.statureCaveat}
+                  </p>
+                </div>
+              )}
+
+              {llmResult.guidance && (
+                <div className="flex flex-col gap-1.5 border-t border-accent-200 pt-4">
+                  <h3 className="text-xs font-semibold tracking-wide text-text-secondary uppercase">
+                    {t.results.guidanceHeading}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-text-primary">
+                    {llmResult.guidance}
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    {t.results.guidanceDisclaimer}
+                  </p>
+                </div>
+              )}
+
               <p className="text-xs text-text-muted">
                 {t.results.midParental(
                   llmResult.mid_parental_height_cm.toFixed(1),

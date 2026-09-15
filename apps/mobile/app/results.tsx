@@ -194,6 +194,36 @@ export default function ResultsScreen() {
               {llmResult.reasoning || t.results.llmFallbackReasoning}
             </Text>
 
+            {/* Neither tail is coloured as a problem: most children are not
+                exactly average, and both ends of the range are ordinary. */}
+            {llmResult.stature_band ? (
+              <View style={styles.subSection}>
+                <View style={styles.statureRow}>
+                  <Text style={styles.inputsHeading}>
+                    {t.results.statureLabel}
+                  </Text>
+                  <Badge
+                    tone={
+                      llmResult.stature_band === "average" ? "neutral" : "accent"
+                    }
+                  >
+                    {t.results.stature[llmResult.stature_band]}
+                  </Badge>
+                </View>
+                <Text style={styles.pairLabel}>{t.results.statureCaveat}</Text>
+              </View>
+            ) : null}
+
+            {llmResult.guidance ? (
+              <View style={styles.subSection}>
+                <Text style={styles.inputsHeading}>
+                  {t.results.guidanceHeading}
+                </Text>
+                <Text style={styles.reasoning}>{llmResult.guidance}</Text>
+                <Text style={styles.muted}>{t.results.guidanceDisclaimer}</Text>
+              </View>
+            ) : null}
+
             <Text style={styles.muted}>
               {t.results.midParental(
                 llmResult.mid_parental_height_cm.toFixed(1),
@@ -218,7 +248,9 @@ export default function ResultsScreen() {
       ) : null}
 
       <Card tone="muted" padding="md">
-        <Text style={styles.inputsHeading}>{t.results.inputsUsed}</Text>
+        <Text style={[styles.inputsHeading, styles.inputsHeadingSpaced]}>
+          {t.results.inputsUsed}
+        </Text>
         <View style={styles.inputsGrid}>
           {inputRows.map((row) => (
             <View key={row.label} style={styles.inputsCell}>
@@ -297,6 +329,18 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   muted: { fontSize: fontSize.xs, color: theme.semantic.textMuted },
+  subSection: {
+    gap: theme.space[1] + 2,
+    borderTopWidth: 1,
+    borderTopColor: theme.color.accent[200],
+    paddingTop: theme.space[4],
+  },
+  statureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: theme.space[2],
+  },
   reasoning: {
     fontSize: fontSize.sm,
     lineHeight: 21,
@@ -313,8 +357,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: "uppercase",
     color: theme.semantic.textSecondary,
-    marginBottom: theme.space[3],
   },
+  // Only the inputs grid wants the gap below its heading; the guidance block
+  // gets its spacing from the container's `gap`.
+  inputsHeadingSpaced: { marginBottom: theme.space[3] },
   inputsGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: theme.space[3] },
   // Two per row, matching the web's grid-cols-2.
   inputsCell: { width: "50%", gap: 2, paddingRight: theme.space[4] },

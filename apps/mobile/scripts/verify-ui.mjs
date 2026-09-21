@@ -27,7 +27,10 @@ import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const MOBILE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const API_ORIGIN = "http://localhost:3000";
+// Defaults to the local dev server; point it at a deployment to check the
+// native client against the real backend:
+//   VERIFY_API_ORIGIN=https://… npm run verify:ui --workspace @notch/mobile
+const API_ORIGIN = process.env.VERIFY_API_ORIGIN ?? "http://localhost:3000";
 const PROXY_PORT = 5050;
 const CDP_PORT = 9222;
 const VIEWPORT = { width: 393, height: 852, deviceScaleFactor: 2, mobile: true };
@@ -87,7 +90,7 @@ function startProxy(distDir) {
       try {
         const upstream = await fetch(API_ORIGIN + req.url, {
           method: req.method,
-          headers: { ...req.headers, host: "localhost:3000" },
+          headers: { ...req.headers, host: new URL(API_ORIGIN).host },
           body: ["GET", "HEAD"].includes(req.method)
             ? undefined
             : Buffer.concat(chunks),
@@ -594,11 +597,16 @@ async function main() {
 
     // The explanation arrives after the estimate and must never gate it.
     const explained = await (async () => {
-      const deadline = Date.now() + 25_000;
+      // The card's header renders while the request is still in flight, so
+      // waiting for it alone reads the loading state — which is fast enough to
+      // pass against a stub and slow enough to fail against a real model.
+      const deadline = Date.now() + 90_000;
       while (Date.now() < deadline) {
         const text = await evaluate(`document.body.innerText`);
-        if (/what this means/i.test(text)) return text;
-        await sleep(800);
+        if (/what this means/i.test(text) && !/Writing an explanation/i.test(text)) {
+          return text;
+        }
+        await sleep(1500);
       }
       return await evaluate(`document.body.innerText`);
     })();

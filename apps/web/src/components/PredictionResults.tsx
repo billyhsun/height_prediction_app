@@ -186,10 +186,23 @@ export function PredictionResults({
                   }
                 : null
             }
+            // Converted like every other height on this screen, so the band
+            // lines up with the axis whichever unit is showing.
+            predictedRange={
+              result.intervals?.height
+                ? {
+                    low: heightInDisplayUnit(result.intervals.height.low, units),
+                    high: heightInDisplayUnit(result.intervals.height.high, units),
+                  }
+                : null
+            }
             sex={inputs.sex}
             labels={{
               ...t.results.chart,
               heightAxis: t.results.chart.heightAxis(heightUnitLabel(units, t)),
+              range: result.intervals?.height
+                ? t.results.predictedRangeLabel(result.intervals.height.confidence)
+                : undefined,
             }}
           />
         </Card>

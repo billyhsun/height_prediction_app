@@ -525,6 +525,22 @@ async function main() {
       range ?? "backend sent no intervals",
     );
 
+    // The shaded interval is a filled path; every other mark in the chart is a
+    // stroked line or circle, so a fill-opacity attribute identifies it.
+    const band = await evaluate(`(() => {
+      const chart = [...document.querySelectorAll('svg')]
+        .find(s => s.getBoundingClientRect().width > 100);
+      if (!chart) return null;
+      const filled = [...chart.querySelectorAll('path')]
+        .filter(p => p.getAttribute('fill-opacity') || /fill-opacity/.test(p.getAttribute('style') || ''));
+      return filled.length;
+    })()`);
+    check(
+      range ? "growth chart shades the interval" : "no interval to shade (skipped)",
+      range ? band >= 1 : true,
+      `${band ?? 0} filled path(s)`,
+    );
+
     check("growth chart draws its projection", predicted.paths >= 1,
       `${predicted.paths} paths`);
     check("growth chart draws both markers", predicted.circles >= 2,

@@ -109,6 +109,31 @@ export function linePath(points: ChartPoint[], scales: Scales): string {
 }
 
 /**
+ * A closed path spanning two curves, for shading the space between them.
+ *
+ * The upper edge is drawn forward and the lower returned, so the fill is the
+ * region between. Used for the prediction interval, whose two edges are the
+ * same growth curve anchored to different endpoints — which is why the band
+ * pinches to nothing at the measurement and opens only towards the target age.
+ * That shape is the honest one: the model reports an interval at the horizon
+ * it was asked about, not a calibrated width at every intermediate age.
+ */
+export function bandPath(
+  upper: ChartPoint[],
+  lower: ChartPoint[],
+  scales: Scales,
+): string {
+  if (upper.length === 0 || lower.length === 0) return "";
+
+  const at = (p: ChartPoint) =>
+    `${scales.x(p.ageYears).toFixed(2)} ${scales.y(p.heightCm).toFixed(2)}`;
+
+  const forward = upper.map((p, i) => `${i === 0 ? "M" : "L"} ${at(p)}`);
+  const back = [...lower].reverse().map((p) => `L ${at(p)}`);
+  return [...forward, ...back, "Z"].join(" ");
+}
+
+/**
  * Collapses observed points to one per age, keeping the most recent.
  *
  * Several predictions are often run for the same child at the same age; plotting

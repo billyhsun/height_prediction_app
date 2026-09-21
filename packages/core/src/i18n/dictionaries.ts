@@ -187,6 +187,11 @@ const en = {
       "Please enter both mother and father heights, or leave both blank.",
     llmFailed: "LLM prediction failed",
     somethingWentWrong: "Something went wrong",
+    /** Shown for any 5xx from the prediction backend. Deliberately says what
+     *  the user should do rather than what broke — the upstream's own message
+     *  names internals and is not translated. */
+    serviceUnavailable:
+      "The prediction service is temporarily unavailable. Please try again in a few minutes.",
     calculating: "Calculating…",
     submit: "Get prediction",
   },
@@ -521,6 +526,7 @@ const zhCN: Dictionary = {
     bothParentHeightsRequired: "请同时填写父亲和母亲的身高，或两项都留空。",
     llmFailed: "大语言模型预测失败",
     somethingWentWrong: "出现错误",
+    serviceUnavailable: "预测服务暂时不可用，请稍后再试。",
     calculating: "计算中…",
     submit: "获取预测",
   },

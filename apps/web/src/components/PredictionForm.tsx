@@ -37,7 +37,7 @@ import { CHILD_LIMITS, MAX_MODEL_CURRENT_AGE, MAX_TARGET_AGE } from "@notch/core
 import { useI18n } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
 
-import { displayError, formatHeight, formatWeight } from "@notch/core";
+import { displayPredictionError, formatHeight, formatWeight } from "@notch/core";
 import {
   Badge,
   Button,
@@ -442,7 +442,12 @@ export function PredictionForm() {
         try {
           llmResult = await predictLlm(inputs);
         } catch (err) {
-          llmError = err instanceof Error ? err.message : t.form.llmFailed;
+          // An LLM outage reads the same way to a user as a prediction one,
+          // and its upstream text is just as unhelpful.
+          llmError = displayPredictionError(err, {
+            unavailable: t.form.serviceUnavailable,
+            fallback: t.form.llmFailed,
+          });
         }
       }
 
@@ -468,7 +473,12 @@ export function PredictionForm() {
 
       router.push(`/results?${inputsToSearchParams(inputs)}`);
     } catch (err) {
-      setError(displayError(err, t.form.somethingWentWrong));
+      setError(
+        displayPredictionError(err, {
+          unavailable: t.form.serviceUnavailable,
+          fallback: t.form.somethingWentWrong,
+        }),
+      );
     } finally {
       setLoading(false);
     }

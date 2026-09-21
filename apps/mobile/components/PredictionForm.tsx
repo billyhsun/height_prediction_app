@@ -15,7 +15,7 @@ import {
   ageYearsFromDateOfBirth,
   ageYearsFromYearsMonths,
   calculateBmi,
-  displayError,
+  displayPredictionError,
   fetchChildren,
   formatHeight,
   formatWeight,
@@ -436,7 +436,12 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
         try {
           llmResult = await predictLlm(inputs);
         } catch (err) {
-          llmError = err instanceof Error ? err.message : t.form.llmFailed;
+          // An LLM outage reads the same way to a user as a prediction one,
+          // and its upstream text is just as unhelpful.
+          llmError = displayPredictionError(err, {
+            unavailable: t.form.serviceUnavailable,
+            fallback: t.form.llmFailed,
+          });
         }
       }
 
@@ -464,7 +469,12 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
       // web cannot rely on because its results page is also reachable by URL.
       router.push("/results");
     } catch (err) {
-      setError(displayError(err, t.form.somethingWentWrong));
+      setError(
+        displayPredictionError(err, {
+          unavailable: t.form.serviceUnavailable,
+          fallback: t.form.somethingWentWrong,
+        }),
+      );
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 import { apiFetch } from "./http";
+import { GenericRequestError } from "./request-error";
 export type PredictRequest = {
   sex: number;
   height_cm: number;
@@ -91,6 +92,30 @@ async function parseError(res: Response, fallback: string): Promise<string> {
   return fallback;
 }
 
+/**
+ * Turns a failed prediction response into the right kind of error.
+ *
+ * A 4xx is about this request — a height out of range, a target age below the
+ * current one — and its message was written by our own route handler for the
+ * user to read, so it is shown verbatim.
+ *
+ * A 5xx is an outage. The message there comes from the upstream survey
+ * platform, which collapses every internal fault to one English sentence
+ * ("There was an error while calculating the survey results") that means
+ * nothing to a parent, names our internals, and appears untranslated in a
+ * Chinese UI. GenericRequestError exists for exactly this: the message survives
+ * for logs while the UI substitutes its own localized text.
+ */
+async function predictionError(
+  res: Response,
+  fallback: string,
+): Promise<Error> {
+  const message = await parseError(res, fallback);
+  return res.status >= 500
+    ? new GenericRequestError(message, res.status)
+    : new Error(message);
+}
+
 export async function predict(data: PredictRequest): Promise<PredictResponse> {
   const res = await apiFetch("/api/v1/predict", {
     method: "POST",
@@ -105,7 +130,7 @@ export async function predict(data: PredictRequest): Promise<PredictResponse> {
   });
 
   if (!res.ok) {
-    throw new Error(await parseError(res, "Prediction failed. Is the API running?"));
+    throw await predictionError(res, "Prediction failed. Is the API running?");
   }
 
   return res.json();
@@ -121,7 +146,7 @@ export async function predictLlm(
   });
 
   if (!res.ok) {
-    throw new Error(await parseError(res, "LLM prediction failed"));
+    throw await predictionError(res, "LLM prediction failed");
   }
 
   return res.json();

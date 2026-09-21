@@ -64,6 +64,7 @@ curl -X POST http://localhost:8000/api/v1/predict/llm \
 - [System design](docs/design.md) — full architecture and roadmap
 - [Prediction backend](docs/prediction-api.md) — the ML endpoint contract and auth
 - [Auth & profiles setup](docs/auth-setup.md) — Clerk, Postgres, guest vs signed-in
+- [Model retraining plan](docs/model-retraining.md) — why the backend is failing, and what a retrain has to fix
 
 ## Disclaimer
 

@@ -185,6 +185,39 @@ async function main() {
   log("checking the API is up...");
   await waitForHttp(API_ORIGIN, 15_000, "web app on :3000 (npm run dev --workspace web)");
 
+  /*
+   * A reachable web app is not a working one. When the ML backend cannot serve
+   * a prediction the UI still mounts, still navigates and still validates, so
+   * the suite fails six checks in a row at the very end and none of them says
+   * why. Asking for one real prediction up front turns that into a single line
+   * before anything else runs.
+   */
+  log("checking the prediction backend can answer...");
+  const probe = await fetch(`${API_ORIGIN}/api/v1/predict`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sex: 1,
+      height_cm: 110,
+      weight_kg: 20,
+      current_age_years: 5,
+      target_age_years: 18,
+    }),
+  }).catch((error) => {
+    throw new Error(`could not reach ${API_ORIGIN}/api/v1/predict — ${error}`);
+  });
+
+  if (!probe.ok) {
+    const detail = await probe.json().catch(() => null);
+    throw new Error(
+      `the prediction backend is not answering (HTTP ${probe.status}: ` +
+        `${detail?.detail ?? "no detail"}).\n` +
+        `  Every UI check below depends on it, so the run would fail for a ` +
+        `reason that has nothing to do with the UI.\n` +
+        `  Check it with: npm run health --workspace web`,
+    );
+  }
+
   // Empty base URL makes @notch/core use relative URLs, so the proxy's single
   // origin serves both the bundle and the API.
   log("exporting the web bundle...");

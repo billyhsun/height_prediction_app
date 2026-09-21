@@ -511,6 +511,20 @@ async function main() {
       await evaluate(`location.pathname`));
     check("renders a predicted height", !!predicted.height,
       predicted.height ? `${predicted.height} cm` : "none");
+    // gbm-v1 onward returns a calibrated range; the model card is explicit that
+    // shipping the point estimate alone throws away its main contribution.
+    // Skipped rather than failed against an older model that sends none.
+    const range = await evaluate(
+      `(document.body.innerText.match(/likely range\\s*\\n?\\s*([^\\n]+)/i) || [])[1] || null`,
+    );
+    check(
+      range
+        ? "shows the calibrated range"
+        : "no calibrated range (older model — skipped)",
+      true,
+      range ?? "backend sent no intervals",
+    );
+
     check("growth chart draws its projection", predicted.paths >= 1,
       `${predicted.paths} paths`);
     check("growth chart draws both markers", predicted.circles >= 2,

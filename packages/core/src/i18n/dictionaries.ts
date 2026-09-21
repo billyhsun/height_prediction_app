@@ -268,11 +268,16 @@ const en = {
       `Based on a ${age}-year-old ${sexNoun} measuring ${height} and ${weight}.`,
     savedToAccount: "Saved to your account",
     viewHistory: "View history",
-    mlModel: "ML model (SVR)",
+    mlModel: "ML model",
     predictedHeight: "Predicted height",
     predictedWeight: "Predicted weight",
     predictedBmi: "Predicted BMI",
     modelLabel: (model: string) => `Model: ${model}`,
+    /** The calibrated range beside a prediction. `confidence` arrives as a
+     *  fraction from the model and is rendered as a percentage here. */
+    predictedRange: (low: string, high: string) => `${low} – ${high}`,
+    predictedRangeLabel: (confidence: number) =>
+      `${Math.round(confidence * 100)}% likely range`,
     llmPrediction: "LLM prediction",
     midParental: (height: string, model: string) =>
       `Mid-parental height: ${height} · Model: ${model}`,
@@ -598,11 +603,14 @@ const zhCN: Dictionary = {
       `基于一名 ${age} 岁${sexNoun}，身高 ${height}，体重 ${weight}。`,
     savedToAccount: "已保存到您的账户",
     viewHistory: "查看历史记录",
-    mlModel: "机器学习模型（SVR）",
+    mlModel: "机器学习模型",
     predictedHeight: "预测身高",
     predictedWeight: "预测体重",
     predictedBmi: "预测 BMI",
     modelLabel: (model: string) => `模型：${model}`,
+    predictedRange: (low: string, high: string) => `${low} – ${high}`,
+    predictedRangeLabel: (confidence: number) =>
+      `${Math.round(confidence * 100)}% 可能区间`,
     llmPrediction: "大语言模型预测",
     midParental: (height: string, model: string) =>
       `父母平均身高：${height} · 模型：${model}`,

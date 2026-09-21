@@ -1,5 +1,6 @@
 import {
   isWithinModelDomain,
+  type PredictionInterval,
   MAX_MODEL_CURRENT_AGE,
   MAX_TARGET_AGE,
 } from "@notch/core";
@@ -49,6 +50,7 @@ export type PredictionResult = {
   pred_bmi: number;
   target_age_years: number;
   model_version: string;
+  intervals?: { height?: PredictionInterval; weight?: PredictionInterval };
 };
 
 export class UpstreamError extends Error {
@@ -176,6 +178,27 @@ function messageFromBody(body: unknown, fallback: string): string {
   return fallback;
 }
 
+/** Narrows the backend's `prediction_intervals` to what we are willing to show. */
+function readIntervals(
+  raw: unknown,
+): { height?: PredictionInterval; weight?: PredictionInterval } | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+
+  const one = (value: unknown): PredictionInterval | undefined => {
+    if (typeof value !== "object" || value === null) return undefined;
+    const { low, high, confidence } = value as Record<string, unknown>;
+    const nums = [low, high, confidence].map(Number);
+    // A range that is empty or inverted is not worth showing, and a missing
+    // confidence would leave the label unable to say what the range means.
+    if (!nums.every(Number.isFinite) || nums[0] >= nums[1]) return undefined;
+    return { low: nums[0], high: nums[1], confidence: nums[2] };
+  };
+
+  const { height, weight } = raw as Record<string, unknown>;
+  const parsed = { height: one(height), weight: one(weight) };
+  return parsed.height || parsed.weight ? parsed : undefined;
+}
+
 export async function predict(
   inputs: PredictionInputs,
 ): Promise<PredictionResult> {
@@ -255,6 +278,12 @@ export async function predict(
     pred_weight_kg: weight,
     pred_bmi: bmi,
     target_age_years: inputs.target_age_years,
+    // Calibrated ranges, present from gbm-v1 onward. Read defensively rather
+    // than trusted: an older backend omits the field entirely, and the model
+    // card warns the longest horizons under-cover their nominal confidence.
+    ...(readIntervals(record.prediction_intervals)
+      ? { intervals: readIntervals(record.prediction_intervals) }
+      : {}),
     // The backend now reports which model produced the prediction, so prefer
     // that over local configuration — it cannot drift when the model changes.
     // PREDICTION_MODEL_VERSION remains a fallback for older deployments that

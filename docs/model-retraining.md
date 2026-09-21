@@ -168,30 +168,66 @@ The §3 defects are fixed. Verified by running the backend's own
 `MODEL_VERSION = "gbm-v1"` and `MODEL_SUBDIR = "gbm-v1"`, and the artifacts are
 committed under `backend/surveys/static/survey_files/child_bmi/gbm-v1/`.
 
-### Deploy: NOT done — this is why production is still failing
+### Deploy: done. The image is the problem
 
-Production returns 500 because the Cloud Run service `kangleelab-legacy` is
-still running a revision from before that merge. Nothing in the repo deploys it:
-both GitHub workflows are CI only (`on: push: branches: [main]` running lint and
-tests), and there is no Cloud Build config, no Terraform, and no deploy job.
-The deploy is manual, from `backend/Dockerfile.legacy`.
+**Correction.** An earlier revision of this section said the deploy had not
+happened. That was wrong, and the test that settles it is cheap: the auth0 merge
+at main's tip (`830412b`) added `/surveys/me` and
+`/surveys/participants/me/responses`. Production answers both with **401**, not
+404 — the routes exist. Production is running main, gbm-v1 and all.
 
-To ship it:
+It still fails because **the container it runs in cannot load the model.**
 
-```bash
-# from a checkout of lab-surveys at origin/main, authenticated to the project
-python backend/surveys/utils/child_bmi/verify_model.py   # gate: must exit 0
-gcloud run deploy kangleelab-legacy \
-  --source backend --region northamerica-northeast2
+`Dockerfile.legacy`, which builds the `kangleelab-legacy` service, does not
+install `backend/requirements.txt`. It installs
+`backend/docker/legacy/requirements-legacy.txt`, and that file pins:
+
+```
+scikit-learn==1.0.2
 ```
 
-then confirm from this repo:
+gbm-v1 was trained on **1.4.2**. Loading its artifacts under 1.0.2 fails:
 
-```bash
-npm run health --workspace web -- https://<deployment>
+```
+TypeError: __generator_ctor() takes from 0 to 1 positional arguments but 2 were given
 ```
 
-which should report `model gbm-v1` instead of the current HTTP 502.
+Verified directly, in a virtualenv built to the legacy pin (scikit-learn 1.0.2,
+numpy 1.23.0, pandas 1.4.3) against the artifacts as committed on main:
+
+| artifact | sklearn 1.0.2 (production) | sklearn 1.4.2 |
+|---|---|---|
+| `child_bmi/gbm-v1/*` (all three) | **TypeError** | **loads** |
+| `child_bmi/*.bin` (old svr) | loads | loads |
+| `nafld/nafld_models_lr.bin` | loads | loads |
+| `dass/*`, `mmpi/*` | needs xgboost | needs xgboost |
+
+This accounts for every symptom: it throws at load, before any input is read,
+which is why valid data and `data: {}` fail identically in 250 ms, and why
+`sample_survey` — which loads no model — is fine.
+
+### Two ways to fix it
+
+The repo already has a second image for exactly this. `Dockerfile.modern`
+("Modern ML environment: sklearn 1.4.2") differs from the legacy one by **one
+line** — `scikit-learn==1.4.2` against `1.0.2`. numpy, pandas, scipy, xgboost
+0.81 and Python 3.10 are identical in both.
+
+**A. Serve child_bmi from the modern image.** What the split is for: child_bmi
+stopped being a legacy-sklearn survey the moment gbm-v1 shipped. Needs a modern
+service that serves it, and `PREDICTION_API_URL` in the Notch app repointed at
+it. No change to any other survey.
+
+**B. Bump `requirements-legacy.txt` to `scikit-learn==1.4.2`.** One line, and it
+makes the two images identical — at which point the legacy/modern split has no
+remaining purpose. The evidence is encouraging: the old child_bmi svr models and
+nafld load under both pins, and the modern image already pairs xgboost 0.81 with
+sklearn 1.4.2 in production. The untested risk is DASS and MMPI, whose pickles
+need xgboost and so could not be loaded in the replica here. **Load-test those
+two under 1.4.2 before taking this option** — `verify_model.py` covers only
+child_bmi.
+
+A is the lower-risk change and the one this architecture was designed for.
 
 ### The age cap is now a product decision, not a guard
 

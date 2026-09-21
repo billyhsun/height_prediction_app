@@ -1,4 +1,5 @@
 import { apiFetch } from "./http";
+import { GenericRequestError } from "./request-error";
 export type PredictRequest = {
   sex: number;
   height_cm: number;
@@ -22,6 +23,29 @@ export type PredictResponse = {
   model_version: string;
 };
 
+/**
+ * How the child's CURRENT height compares with others of the same age and sex.
+ *
+ * Three coarse bands rather than a percentile on purpose. The figure comes from
+ * an LLM reading a growth reference, not from a clinical calculation against
+ * LMS tables, and a number like "34th percentile" would claim a precision that
+ * origin cannot support. A band is what the estimate can actually carry.
+ *
+ * None of the three is a finding: most children are not exactly average, and
+ * both tails are ordinary. The UI colours them accordingly.
+ */
+export type StatureBand = "below_average" | "average" | "above_average";
+
+const STATURE_BANDS: readonly string[] = [
+  "below_average",
+  "average",
+  "above_average",
+];
+
+export function isStatureBand(value: unknown): value is StatureBand {
+  return typeof value === "string" && STATURE_BANDS.includes(value);
+}
+
 export type LlmPredictResponse = {
   pred_height_cm: number;
   reasoning: string;
@@ -32,6 +56,12 @@ export type LlmPredictResponse = {
   /** Language the reasoning was generated in. Absent on predictions saved
    *  before the LLM was made locale-aware. */
   reasoning_locale?: string;
+  /** Absent when the model did not return a usable band, and on any prediction
+   *  reloaded from the account — there is no column for it yet. */
+  stature_band?: StatureBand;
+  /** Non-clinical suggestions, present only when the model judged the child's
+   *  height far enough from average to warrant them. Empty otherwise. */
+  guidance?: string;
 };
 
 export function calculateBmi(weightKg: number, heightCm: number): number {
@@ -62,6 +92,30 @@ async function parseError(res: Response, fallback: string): Promise<string> {
   return fallback;
 }
 
+/**
+ * Turns a failed prediction response into the right kind of error.
+ *
+ * A 4xx is about this request — a height out of range, a target age below the
+ * current one — and its message was written by our own route handler for the
+ * user to read, so it is shown verbatim.
+ *
+ * A 5xx is an outage. The message there comes from the upstream survey
+ * platform, which collapses every internal fault to one English sentence
+ * ("There was an error while calculating the survey results") that means
+ * nothing to a parent, names our internals, and appears untranslated in a
+ * Chinese UI. GenericRequestError exists for exactly this: the message survives
+ * for logs while the UI substitutes its own localized text.
+ */
+async function predictionError(
+  res: Response,
+  fallback: string,
+): Promise<Error> {
+  const message = await parseError(res, fallback);
+  return res.status >= 500
+    ? new GenericRequestError(message, res.status)
+    : new Error(message);
+}
+
 export async function predict(data: PredictRequest): Promise<PredictResponse> {
   const res = await apiFetch("/api/v1/predict", {
     method: "POST",
@@ -76,7 +130,7 @@ export async function predict(data: PredictRequest): Promise<PredictResponse> {
   });
 
   if (!res.ok) {
-    throw new Error(await parseError(res, "Prediction failed. Is the API running?"));
+    throw await predictionError(res, "Prediction failed. Is the API running?");
   }
 
   return res.json();
@@ -92,7 +146,7 @@ export async function predictLlm(
   });
 
   if (!res.ok) {
-    throw new Error(await parseError(res, "LLM prediction failed"));
+    throw await predictionError(res, "LLM prediction failed");
   }
 
   return res.json();

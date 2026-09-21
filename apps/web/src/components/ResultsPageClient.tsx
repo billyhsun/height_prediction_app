@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { PredictionResults } from "@/components/PredictionResults";
 import { useTranslations } from "@/lib/i18n/context";
-import { displayError } from "@notch/core";
+import { displayError, displayPredictionError } from "@notch/core";
 import {
   loadPredictionSession,
   savePredictionSession,
@@ -110,8 +110,10 @@ export function ResultsPageClient() {
           try {
             llmResult = await predictLlm(inputs);
           } catch (err) {
-            llmError =
-              err instanceof Error ? err.message : t.form.llmFailed;
+            llmError = displayPredictionError(err, {
+              unavailable: t.form.serviceUnavailable,
+              fallback: t.form.llmFailed,
+            });
           }
         }
 
@@ -120,7 +122,12 @@ export function ResultsPageClient() {
         setSession(nextSession);
         setSavedToAccount(isSignedIn ?? false);
       } catch (err) {
-        setError(displayError(err, t.results.predictionFailed));
+        setError(
+          displayPredictionError(err, {
+            unavailable: t.form.serviceUnavailable,
+            fallback: t.results.predictionFailed,
+          }),
+        );
       } finally {
         setLoading(false);
       }

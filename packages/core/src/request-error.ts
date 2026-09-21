@@ -28,3 +28,20 @@ export function displayError(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) return error.message;
   return fallback;
 }
+
+/**
+ * Picks the message for a failed prediction.
+ *
+ * Splits what `displayError` cannot: a backend outage deserves different words
+ * from a request the user can fix. Both platforms call this so the two cannot
+ * drift, and so neither has to remember that a 5xx must not be shown verbatim.
+ */
+export function displayPredictionError(
+  error: unknown,
+  messages: { unavailable: string; fallback: string },
+): string {
+  if (error instanceof GenericRequestError && (error.status ?? 0) >= 500) {
+    return messages.unavailable;
+  }
+  return displayError(error, messages.fallback);
+}

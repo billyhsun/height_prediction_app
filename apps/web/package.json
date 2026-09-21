@@ -10,7 +10,8 @@
     "vercel-build": "npm run tokens && next build",
     "db:ddl": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script",
     "tokens": "node --experimental-strip-types scripts/build-tokens.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "health": "node scripts/health-check.mjs"
   },
   "comments": {
     "optionalDependencies": [

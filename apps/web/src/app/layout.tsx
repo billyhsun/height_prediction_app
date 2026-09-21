@@ -4,8 +4,14 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { enUS, zhCN } from "@clerk/localizations";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
-import { LOCALE_COOKIE, resolveLocale } from "@notch/core";
+import {
+  LOCALE_COOKIE,
+  UNITS_COOKIE,
+  resolveLocale,
+  resolveUnitSystem,
+} from "@notch/core";
 import { LocaleProvider } from "@/lib/i18n/context";
+import { UnitsProvider } from "@/lib/units/context";
 import { getDictionary } from "@notch/core";
 import "./globals.css";
 
@@ -22,6 +28,11 @@ const geistMono = Geist_Mono({
 async function readLocale() {
   const cookieStore = await cookies();
   return resolveLocale(cookieStore.get(LOCALE_COOKIE)?.value);
+}
+
+async function readUnits() {
+  const cookieStore = await cookies();
+  return resolveUnitSystem(cookieStore.get(UNITS_COOKIE)?.value);
 }
 
 /**
@@ -56,6 +67,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await readLocale();
+  const units = await readUnits();
 
   return (
     <ClerkProvider localization={CLERK_LOCALIZATIONS[locale]}>
@@ -65,8 +77,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       >
         <body className="min-h-full flex flex-col bg-canvas">
           <LocaleProvider initialLocale={locale}>
-            <Header />
-            {children}
+            <UnitsProvider initialUnits={units}>
+              <Header />
+              {children}
+            </UnitsProvider>
           </LocaleProvider>
         </body>
       </html>

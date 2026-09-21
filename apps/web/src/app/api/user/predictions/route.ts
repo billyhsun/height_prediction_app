@@ -112,6 +112,8 @@ export async function POST(request: Request) {
         llmReasoning: llmResult?.reasoning ?? null,
         llmMidParentalHeight: llmResult?.mid_parental_height_cm ?? null,
         llmModel: llmResult?.model ?? null,
+        llmStatureBand: llmResult?.stature_band ?? null,
+        llmGuidance: llmResult?.guidance ?? null,
       })
       .select(SUMMARY_SELECT)
       .single();

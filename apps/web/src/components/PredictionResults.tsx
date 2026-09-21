@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { calculateBmi } from "@notch/core";
+import {
+  calculateBmi,
+  formatHeight,
+  formatWeight,
+  heightInDisplayUnit,
+  heightMeasurement,
+  heightUnitLabel,
+} from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
+import { useUnits } from "@/lib/units/context";
 import { Badge, Button, Card, GrowthChart, Stat } from "@/components/ui";
 import type { ChartPoint } from "@notch/core";
 import {
@@ -28,29 +36,43 @@ export function PredictionResults({
   history = [],
 }: PredictionResultsProps) {
   const t = useTranslations();
+  const { units } = useUnits();
   const { inputs, result, llmResult, llmError } = session;
   const currentBmi = calculateBmi(inputs.weight_kg, inputs.height_cm);
   const editHref = `/?${inputsToSearchParams(inputs)}`;
 
   // The measurement behind this prediction is always plotted; prior ones are
   // added when available. dedupeByAge in the chart collapses repeats.
-  const observed: ChartPoint[] = [
-    ...history,
-    { ageYears: inputs.current_age_years, heightCm: inputs.height_cm },
-  ];
+  const observed: ChartPoint[] = [...history, {
+    ageYears: inputs.current_age_years,
+    heightCm: inputs.height_cm,
+  }].map((point) => ({
+    ...point,
+    heightCm: heightInDisplayUnit(point.heightCm, units),
+  }));
 
   const inputRows: { label: string; value: string }[] = [
     { label: t.results.sex, value: inputs.sex === 1 ? t.common.male : t.common.female },
     { label: t.results.currentAge, value: t.common.years(inputs.current_age_years) },
-    { label: t.results.height, value: `${inputs.height_cm} cm` },
-    { label: t.results.weight, value: `${inputs.weight_kg} kg` },
+    { label: t.results.height, value: formatHeight(inputs.height_cm, units, t) },
+    { label: t.results.weight, value: formatWeight(inputs.weight_kg, units, t) },
     { label: t.results.currentBmi, value: currentBmi.toFixed(1) },
     { label: t.results.targetAge, value: t.common.years(inputs.target_age_years) },
     ...(inputs.mother_height_cm
-      ? [{ label: t.results.motherHeight, value: `${inputs.mother_height_cm} cm` }]
+      ? [
+          {
+            label: t.results.motherHeight,
+            value: formatHeight(inputs.mother_height_cm, units, t),
+          },
+        ]
       : []),
     ...(inputs.father_height_cm
-      ? [{ label: t.results.fatherHeight, value: `${inputs.father_height_cm} cm` }]
+      ? [
+          {
+            label: t.results.fatherHeight,
+            value: formatHeight(inputs.father_height_cm, units, t),
+          },
+        ]
       : []),
   ];
 
@@ -69,8 +91,8 @@ export function PredictionResults({
           {t.results.basedOn(
             inputs.current_age_years,
             t.common.sexNoun(inputs.sex),
-            inputs.height_cm,
-            inputs.weight_kg,
+            formatHeight(inputs.height_cm, units, t),
+            formatWeight(inputs.weight_kg, units, t),
           )}
         </p>
         {savedToAccount && (
@@ -94,8 +116,7 @@ export function PredictionResults({
             </div>
             <Stat
               label={t.results.predictedHeight}
-              value={result.pred_height_cm.toFixed(1)}
-              unit="cm"
+              {...heightMeasurement(result.pred_height_cm, units, t)}
             />
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <div className="flex flex-col gap-0.5">
@@ -103,7 +124,7 @@ export function PredictionResults({
                   {t.results.predictedWeight}
                 </span>
                 <span className="text-lg font-semibold tabular-nums text-text-primary">
-                  {result.pred_weight_kg.toFixed(1)} kg
+                  {formatWeight(result.pred_weight_kg, units, t)}
                 </span>
               </div>
               <div className="flex flex-col gap-0.5">
@@ -126,18 +147,24 @@ export function PredictionResults({
             observed={observed}
             predicted={{
               ageYears: result.target_age_years,
-              heightCm: result.pred_height_cm,
+              heightCm: heightInDisplayUnit(result.pred_height_cm, units),
             }}
             llmPredicted={
               llmResult
                 ? {
                     ageYears: llmResult.target_age_years,
-                    heightCm: llmResult.pred_height_cm,
+                    heightCm: heightInDisplayUnit(
+                      llmResult.pred_height_cm,
+                      units,
+                    ),
                   }
                 : null
             }
             sex={inputs.sex}
-            labels={t.results.chart}
+            labels={{
+              ...t.results.chart,
+              heightAxis: t.results.chart.heightAxis(heightUnitLabel(units, t)),
+            }}
           />
         </Card>
 
@@ -152,16 +179,54 @@ export function PredictionResults({
               </div>
               <Stat
                 label={t.results.predictedHeight}
-                value={llmResult.pred_height_cm.toFixed(1)}
-                unit="cm"
+                {...heightMeasurement(llmResult.pred_height_cm, units, t)}
                 tone="accent"
               />
               <p className="text-sm leading-relaxed text-text-primary">
                 {llmResult.reasoning}
               </p>
+
+              {/* Neither tail is coloured as a problem: most children are not
+                  exactly average, and both ends of the range are ordinary. */}
+              {llmResult.stature_band && (
+                <div className="flex flex-col gap-1.5 border-t border-accent-200 pt-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium tracking-wide text-text-secondary uppercase">
+                      {t.results.statureLabel}
+                    </span>
+                    <Badge
+                      tone={
+                        llmResult.stature_band === "average"
+                          ? "neutral"
+                          : "accent"
+                      }
+                    >
+                      {t.results.stature[llmResult.stature_band]}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-text-secondary">
+                    {t.results.statureCaveat}
+                  </p>
+                </div>
+              )}
+
+              {llmResult.guidance && (
+                <div className="flex flex-col gap-1.5 border-t border-accent-200 pt-4">
+                  <h3 className="text-xs font-semibold tracking-wide text-text-secondary uppercase">
+                    {t.results.guidanceHeading}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-text-primary">
+                    {llmResult.guidance}
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    {t.results.guidanceDisclaimer}
+                  </p>
+                </div>
+              )}
+
               <p className="text-xs text-text-muted">
                 {t.results.midParental(
-                  llmResult.mid_parental_height_cm.toFixed(1),
+                  formatHeight(llmResult.mid_parental_height_cm, units, t),
                   llmResult.model,
                 )}
               </p>

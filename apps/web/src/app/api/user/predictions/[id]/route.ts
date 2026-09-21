@@ -44,6 +44,8 @@ export async function GET(_request: Request, context: RouteContext) {
       llmReasoning: prediction.llmReasoning,
       llmMidParentalHeight: prediction.llmMidParentalHeight,
       llmModel: prediction.llmModel,
+      llmStatureBand: prediction.llmStatureBand,
+      llmGuidance: prediction.llmGuidance,
     });
   } catch (error) {
     console.error("Failed to load prediction:", error);

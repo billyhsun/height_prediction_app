@@ -33,19 +33,22 @@ import {
   ETHNICITY_VALUES,
   type EthnicityValue,
 } from "@notch/core";
-import { MAX_MODEL_CURRENT_AGE, MAX_TARGET_AGE } from "@notch/core";
+import { CHILD_LIMITS, MAX_MODEL_CURRENT_AGE, MAX_TARGET_AGE } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
+import { useUnits } from "@/lib/units/context";
 
-import { displayError } from "@notch/core";
+import { displayPredictionError, formatHeight, formatWeight } from "@notch/core";
 import {
   Badge,
   Button,
   Field,
+  HeightField,
   Input,
   OptionGrid,
   SegmentedControl,
   Section,
   Select,
+  WeightField,
 } from "@/components/ui";
 import {
   inputsToSearchParams,
@@ -141,6 +144,7 @@ export function PredictionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { locale, t } = useI18n();
+  const { units } = useUnits();
 
   const appliedChildIdRef = useRef<string | null>(null);
   const [children, setChildren] = useState<ChildProfile[]>([]);
@@ -348,6 +352,37 @@ export function PredictionForm() {
       return;
     }
 
+    // In metric these bounds come free from the number inputs' min/max. The
+    // imperial height field is a feet/inches pair with no cm bounds to declare,
+    // so they are checked here — otherwise switching units would quietly lose
+    // the client-side check and defer to a server 400.
+    if (
+      heightCm < CHILD_LIMITS.heightCm.min ||
+      heightCm > CHILD_LIMITS.heightCm.max
+    ) {
+      setError(
+        t.form.heightOutOfRange(
+          formatHeight(CHILD_LIMITS.heightCm.min, units, t),
+          formatHeight(CHILD_LIMITS.heightCm.max, units, t),
+        ),
+      );
+      setLoading(false);
+      return;
+    }
+    if (
+      weightKg < CHILD_LIMITS.weightKg.min ||
+      weightKg > CHILD_LIMITS.weightKg.max
+    ) {
+      setError(
+        t.form.weightOutOfRange(
+          formatWeight(CHILD_LIMITS.weightKg.min, units, t),
+          formatWeight(CHILD_LIMITS.weightKg.max, units, t),
+        ),
+      );
+      setLoading(false);
+      return;
+    }
+
     // The number input caps years, but a date of birth can express an age past
     // the model's domain without any field being out of range.
     if (currentAge > MAX_MODEL_CURRENT_AGE) {
@@ -407,7 +442,12 @@ export function PredictionForm() {
         try {
           llmResult = await predictLlm(inputs);
         } catch (err) {
-          llmError = err instanceof Error ? err.message : t.form.llmFailed;
+          // An LLM outage reads the same way to a user as a prediction one,
+          // and its upstream text is just as unhelpful.
+          llmError = displayPredictionError(err, {
+            unavailable: t.form.serviceUnavailable,
+            fallback: t.form.llmFailed,
+          });
         }
       }
 
@@ -433,7 +473,12 @@ export function PredictionForm() {
 
       router.push(`/results?${inputsToSearchParams(inputs)}`);
     } catch (err) {
-      setError(displayError(err, t.form.somethingWentWrong));
+      setError(
+        displayPredictionError(err, {
+          unavailable: t.form.serviceUnavailable,
+          fallback: t.form.somethingWentWrong,
+        }),
+      );
     } finally {
       setLoading(false);
     }
@@ -664,34 +709,23 @@ export function PredictionForm() {
 
         <Section title={t.form.currentMeasurements}>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label={t.form.heightCm}>
-              {({ id }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  min={40}
-                  max={220}
-                  step={0.1}
-                  required
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(Number(e.target.value))}
-                />
-              )}
-            </Field>
-            <Field label={t.form.weightKg}>
-              {({ id }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  min={2}
-                  max={150}
-                  step={0.1}
-                  required
-                  value={weightKg}
-                  onChange={(e) => setWeightKg(Number(e.target.value))}
-                />
-              )}
-            </Field>
+            <HeightField
+              valueCm={String(heightCm)}
+              onChangeCm={(cm) => setHeightCm(Number(cm))}
+              units={units}
+              t={t}
+              metricLabel={t.units.heightLabel}
+              groupLabel={t.units.heightGroupLabel}
+              required
+            />
+            <WeightField
+              valueKg={String(weightKg)}
+              onChangeKg={(kg) => setWeightKg(Number(kg))}
+              units={units}
+              t={t}
+              label={t.units.weightLabel}
+              required
+            />
           </div>
           <div className="flex items-baseline gap-2 border-t border-border pt-3">
             <span className="text-xs font-medium tracking-wide text-text-secondary uppercase">
@@ -736,68 +770,50 @@ export function PredictionForm() {
           }
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label={t.form.mothersHeightCm}>
-              {({ id }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  min={PARENT_LIMITS.heightCm.min}
-                  max={PARENT_LIMITS.heightCm.max}
-                  step={0.1}
-                  value={motherHeight}
-                  onChange={(e) => setMotherHeight(e.target.value)}
-                  placeholder={t.common.egPlaceholder("165")}
-                />
+            <HeightField
+              valueCm={motherHeight}
+              onChangeCm={setMotherHeight}
+              units={units}
+              t={t}
+              metricLabel={t.units.mothersHeightLabel}
+              groupLabel={t.units.mothersHeightGroupLabel}
+              placeholder={t.common.egPlaceholder(
+                units === "imperial" ? "5" : "165",
               )}
-            </Field>
-            <Field label={t.form.fathersHeightCm}>
-              {({ id }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  min={PARENT_LIMITS.heightCm.min}
-                  max={PARENT_LIMITS.heightCm.max}
-                  step={0.1}
-                  value={fatherHeight}
-                  onChange={(e) => setFatherHeight(e.target.value)}
-                  placeholder={t.common.egPlaceholder("178")}
-                />
+            />
+            <HeightField
+              valueCm={fatherHeight}
+              onChangeCm={setFatherHeight}
+              units={units}
+              t={t}
+              metricLabel={t.units.fathersHeightLabel}
+              groupLabel={t.units.fathersHeightGroupLabel}
+              placeholder={t.common.egPlaceholder(
+                units === "imperial" ? "5" : "178",
               )}
-            </Field>
-            <Field
-              label={t.form.mothersWeightKg}
+            />
+            <WeightField
+              valueKg={motherWeight}
+              onChangeKg={setMotherWeight}
+              units={units}
+              t={t}
+              label={t.units.mothersWeightLabel}
               hint={t.form.parentWeightHelp}
-            >
-              {({ id }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  min={PARENT_LIMITS.weightKg.min}
-                  max={PARENT_LIMITS.weightKg.max}
-                  step={0.1}
-                  value={motherWeight}
-                  onChange={(e) => setMotherWeight(e.target.value)}
-                  placeholder={t.common.egPlaceholder("60")}
-                />
+              placeholder={t.common.egPlaceholder(
+                units === "imperial" ? "132" : "60",
               )}
-            </Field>
-            <Field
-              label={t.form.fathersWeightKg}
+            />
+            <WeightField
+              valueKg={fatherWeight}
+              onChangeKg={setFatherWeight}
+              units={units}
+              t={t}
+              label={t.units.fathersWeightLabel}
               hint={t.form.parentWeightHelp}
-            >
-              {({ id }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  min={PARENT_LIMITS.weightKg.min}
-                  max={PARENT_LIMITS.weightKg.max}
-                  step={0.1}
-                  value={fatherWeight}
-                  onChange={(e) => setFatherWeight(e.target.value)}
-                  placeholder={t.common.egPlaceholder("82")}
-                />
+              placeholder={t.common.egPlaceholder(
+                units === "imperial" ? "181" : "82",
               )}
-            </Field>
+            />
           </div>
         </Section>
 

@@ -37,6 +37,20 @@ export const MAX_MODEL_CURRENT_AGE = 15;
  */
 export const MAX_TARGET_AGE = 20;
 
+/**
+ * Plausible ranges for a child's own measurements.
+ *
+ * The web got these for free from `<input type="number" min max>`. React Native
+ * has no such thing — a TextInput accepts any string — so the bounds have to
+ * live where both platforms can read them rather than as literals in one form's
+ * markup. Like PARENT_LIMITS, they are deliberately wide: the point is to catch
+ * a unit mix-up or a stray digit, not to police an unusual child.
+ */
+export const CHILD_LIMITS = {
+  heightCm: { min: 40, max: 220 },
+  weightKg: { min: 2, max: 150 },
+} as const;
+
 /** True when the ML model can be asked about a child of this age. */
 export function isWithinModelDomain(currentAgeYears: number): boolean {
   return currentAgeYears <= MAX_MODEL_CURRENT_AGE;

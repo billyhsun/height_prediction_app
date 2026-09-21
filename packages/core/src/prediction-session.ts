@@ -63,26 +63,46 @@ export function loadPredictionSession(): PredictionSession | null {
   }
 }
 
-export function inputsToSearchParams(inputs: PredictRequest): string {
-  const params = new URLSearchParams();
-  params.set("sex", String(inputs.sex));
-  params.set("height_cm", String(inputs.height_cm));
-  params.set("weight_kg", String(inputs.weight_kg));
-  params.set("current_age_years", String(inputs.current_age_years));
-  params.set("target_age_years", String(inputs.target_age_years));
+/**
+ * The prediction inputs as a flat record of strings.
+ *
+ * Both platforms carry the inputs from the results screen back to the form
+ * through their router — the web as a query string, native as expo-router
+ * params. Deriving both from one keyed list here is what stops them drifting:
+ * a field added to PredictRequest is either carried by both routes or neither.
+ *
+ * Falsy optionals are omitted rather than written as "undefined", so an absent
+ * parent height round-trips as absent instead of as a string to be re-parsed.
+ */
+export function inputsToParamRecord(
+  inputs: PredictRequest,
+): Record<string, string> {
+  const params: Record<string, string> = {
+    sex: String(inputs.sex),
+    height_cm: String(inputs.height_cm),
+    weight_kg: String(inputs.weight_kg),
+    current_age_years: String(inputs.current_age_years),
+    target_age_years: String(inputs.target_age_years),
+  };
+
   if (inputs.mother_height_cm) {
-    params.set("mother_height_cm", String(inputs.mother_height_cm));
+    params.mother_height_cm = String(inputs.mother_height_cm);
   }
   if (inputs.father_height_cm) {
-    params.set("father_height_cm", String(inputs.father_height_cm));
+    params.father_height_cm = String(inputs.father_height_cm);
   }
   if (inputs.mother_weight_kg) {
-    params.set("mother_weight_kg", String(inputs.mother_weight_kg));
+    params.mother_weight_kg = String(inputs.mother_weight_kg);
   }
   if (inputs.father_weight_kg) {
-    params.set("father_weight_kg", String(inputs.father_weight_kg));
+    params.father_weight_kg = String(inputs.father_weight_kg);
   }
-  return params.toString();
+
+  return params;
+}
+
+export function inputsToSearchParams(inputs: PredictRequest): string {
+  return new URLSearchParams(inputsToParamRecord(inputs)).toString();
 }
 
 // sexLabel moved into the locale dictionaries (`common.male` / `common.female`)

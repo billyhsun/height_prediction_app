@@ -128,7 +128,14 @@ these are the differences worth knowing.
 ### Which endpoint serves the model
 
 Confirmed from `GET /surveys/catalog` on the live service — `child_bmi` is served
-by the `kangleelab-legacy` Cloud Run service. The service has been renamed once
+by the **`kangleelab-modern`** Cloud Run service. It moved there with gbm-v1:
+the platform runs two images that differ only in their ML pins, and the model
+needs the newer ones (`scikit-learn` 1.4.2, `numpy` >=1.24) that
+`Dockerfile.legacy` cannot carry without breaking the scikit-learn 1.0.2
+pickles ASQ, DASS, MMPI and NAFLD still use. Pointing this at
+`kangleelab-legacy` now yields HTTP 500 on every prediction — the model loads
+before it reads any input, so the failure looks identical for valid and empty
+bodies. The service has been renamed once
 already (from `lab-surveys-backend-all-other-surveys`), so treat the URL as
 configuration rather than something to hardcode:
 
@@ -275,7 +282,7 @@ IAM, much simpler, far better than an open endpoint.
 
 ```bash
 # apps/web/.env.local
-PREDICTION_API_URL=https://kangleelab-legacy-489345092369.northamerica-northeast2.run.app/surveys
+PREDICTION_API_URL=https://kangleelab-modern-489345092369.northamerica-northeast2.run.app/surveys
 OPENAI_API_KEY=sk-...
 ```
 

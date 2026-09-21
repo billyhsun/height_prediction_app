@@ -206,28 +206,48 @@ This accounts for every symptom: it throws at load, before any input is read,
 which is why valid data and `data: {}` fail identically in 250 ms, and why
 `sample_survey` — which loads no model — is fine.
 
-### Two ways to fix it
+### The fix, and what it actually took
 
-The repo already has a second image for exactly this. `Dockerfile.modern`
-("Modern ML environment: sklearn 1.4.2") differs from the legacy one by **one
-line** — `scikit-learn==1.4.2` against `1.0.2`. numpy, pandas, scipy, xgboost
-0.81 and Python 3.10 are identical in both.
+Serving from the modern image, as chosen — but that alone was not enough, and
+the reason is worth recording.
 
-**A. Serve child_bmi from the modern image.** What the split is for: child_bmi
-stopped being a legacy-sklearn survey the moment gbm-v1 shipped. Needs a modern
-service that serves it, and `PREDICTION_API_URL` in the Notch app repointed at
-it. No change to any other survey.
+`kangleelab-modern` was already live and already running main, and child_bmi
+failed there too. **Both** images pin `numpy==1.23.0`, and numpy's `Generator`
+constructor gained a second argument in 1.24, so the artifact raises the same
+`TypeError` regardless of which scikit-learn is present. Two pins were wrong,
+not one; only the scikit-learn half was visible from the Dockerfile headers.
 
-**B. Bump `requirements-legacy.txt` to `scikit-learn==1.4.2`.** One line, and it
-makes the two images identical — at which point the legacy/modern split has no
-remaining purpose. The evidence is encouraging: the old child_bmi svr models and
-nafld load under both pins, and the modern image already pairs xgboost 0.81 with
-sklearn 1.4.2 in production. The untested risk is DASS and MMPI, whose pickles
-need xgboost and so could not be loaded in the replica here. **Load-test those
-two under 1.4.2 before taking this option** — `verify_model.py` covers only
-child_bmi.
+Measured against the artifacts as committed on main, scikit-learn 1.4.2 and
+pandas 1.4.3 held constant:
 
-A is the lower-risk change and the one this architecture was designed for.
+| numpy | result |
+|---|---|
+| 1.23.0 | `TypeError: __generator_ctor()` |
+| 1.24.4 | loads |
+| 1.25.2 | loads |
+| 1.26.4 | loads |
+
+That the split itself is sound was confirmed separately: `dass_multiclass`,
+which needs scikit-learn 1.4.2, returns 200 on the modern service and 500 on
+the legacy one.
+
+**Backend** — `kang-lee-lab/lab-surveys`, branch `child-bmi-modern-numpy`,
+awaiting PR. Bumps `docker/modern/requirements-modern.txt` to `numpy==1.26.4`,
+matching what `backend/requirements.txt` already asks for, and corrects both
+Dockerfile headers to show which surveys each image serves.
+`verify_model.py` passes all ten checks under the new combination, and the
+`dass_multiclass` RandomForest loads unchanged under 1.23.0, 1.24.4 and 1.26.4,
+so the bump costs the modern image's existing survey nothing. The legacy image
+is untouched.
+
+**Frontend** — `PREDICTION_API_URL` must move from `kangleelab-legacy` to
+`kangleelab-modern`. Done here in `.env.local.example` and
+`docs/prediction-api.md`; **the Vercel environment variable and any local
+`.env.local` still need changing by hand.** Verify with:
+
+```bash
+npm run health --workspace web -- https://<deployment>
+```
 
 ### The age cap is now a product decision, not a guard
 

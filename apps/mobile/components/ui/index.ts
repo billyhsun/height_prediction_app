@@ -10,7 +10,7 @@
  */
 export { Button, type ButtonVariant, type ButtonSize } from "./Button";
 export { Field, Input, Select, type SelectOption } from "./Field";
-export { HeightField, WeightField } from "./MeasurementField";
+export { HeightField, LengthField, WeightField } from "./MeasurementField";
 export { SegmentedControl, type SegmentOption } from "./SegmentedControl";
 export { OptionGrid, type Option } from "./OptionGrid";
 export { Card, Section, Badge, Stat } from "./Card";

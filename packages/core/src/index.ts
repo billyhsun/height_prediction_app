@@ -24,6 +24,7 @@ export * from "./i18n/dictionaries";
 // Domain
 export * from "./age";
 export * from "./units";
+export * from "./birth-prediction";
 export * from "./ethnicities";
 export * from "./child-profile";
 export * from "./model-domain";

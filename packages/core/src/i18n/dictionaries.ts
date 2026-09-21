@@ -337,6 +337,49 @@ const en = {
     failed: "Could not delete your account",
   },
 
+
+  /**
+   * The newborn / not-yet-born page. A separate estimate from a separate
+   * method: parental height, not the growth model, which cannot answer this.
+   */
+  birth: {
+    navLabel: "Baby",
+    title: "A baby's adult height",
+    subtitle:
+      "Estimate how tall a newborn — or a baby not yet born — is likely to be as an adult, from the parents' heights.",
+    statusLegend: "Is the baby born?",
+    statusBorn: "Born",
+    statusExpecting: "Not yet born",
+    babyLegend: "About the baby",
+    sexHint: "Boys and girls differ by about 13 cm as adults, so this is needed.",
+    measurementsLegend: "Birth measurements (optional)",
+    lengthLabel: (unit: string) => `Birth length (${unit})`,
+    weightLabel: (unit: string) => `Birth weight (${unit})`,
+    /** Said plainly, because collecting a field and then barely using it is
+     *  worse than not collecting it. */
+    measurementsHelp:
+      "Recorded with the estimate. Birth size barely predicts adult height — the parents' heights carry almost all of it.",
+    expectingHelp:
+      "Without the baby there is nothing to measure, so the estimate rests entirely on the parents.",
+    parentsLegend: "Parents",
+    parentsHelp: "Both heights are required — they are what this estimate is built from.",
+    submit: "Estimate adult height",
+    parentsRequired: "Enter both parents' heights.",
+    lengthOutOfRange: (min: string, max: string) =>
+      `Birth length must be between ${min} and ${max}.`,
+    weightOutOfRange: (min: string, max: string) =>
+      `Birth weight must be between ${min} and ${max}.`,
+    resultTitle: "As an adult",
+    predictedHeight: "Predicted adult height",
+    methodLabel: "Mid-parental height (Tanner)",
+    methodNote:
+      "The parents' heights averaged, then adjusted for sex. It is the method a pediatrician uses for this question, and adult height is roughly 80% heritable — but it describes a range of outcomes, not a destiny.",
+    recordedLabel: "Recorded at birth",
+    startOver: "Start over",
+    /** Shown instead of the growth chart, which needs measurements over time. */
+    noChartNote:
+      "No growth curve yet — that needs measurements taken over time. Come back once the baby has been measured.",
+  },
   /** The account-level parent measurements, shared by onboarding and account. */
   parents: {
     legend: "Parent details",
@@ -663,6 +706,40 @@ const zhCN: Dictionary = {
     failed: "无法删除您的账户",
   },
 
+
+  birth: {
+    navLabel: "婴儿",
+    title: "婴儿的成年身高",
+    subtitle:
+      "根据父母的身高，估算新生儿——或尚未出生的宝宝——成年后的大致身高。",
+    statusLegend: "宝宝出生了吗？",
+    statusBorn: "已出生",
+    statusExpecting: "尚未出生",
+    babyLegend: "宝宝信息",
+    sexHint: "男女成年身高平均相差约 13 厘米，因此需要填写。",
+    measurementsLegend: "出生时的测量（可选）",
+    lengthLabel: (unit: string) => `出生身长（${unit}）`,
+    weightLabel: (unit: string) => `出生体重（${unit}）`,
+    measurementsHelp:
+      "会与估算结果一并记录。出生时的体型对成年身高的预测作用很小——父母的身高几乎决定了全部。",
+    expectingHelp: "宝宝尚未出生，无法测量，因此估算完全依据父母的身高。",
+    parentsLegend: "父母",
+    parentsHelp: "两项身高均为必填——本估算正是基于这两个数值。",
+    submit: "估算成年身高",
+    parentsRequired: "请填写父母双方的身高。",
+    lengthOutOfRange: (min: string, max: string) =>
+      `出生身长需在 ${min} 至 ${max} 之间。`,
+    weightOutOfRange: (min: string, max: string) =>
+      `出生体重需在 ${min} 至 ${max} 之间。`,
+    resultTitle: "成年时",
+    predictedHeight: "预测成年身高",
+    methodLabel: "父母平均身高法（Tanner）",
+    methodNote:
+      "取父母身高的平均值，再按性别调整。这是儿科医生回答该问题时使用的方法，成年身高的遗传度约为 80%——但它给出的是一个范围，而非定数。",
+    recordedLabel: "出生时记录",
+    startOver: "重新开始",
+    noChartNote: "暂无生长曲线——那需要一段时间内的多次测量。等宝宝有了测量记录再回来查看。",
+  },
   parents: {
     legend: "父母信息",
     accountHelp:

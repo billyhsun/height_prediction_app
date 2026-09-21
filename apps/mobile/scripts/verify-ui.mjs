@@ -548,6 +548,50 @@ async function main() {
     check("growth chart draws axis labels", predicted.ticks >= 4,
       `${predicted.ticks} labels`);
 
+    // --- the birth / not-yet-born screen ---
+    // A different method from the growth model, and one that needs no backend:
+    // it is a formula over the two parent heights.
+    await send("Page.navigate", { url: `http://localhost:${PROXY_PORT}/birth` });
+    for (let i = 0; i < 40; i++) {
+      if (await evaluate(`document.body.innerText.includes('Estimate adult height')`)) break;
+      await sleep(400);
+    }
+    check(
+      "birth screen renders",
+      await evaluate(`document.body.innerText.includes('Estimate adult height')`),
+    );
+
+    await click("Not yet born");
+    check(
+      "unborn hides the birth measurements",
+      await evaluate(
+        `!document.body.innerText.includes('Birth length') &&` +
+          ` document.body.innerText.includes('nothing to measure')`,
+      ),
+    );
+
+    // Mother 165, father 178, boy -> Tanner gives exactly 178.0.
+    await setInput("", "165");
+    const filled = await evaluate(`(() => {
+      const empty = [...document.querySelectorAll('input')].filter(i => !i.value);
+      if (!empty.length) return false;
+      const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      set.call(empty[0], '178');
+      empty[0].dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    })()`);
+    await sleep(400);
+    await click("Estimate adult height");
+    await sleep(800);
+    const estimate = await evaluate(
+      `(document.body.innerText.match(/PREDICTED ADULT HEIGHT\\s*\\n\\s*([^\\n]+)/i) || [])[1] || null`,
+    );
+    check(
+      "unborn estimate matches the Tanner formula",
+      filled && !!estimate && estimate.trim().startsWith("178"),
+      estimate ?? "no estimate",
+    );
+
     const shotPath = join(MOBILE_ROOT, ".verify-dist", "screenshot.png");
     const { data } = await send("Page.captureScreenshot", { format: "png" });
     await writeFile(shotPath, Buffer.from(data, "base64"));

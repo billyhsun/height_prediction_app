@@ -3,7 +3,9 @@ import { StyleSheet, View } from "react-native";
 
 import {
   cmFromFeetInches,
+  cmToInches,
   feetInchesFromCm,
+  inchesToCm,
   heightUnitLabel,
   kgToPounds,
   poundsToKg,
@@ -210,3 +212,54 @@ const styles = StyleSheet.create({
   pair: { flexDirection: "row", gap: theme.space[3] },
   part: { flex: 1 },
 });
+
+type LengthFieldProps = {
+  /** Length in centimetres, as text. */
+  valueCm: string;
+  onChangeCm: (cm: string) => void;
+  units: UnitSystem;
+  t: Dictionary;
+  label: (unit: string) => string;
+  hint?: string;
+  placeholder?: string;
+};
+
+/**
+ * A single length field that switches between centimetres and plain inches.
+ *
+ * Distinct from HeightField, which splits imperial into feet and inches. That
+ * is right for a person's height and wrong for a newborn: a baby's length is
+ * quoted as "20 inches", never "1 foot 8".
+ */
+export function LengthField({
+  valueCm,
+  onChangeCm,
+  units,
+  t,
+  label,
+  hint,
+  placeholder,
+}: LengthFieldProps) {
+  const [display, setDisplay] = useConvertedInput<string>(
+    valueCm,
+    (cm) => (cm.trim() === "" ? "" : trimWeight(cmToInches(Number(cm) || 0))),
+    (inches) =>
+      inches.trim() === "" ? "" : trimNumber(inchesToCm(Number(inches) || 0)),
+    onChangeCm,
+  );
+
+  const imperial = units === "imperial";
+
+  return (
+    <Field label={label(imperial ? t.units.in : t.units.cm)} hint={hint}>
+      {() => (
+        <Input
+          keyboardType="decimal-pad"
+          value={imperial ? display : valueCm}
+          onChangeText={imperial ? setDisplay : onChangeCm}
+          placeholder={placeholder}
+        />
+      )}
+    </Field>
+  );
+}

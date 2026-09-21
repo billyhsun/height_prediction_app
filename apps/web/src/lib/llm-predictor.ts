@@ -17,7 +17,7 @@ import {
 } from "@notch/core";
 import { dictionaries } from "@notch/core";
 import { sanitizeEthnicities } from "@notch/core";
-import { isStatureBand, type StatureBand } from "@notch/core";
+import { isStatureBand, midParentalHeightCm, type StatureBand } from "@notch/core";
 
 /**
  * Overridable so the endpoint can be pointed at an Azure OpenAI deployment, a
@@ -78,16 +78,10 @@ export class LlmError extends Error {
   }
 }
 
-/** Tanner mid-parental target height. */
-export function midParentalHeightCm(
-  sex: number,
-  motherCm: number,
-  fatherCm: number,
-): number {
-  return sex === 1
-    ? (fatherCm + motherCm + 13) / 2
-    : (fatherCm + motherCm - 13) / 2;
-}
+// Tanner mid-parental target height. Re-exported rather than redefined: the
+// birth-prediction page rests on the same formula, and two copies of a
+// constant-plus-halving is exactly the shape of thing that silently diverges.
+export { midParentalHeightCm };
 
 /**
  * English ethnicity labels for the prompt, read from the locale dictionary

@@ -10,10 +10,13 @@ import {
   PARENT_LIMITS,
   saveParentDefaults,
   displayError,
+  formatHeight,
+  formatWeight,
   type ParentDefaults,
 } from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
-import { Button, Field, Input } from "@/components/ui";
+import { useUnits } from "@/lib/units/context";
+import { Button, HeightField, WeightField } from "@/components/ui";
 
 type FormState = {
   motherHeightCm: string;
@@ -61,6 +64,7 @@ export function ParentDefaultsForm({
   submitLabel,
 }: ParentDefaultsFormProps) {
   const t = useTranslations();
+  const { units } = useUnits();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,8 +95,8 @@ export function ParentDefaultsForm({
       if (raw !== "" && !isValidParentHeight(Number(raw))) {
         setError(
           t.parents.heightOutOfRange(
-            PARENT_LIMITS.heightCm.min,
-            PARENT_LIMITS.heightCm.max,
+            formatHeight(PARENT_LIMITS.heightCm.min, units, t),
+            formatHeight(PARENT_LIMITS.heightCm.max, units, t),
           ),
         );
         return;
@@ -103,8 +107,8 @@ export function ParentDefaultsForm({
       if (raw !== "" && !isValidParentWeight(Number(raw))) {
         setError(
           t.parents.weightOutOfRange(
-            PARENT_LIMITS.weightKg.min,
-            PARENT_LIMITS.weightKg.max,
+            formatWeight(PARENT_LIMITS.weightKg.min, units, t),
+            formatWeight(PARENT_LIMITS.weightKg.max, units, t),
           ),
         );
         return;
@@ -138,62 +142,40 @@ export function ParentDefaultsForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={t.parents.mothersHeightCm}>
-          {({ id }) => (
-            <Input
-              id={id}
-              type="number"
-              step="0.1"
-              min={PARENT_LIMITS.heightCm.min}
-              max={PARENT_LIMITS.heightCm.max}
-              placeholder={t.parents.optionalPlaceholder}
-              value={form.motherHeightCm}
-              onChange={(e) => update("motherHeightCm", e.target.value)}
-            />
-          )}
-        </Field>
-        <Field label={t.parents.fathersHeightCm}>
-          {({ id }) => (
-            <Input
-              id={id}
-              type="number"
-              step="0.1"
-              min={PARENT_LIMITS.heightCm.min}
-              max={PARENT_LIMITS.heightCm.max}
-              placeholder={t.parents.optionalPlaceholder}
-              value={form.fatherHeightCm}
-              onChange={(e) => update("fatherHeightCm", e.target.value)}
-            />
-          )}
-        </Field>
-        <Field label={t.parents.mothersWeightKg}>
-          {({ id }) => (
-            <Input
-              id={id}
-              type="number"
-              step="0.1"
-              min={PARENT_LIMITS.weightKg.min}
-              max={PARENT_LIMITS.weightKg.max}
-              placeholder={t.parents.optionalPlaceholder}
-              value={form.motherWeightKg}
-              onChange={(e) => update("motherWeightKg", e.target.value)}
-            />
-          )}
-        </Field>
-        <Field label={t.parents.fathersWeightKg}>
-          {({ id }) => (
-            <Input
-              id={id}
-              type="number"
-              step="0.1"
-              min={PARENT_LIMITS.weightKg.min}
-              max={PARENT_LIMITS.weightKg.max}
-              placeholder={t.parents.optionalPlaceholder}
-              value={form.fatherWeightKg}
-              onChange={(e) => update("fatherWeightKg", e.target.value)}
-            />
-          )}
-        </Field>
+        <HeightField
+          valueCm={form.motherHeightCm}
+          onChangeCm={(cm) => update("motherHeightCm", cm)}
+          units={units}
+          t={t}
+          metricLabel={t.units.mothersHeightLabel}
+          groupLabel={t.units.mothersHeightGroupLabel}
+          placeholder={t.parents.optionalPlaceholder}
+        />
+        <HeightField
+          valueCm={form.fatherHeightCm}
+          onChangeCm={(cm) => update("fatherHeightCm", cm)}
+          units={units}
+          t={t}
+          metricLabel={t.units.fathersHeightLabel}
+          groupLabel={t.units.fathersHeightGroupLabel}
+          placeholder={t.parents.optionalPlaceholder}
+        />
+        <WeightField
+          valueKg={form.motherWeightKg}
+          onChangeKg={(kg) => update("motherWeightKg", kg)}
+          units={units}
+          t={t}
+          label={t.units.mothersWeightLabel}
+          placeholder={t.parents.optionalPlaceholder}
+        />
+        <WeightField
+          valueKg={form.fatherWeightKg}
+          onChangeKg={(kg) => update("fatherWeightKg", kg)}
+          units={units}
+          t={t}
+          label={t.units.fathersWeightLabel}
+          placeholder={t.parents.optionalPlaceholder}
+        />
       </div>
 
       {error && (

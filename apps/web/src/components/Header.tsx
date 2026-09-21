@@ -11,6 +11,7 @@ import {
 } from "@clerk/nextjs";
 
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { UnitsToggle } from "@/components/UnitsToggle";
 import { Button } from "@/components/ui";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -39,6 +40,7 @@ export function Header() {
 
         <nav className="flex items-center gap-2">
           <LanguageToggle />
+          <UnitsToggle />
 
           <SignedIn>
             <div className="hidden items-center gap-1 sm:flex">

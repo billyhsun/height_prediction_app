@@ -9,6 +9,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { configureApiBaseUrl, configureApiHeaders, tokens } from "@notch/core";
 
 import { LocaleProvider, useTranslations } from "@/components/i18n";
+import { UnitsProvider } from "@/components/units";
 
 /**
  * Clerk needs somewhere durable to keep the session. On the web that is a
@@ -134,10 +135,12 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
         <LocaleProvider>
-          <ApiBridge>
-            <StatusBar style="dark" />
-            <AppStack />
-          </ApiBridge>
+          <UnitsProvider>
+            <ApiBridge>
+              <StatusBar style="dark" />
+              <AppStack />
+            </ApiBridge>
+          </UnitsProvider>
         </LocaleProvider>
       </ClerkProvider>
     </SafeAreaProvider>

@@ -16,10 +16,13 @@ import {
 } from "@notch/core";
 import {
   fetchParentDefaults,
+  formatHeight,
   PARENT_LIMITS,
   type ParentDefaults,
 } from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
+import { useUnits } from "@/lib/units/context";
+import { HeightField } from "@/components/ui";
 import { displayError } from "@notch/core";
 
 type ChildFormProps = {
@@ -38,6 +41,7 @@ const EMPTY: ChildInput = {
 export function ChildForm({ childId }: ChildFormProps) {
   const router = useRouter();
   const t = useTranslations();
+  const { units } = useUnits();
   const isEdit = Boolean(childId);
 
   const [form, setForm] = useState<ChildInput>(EMPTY);
@@ -253,49 +257,37 @@ export function ChildForm({ childId }: ChildFormProps) {
               : t.childForm.parentHeightsHelp}
           </p>
 
-          <label className="block space-y-1">
-            <span className="text-sm text-text-secondary">
-              {t.childForm.mothersHeightCm}
-            </span>
-            <input
-              type="number"
-              min={PARENT_LIMITS.heightCm.min}
-              max={PARENT_LIMITS.heightCm.max}
-              step={0.1}
-              value={motherHeight}
-              onChange={(e) => setMotherHeight(e.target.value)}
-              placeholder={
-                parentDefaults?.motherHeightCm != null
-                  ? t.childForm.accountDefaultPlaceholder(
-                      parentDefaults.motherHeightCm,
-                    )
-                  : t.common.egPlaceholder("165")
-              }
-              className="w-full rounded-md border border-border px-3 py-2 text-sm"
-            />
-          </label>
+          <HeightField
+            valueCm={motherHeight}
+            onChangeCm={setMotherHeight}
+            units={units}
+            t={t}
+            metricLabel={t.units.mothersHeightLabel}
+            groupLabel={t.units.mothersHeightGroupLabel}
+            placeholder={
+              parentDefaults?.motherHeightCm != null
+                ? t.childForm.accountDefaultPlaceholder(
+                    formatHeight(parentDefaults.motherHeightCm, units, t),
+                  )
+                : t.common.egPlaceholder(units === "imperial" ? "5" : "165")
+            }
+          />
 
-          <label className="block space-y-1">
-            <span className="text-sm text-text-secondary">
-              {t.childForm.fathersHeightCm}
-            </span>
-            <input
-              type="number"
-              min={PARENT_LIMITS.heightCm.min}
-              max={PARENT_LIMITS.heightCm.max}
-              step={0.1}
-              value={fatherHeight}
-              onChange={(e) => setFatherHeight(e.target.value)}
-              placeholder={
-                parentDefaults?.fatherHeightCm != null
-                  ? t.childForm.accountDefaultPlaceholder(
-                      parentDefaults.fatherHeightCm,
-                    )
-                  : t.common.egPlaceholder("178")
-              }
-              className="w-full rounded-md border border-border px-3 py-2 text-sm"
-            />
-          </label>
+          <HeightField
+            valueCm={fatherHeight}
+            onChangeCm={setFatherHeight}
+            units={units}
+            t={t}
+            metricLabel={t.units.fathersHeightLabel}
+            groupLabel={t.units.fathersHeightGroupLabel}
+            placeholder={
+              parentDefaults?.fatherHeightCm != null
+                ? t.childForm.accountDefaultPlaceholder(
+                    formatHeight(parentDefaults.fatherHeightCm, units, t),
+                  )
+                : t.common.egPlaceholder(units === "imperial" ? "5" : "178")
+            }
+          />
         </fieldset>
 
         {error && (

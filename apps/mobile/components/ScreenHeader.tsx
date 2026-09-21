@@ -2,9 +2,10 @@ import { useAuth, useClerk } from "@clerk/clerk-expo";
 import { Link } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { LOCALES, LOCALE_SHORT_LABELS } from "@notch/core";
+import { LOCALES, LOCALE_SHORT_LABELS, UNIT_SYSTEMS } from "@notch/core";
 
 import { useI18n } from "@/components/i18n";
+import { useUnits } from "@/components/units";
 import { Badge, SegmentedControl, fontSize, theme } from "@/components/ui";
 
 type ScreenHeaderProps = {
@@ -31,6 +32,7 @@ export function ScreenHeader({
   showGuestBadge = false,
 }: ScreenHeaderProps) {
   const { locale, setLocale, t } = useI18n();
+  const { units, setUnits } = useUnits();
   const { isSignedIn } = useAuth();
   const { signOut } = useClerk();
 
@@ -39,18 +41,6 @@ export function ScreenHeader({
       <View style={styles.topRow}>
         <Text style={styles.brand}>{t.common.appName}</Text>
         <View style={styles.actions}>
-          <View style={styles.localeRow}>
-            <SegmentedControl
-              size="sm"
-              label={t.header.languageLabel}
-              value={locale}
-              onChange={setLocale}
-              options={LOCALES.map((option) => ({
-                value: option,
-                label: LOCALE_SHORT_LABELS[option],
-              }))}
-            />
-          </View>
           {isSignedIn ? (
             <Pressable
               onPress={() => signOut()}
@@ -69,6 +59,42 @@ export function ScreenHeader({
               </Pressable>
             </Link>
           )}
+        </View>
+      </View>
+
+      {/*
+        Both preferences share a row of their own rather than sitting beside the
+        brand. Two segmented controls plus a sign-in link do not fit across a
+        393pt phone, and the first thing to overflow would be the units toggle.
+
+        The units control is labelled "cm"/"ft" rather than "Metric"/"Imperial",
+        which would be twice as wide for no extra clarity next to a language
+        picker. The web header, which has the room, spells them out.
+      */}
+      <View style={styles.prefsRow}>
+        <View style={styles.localeControl}>
+          <SegmentedControl
+            size="sm"
+            label={t.header.languageLabel}
+            value={locale}
+            onChange={setLocale}
+            options={LOCALES.map((option) => ({
+              value: option,
+              label: LOCALE_SHORT_LABELS[option],
+            }))}
+          />
+        </View>
+        <View style={styles.unitsControl}>
+          <SegmentedControl
+            size="sm"
+            label={t.units.settingLabel}
+            value={units}
+            onChange={setUnits}
+            options={UNIT_SYSTEMS.map((option) => ({
+              value: option,
+              label: option === "metric" ? t.units.cm : t.units.ft,
+            }))}
+          />
         </View>
       </View>
 
@@ -100,7 +126,9 @@ const styles = StyleSheet.create({
     color: theme.color.primary[700],
   },
   actions: { flexDirection: "row", alignItems: "center", gap: theme.space[2] },
-  localeRow: { width: 118 },
+  prefsRow: { flexDirection: "row", gap: theme.space[2] },
+  localeControl: { width: 118 },
+  unitsControl: { width: 104 },
   link: { paddingVertical: theme.space[1], paddingHorizontal: theme.space[1] },
   pressed: { opacity: 0.6 },
   linkText: {

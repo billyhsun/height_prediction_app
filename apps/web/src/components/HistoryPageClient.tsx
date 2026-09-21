@@ -5,14 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   fetchPredictionHistory,
+  formatHeight,
   type SavedPredictionSummary,
 } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
+import { useUnits } from "@/lib/units/context";
 import { displayError } from "@notch/core";
 
 export function HistoryPageClient() {
   const router = useRouter();
   const { locale, t } = useI18n();
+  const { units } = useUnits();
   const [predictions, setPredictions] = useState<SavedPredictionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,11 +82,11 @@ export function HistoryPageClient() {
                     )}
                   </p>
                   <p className="mt-1 text-lg font-semibold text-text-primary">
-                    {prediction.predHeightCm.toFixed(1)} cm
+                    {formatHeight(prediction.predHeightCm, units, t)}
                     {prediction.llmPredHeightCm != null && (
                       <span className="ml-2 text-sm font-normal text-accent-700">
                         {t.history.llmValue(
-                          prediction.llmPredHeightCm.toFixed(1),
+                          formatHeight(prediction.llmPredHeightCm, units, t),
                         )}
                       </span>
                     )}

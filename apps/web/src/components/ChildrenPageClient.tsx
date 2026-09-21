@@ -4,7 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { ageBreakdownFromDateOfBirth, formatDateOfBirth } from "@notch/core";
+import {
+  ageBreakdownFromDateOfBirth,
+  formatDateOfBirth,
+  formatHeight,
+} from "@notch/core";
 import {
   deleteChild,
   fetchChildren,
@@ -12,11 +16,13 @@ import {
 } from "@notch/core";
 import { formatEthnicities } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
+import { useUnits } from "@/lib/units/context";
 import { displayError } from "@notch/core";
 
 export function ChildrenPageClient() {
   const router = useRouter();
   const { locale, t } = useI18n();
+  const { units } = useUnits();
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,13 +102,13 @@ export function ChildrenPageClient() {
                       <p className="mt-1 text-xs text-text-muted">
                         {t.children.parentsLabel}{" "}
                         {child.motherHeightCm
-                          ? t.children.motherHeight(child.motherHeightCm)
+                          ? t.children.motherHeight(formatHeight(child.motherHeightCm, units, t))
                           : ""}
                         {child.motherHeightCm && child.fatherHeightCm
                           ? t.common.listSeparator
                           : ""}
                         {child.fatherHeightCm
-                          ? t.children.fatherHeight(child.fatherHeightCm)
+                          ? t.children.fatherHeight(formatHeight(child.fatherHeightCm, units, t))
                           : ""}
                       </p>
                     )}

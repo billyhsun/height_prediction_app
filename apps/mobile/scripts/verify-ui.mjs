@@ -336,6 +336,39 @@ async function main() {
       await evaluate(`document.body.innerText.includes('Get prediction')`),
     );
 
+    // --- the units toggle ---
+    // Switching must change what the fields ask for, not just relabel them:
+    // metric is one centimetre box, imperial is a feet/inches pair.
+    await click("ft");
+    check(
+      "imperial splits height into feet and inches",
+      await evaluate(
+        `document.body.innerText.includes('Feet') &&` +
+          ` document.body.innerText.includes('Inches') &&` +
+          ` !document.body.innerText.includes('Height (cm)')`,
+      ),
+    );
+    check(
+      "imperial converts the seeded height",
+      await evaluate(
+        `[...document.querySelectorAll('input')].some(i => i.value === '3') &&` +
+          ` [...document.querySelectorAll('input')].some(i => i.value === '7')`,
+      ),
+      "110 cm should read as 3 ft 7 in",
+    );
+    check(
+      "weight switches to pounds",
+      await evaluate(`document.body.innerText.includes('Weight (lb)')`),
+    );
+    await click("cm");
+    check(
+      "switching back restores centimetres without losing the value",
+      await evaluate(
+        `document.body.innerText.includes('Height (cm)') &&` +
+          ` [...document.querySelectorAll('input')].some(i => i.value === '110')`,
+      ),
+    );
+
     // Age entry has two modes, and the date one is three sheet pickers rather
     // than a native date picker. Switching to it should resolve a real age.
     await click("Date of birth");
@@ -420,7 +453,12 @@ async function main() {
             .find(s => s.getBoundingClientRect().width > 100);
           return {
             requests: window.__net || [],
-            height: (document.body.innerText.match(/(\\d{2,3}\\.\\d)\\s*cm/) || [])[1] || null,
+            // Anchored to the stat that follows the "predicted height" label,
+            // not the first measurement on the page — the inputs-used table
+            // echoes the entered height in the same shape.
+            height: (document.body.innerText
+              .split(/PREDICTED HEIGHT/i)[1] || "")
+              .trim().split("\\n").filter(Boolean)[0] || null,
             paths: chart ? chart.querySelectorAll('path').length : 0,
             circles: chart ? chart.querySelectorAll('circle').length : 0,
             ticks: chart ? chart.querySelectorAll('text').length : 0,

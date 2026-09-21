@@ -42,6 +42,39 @@ const en = {
   },
 
   /**
+   * Unit words and the shapes that combine them with a number.
+   *
+   * Here rather than in units.ts because they are prose: Chinese writes a
+   * height as "5 英尺 9 英寸", and a formatter that hardcoded `${feet}'${inches}"`
+   * would leave that untranslatable.
+   */
+  units: {
+    cm: "cm",
+    kg: "kg",
+    in: "in",
+    ft: "ft",
+    lb: "lb",
+    heightImperial: (feet: number, inches: number) => `${feet}'${inches}"`,
+    /** Field labels. The metric height is one field; the imperial one is two,
+     *  so it takes a group label and two part labels instead. */
+    heightLabel: (unit: string) => `Height (${unit})`,
+    heightGroupLabel: "Height",
+    heightFeetPart: "Feet",
+    heightInchesPart: "Inches",
+    weightLabel: (unit: string) => `Weight (${unit})`,
+    mothersHeightLabel: (unit: string) => `Mother's height (${unit})`,
+    fathersHeightLabel: (unit: string) => `Father's height (${unit})`,
+    mothersHeightGroupLabel: "Mother's height",
+    fathersHeightGroupLabel: "Father's height",
+    mothersWeightLabel: (unit: string) => `Mother's weight (${unit})`,
+    fathersWeightLabel: (unit: string) => `Father's weight (${unit})`,
+    /** The header toggle. */
+    settingLabel: "Units",
+    metric: "Metric",
+    imperial: "Imperial",
+  },
+
+  /**
    * The native apps build their own sign-in screens on Clerk's hooks, so unlike
    * the web — where Clerk's prebuilt components ship their own copy — these
    * strings have to exist here.
@@ -123,8 +156,6 @@ const en = {
     childAgeNotSaved:
       "Age applies to this prediction only — it is not saved back to the profile.",
     currentMeasurements: "Current measurements",
-    heightCm: "Height (cm)",
-    weightKg: "Weight (kg)",
     bmi: "BMI",
     parentsLegend: "Parents (optional)",
     parentHeightsLegend: "Parent heights (optional)",
@@ -137,10 +168,6 @@ const en = {
     parentsFromAccount: "Filled in from your account.",
     parentsEditOnAccount: "Change them",
     parentWeightHelp: "Optional. Adds parental build to the LLM estimate.",
-    mothersHeightCm: "Mother's height (cm)",
-    fathersHeightCm: "Father's height (cm)",
-    mothersWeightKg: "Mother's weight (kg)",
-    fathersWeightKg: "Father's weight (kg)",
     ethnicityLegend: "Ethnicity (optional)",
     ethnicityHelp: "Select all that apply. Used for LLM predictions only.",
     ethnicityWillSave:
@@ -150,10 +177,10 @@ const en = {
     /** Native has no <input type="number">, so the bounds HTML enforced on the
      *  web are checked in code and reported with these. Age is not among them:
      *  the two entry modes have their own messages, shared with the web. */
-    heightOutOfRange: (min: number, max: number) =>
-      `Height must be between ${min} and ${max} cm.`,
-    weightOutOfRange: (min: number, max: number) =>
-      `Weight must be between ${min} and ${max} kg.`,
+    heightOutOfRange: (min: string, max: string) =>
+      `Height must be between ${min} and ${max}.`,
+    weightOutOfRange: (min: string, max: string) =>
+      `Weight must be between ${min} and ${max}.`,
     targetAgeOutOfRange: (min: number, max: number) =>
       `Target age must be between ${min} and ${max} years.`,
     bothParentHeightsRequired:
@@ -179,9 +206,7 @@ const en = {
       "Saved on the profile and auto-filled for LLM predictions.",
     parentHeightsOverrideHelp:
       "Leave blank to use the parent heights on your account. Fill these in only if they differ for this child.",
-    accountDefaultPlaceholder: (cm: number) => `${cm} (from your account)`,
-    mothersHeightCm: "Mother's height (cm)",
-    fathersHeightCm: "Father's height (cm)",
+    accountDefaultPlaceholder: (value: string) => `${value} (from your account)`,
     bothParentHeightsRequired:
       "Please enter both parent heights, or leave both blank.",
     failedToLoad: "Failed to load child",
@@ -205,8 +230,8 @@ const en = {
     failedToDelete: "Failed to delete child",
     bornAndAge: (date: string, age: string) => `born ${date} · age ${age}`,
     parentsLabel: "Parents:",
-    motherHeight: (cm: number) => `mother ${cm} cm`,
-    fatherHeight: (cm: number) => `father ${cm} cm`,
+    motherHeight: (height: string) => `mother ${height}`,
+    fatherHeight: (height: string) => `father ${height}`,
     ethnicityLabel: (list: string) => `Ethnicity: ${list}`,
     predict: "Predict",
   },
@@ -220,7 +245,7 @@ const en = {
     empty: "No saved predictions yet.",
     runPrediction: "Run a prediction",
     ageTransition: (from: number, to: number) => `age ${from} → ${to}`,
-    llmValue: (cm: string) => `LLM: ${cm} cm`,
+    llmValue: (height: string) => `LLM: ${height}`,
   },
 
   results: {
@@ -231,11 +256,11 @@ const en = {
       predicted: "ML prediction",
       llmPredicted: "LLM prediction",
       ageAxis: "age (years)",
-      heightAxis: "height (cm)",
+      heightAxis: (unit: string) => `height (${unit})`,
     },
     atAge: (age: number) => `At age ${age}`,
-    basedOn: (age: number, sexNoun: string, heightCm: number, weightKg: number) =>
-      `Based on a ${age}-year-old ${sexNoun} measuring ${heightCm} cm and ${weightKg} kg.`,
+    basedOn: (age: number, sexNoun: string, height: string, weight: string) =>
+      `Based on a ${age}-year-old ${sexNoun} measuring ${height} and ${weight}.`,
     savedToAccount: "Saved to your account",
     viewHistory: "View history",
     mlModel: "ML model (SVR)",
@@ -244,8 +269,8 @@ const en = {
     predictedBmi: "Predicted BMI",
     modelLabel: (model: string) => `Model: ${model}`,
     llmPrediction: "LLM prediction",
-    midParental: (cm: string, model: string) =>
-      `Mid-parental height: ${cm} cm · Model: ${model}`,
+    midParental: (height: string, model: string) =>
+      `Mid-parental height: ${height} · Model: ${model}`,
     llmUnavailable: "LLM prediction unavailable",
     /** How the current height compares with peers of the same age and sex.
      *  None of the three bands is a finding — see StatureBand in api.ts. */
@@ -307,19 +332,15 @@ const en = {
     legend: "Parent details",
     accountHelp:
       "Used to fill in the prediction form. Adult height doesn't change, so this is asked once. All fields are optional.",
-    mothersHeightCm: "Mother's height (cm)",
-    fathersHeightCm: "Father's height (cm)",
-    mothersWeightKg: "Mother's weight (kg)",
-    fathersWeightKg: "Father's weight (kg)",
     optionalPlaceholder: "Optional",
     save: "Save",
     saving: "Saving…",
     saved: "Saved",
     failedToSave: "Could not save your details",
-    heightOutOfRange: (min: number, max: number) =>
-      `Height must be between ${min} and ${max} cm.`,
-    weightOutOfRange: (min: number, max: number) =>
-      `Weight must be between ${min} and ${max} kg.`,
+    heightOutOfRange: (min: string, max: string) =>
+      `Height must be between ${min} and ${max}.`,
+    weightOutOfRange: (min: string, max: string) =>
+      `Weight must be between ${min} and ${max}.`,
   },
 
   onboarding: {
@@ -381,6 +402,30 @@ const zhCN: Dictionary = {
     signIn: "登录",
     signUp: "注册",
     languageLabel: "语言",
+  },
+
+  units: {
+    cm: "厘米",
+    kg: "公斤",
+    in: "英寸",
+    ft: "英尺",
+    lb: "磅",
+    heightImperial: (feet: number, inches: number) =>
+      inches === 0 ? `${feet} 英尺` : `${feet} 英尺 ${inches} 英寸`,
+    heightLabel: (unit: string) => `身高（${unit}）`,
+    heightGroupLabel: "身高",
+    heightFeetPart: "英尺",
+    heightInchesPart: "英寸",
+    weightLabel: (unit: string) => `体重（${unit}）`,
+    mothersHeightLabel: (unit: string) => `母亲身高（${unit}）`,
+    fathersHeightLabel: (unit: string) => `父亲身高（${unit}）`,
+    mothersHeightGroupLabel: "母亲身高",
+    fathersHeightGroupLabel: "父亲身高",
+    mothersWeightLabel: (unit: string) => `母亲体重（${unit}）`,
+    fathersWeightLabel: (unit: string) => `父亲体重（${unit}）`,
+    settingLabel: "单位",
+    metric: "公制",
+    imperial: "英制",
   },
 
   auth: {
@@ -452,8 +497,6 @@ const zhCN: Dictionary = {
     monthsOutOfRange: "月份需在 0 至 11 之间。",
     childAgeNotSaved: "此处的年龄仅用于本次预测，不会保存到档案。",
     currentMeasurements: "当前身体数据",
-    heightCm: "身高（厘米）",
-    weightKg: "体重（公斤）",
     bmi: "BMI",
     parentsLegend: "父母信息（可选）",
     parentHeightsLegend: "父母身高（可选）",
@@ -464,19 +507,15 @@ const zhCN: Dictionary = {
     parentsFromAccount: "已根据账户信息填写。",
     parentsEditOnAccount: "修改",
     parentWeightHelp: "可选。为大语言模型预测提供父母体型参考。",
-    mothersHeightCm: "母亲身高（厘米）",
-    fathersHeightCm: "父亲身高（厘米）",
-    mothersWeightKg: "母亲体重（公斤）",
-    fathersWeightKg: "父亲体重（公斤）",
     ethnicityLegend: "族裔（可选）",
     ethnicityHelp: "可多选。仅用于大语言模型预测。",
     ethnicityWillSave: "运行预测时会保存到孩子档案。",
     predictionLegend: "预测",
     predictAtAgeYears: "预测年龄（岁）",
-    heightOutOfRange: (min: number, max: number) =>
-      `身高需在 ${min} 至 ${max} 厘米之间。`,
-    weightOutOfRange: (min: number, max: number) =>
-      `体重需在 ${min} 至 ${max} 公斤之间。`,
+    heightOutOfRange: (min: string, max: string) =>
+      `身高需在 ${min} 至 ${max} 之间。`,
+    weightOutOfRange: (min: string, max: string) =>
+      `体重需在 ${min} 至 ${max} 之间。`,
     targetAgeOutOfRange: (min: number, max: number) =>
       `目标年龄需在 ${min} 至 ${max} 岁之间。`,
     bothParentHeightsRequired: "请同时填写父亲和母亲的身高，或两项都留空。",
@@ -500,9 +539,7 @@ const zhCN: Dictionary = {
     parentHeightsHelp: "保存在档案中，并自动用于大语言模型预测。",
     parentHeightsOverrideHelp:
       "留空则使用账户中的父母身高。仅当这个孩子的情况不同时才需填写。",
-    accountDefaultPlaceholder: (cm: number) => `${cm}（来自账户）`,
-    mothersHeightCm: "母亲身高（厘米）",
-    fathersHeightCm: "父亲身高（厘米）",
+    accountDefaultPlaceholder: (value: string) => `${value}（来自账户）`,
     bothParentHeightsRequired: "请同时填写父母双方的身高，或两项都留空。",
     failedToLoad: "加载孩子信息失败",
     failedToSave: "保存失败",
@@ -523,8 +560,8 @@ const zhCN: Dictionary = {
     failedToDelete: "删除孩子失败",
     bornAndAge: (date: string, age: string) => `出生日期 ${date} · ${age}`,
     parentsLabel: "父母：",
-    motherHeight: (cm: number) => `母亲 ${cm} 厘米`,
-    fatherHeight: (cm: number) => `父亲 ${cm} 厘米`,
+    motherHeight: (height: string) => `母亲 ${height}`,
+    fatherHeight: (height: string) => `父亲 ${height}`,
     ethnicityLabel: (list: string) => `族裔：${list}`,
     predict: "预测",
   },
@@ -537,7 +574,7 @@ const zhCN: Dictionary = {
     empty: "还没有保存的预测记录。",
     runPrediction: "开始预测",
     ageTransition: (from: number, to: number) => `${from} 岁 → ${to} 岁`,
-    llmValue: (cm: string) => `大语言模型：${cm} 厘米`,
+    llmValue: (height: string) => `大语言模型：${height}`,
   },
 
   results: {
@@ -548,11 +585,11 @@ const zhCN: Dictionary = {
       predicted: "机器学习预测",
       llmPredicted: "大语言模型预测",
       ageAxis: "年龄（岁）",
-      heightAxis: "身高（厘米）",
+      heightAxis: (unit: string) => `身高（${unit}）`,
     },
     atAge: (age: number) => `${age} 岁时`,
-    basedOn: (age: number, sexNoun: string, heightCm: number, weightKg: number) =>
-      `基于一名 ${age} 岁${sexNoun}，身高 ${heightCm} 厘米，体重 ${weightKg} 公斤。`,
+    basedOn: (age: number, sexNoun: string, height: string, weight: string) =>
+      `基于一名 ${age} 岁${sexNoun}，身高 ${height}，体重 ${weight}。`,
     savedToAccount: "已保存到您的账户",
     viewHistory: "查看历史记录",
     mlModel: "机器学习模型（SVR）",
@@ -561,8 +598,8 @@ const zhCN: Dictionary = {
     predictedBmi: "预测 BMI",
     modelLabel: (model: string) => `模型：${model}`,
     llmPrediction: "大语言模型预测",
-    midParental: (cm: string, model: string) =>
-      `父母平均身高：${cm} 厘米 · 模型：${model}`,
+    midParental: (height: string, model: string) =>
+      `父母平均身高：${height} · 模型：${model}`,
     llmUnavailable: "大语言模型预测不可用",
     statureLabel: "同龄身高对比",
     stature: {
@@ -616,19 +653,15 @@ const zhCN: Dictionary = {
     legend: "父母信息",
     accountHelp:
       "用于自动填写预测表单。成人身高不会变化，因此只需填写一次。所有项均为可选。",
-    mothersHeightCm: "母亲身高（厘米）",
-    fathersHeightCm: "父亲身高（厘米）",
-    mothersWeightKg: "母亲体重（公斤）",
-    fathersWeightKg: "父亲体重（公斤）",
     optionalPlaceholder: "可选",
     save: "保存",
     saving: "保存中…",
     saved: "已保存",
     failedToSave: "无法保存您的信息",
-    heightOutOfRange: (min: number, max: number) =>
-      `身高需在 ${min} 至 ${max} 厘米之间。`,
-    weightOutOfRange: (min: number, max: number) =>
-      `体重需在 ${min} 至 ${max} 公斤之间。`,
+    heightOutOfRange: (min: string, max: string) =>
+      `身高需在 ${min} 至 ${max} 之间。`,
+    weightOutOfRange: (min: string, max: string) =>
+      `体重需在 ${min} 至 ${max} 之间。`,
   },
 
   onboarding: {

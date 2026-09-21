@@ -17,6 +17,8 @@ import {
   calculateBmi,
   displayError,
   fetchChildren,
+  formatHeight,
+  formatWeight,
   fetchParentDefaults,
   formatDateOfBirth,
   hasParentHeights,
@@ -34,18 +36,22 @@ import {
   type EthnicityValue,
   type ParentDefaults,
   type PredictRequest,
+  type UnitSystem,
 } from "@notch/core";
 
 import { useI18n } from "@/components/i18n";
+import { useUnits } from "@/components/units";
 import {
   Button,
   Card,
   Field,
+  HeightField,
   Input,
   OptionGrid,
   SegmentedControl,
   Section,
   Select,
+  WeightField,
   fontSize,
   theme,
 } from "@/components/ui";
@@ -130,7 +136,13 @@ function validate(
   minTargetAge: number,
   profileLocked: boolean,
   t: Dictionary,
+  units: UnitSystem,
 ): string | null {
+  // Bounds are stored in cm and kg but have to be *reported* in the unit the
+  // user is looking at, or "between 40 and 220" reads as nonsense beside a
+  // field showing feet.
+  const asHeight = (cm: number) => formatHeight(cm, units, t);
+  const asWeight = (kg: number) => formatWeight(kg, units, t);
   if (!profileLocked) {
     // Only the active mode is validated. The other may well hold a stale or
     // empty value — that is the point of keeping them independent — and
@@ -157,16 +169,16 @@ function validate(
   const height = toNumber(values.heightCm);
   if (height === undefined || !inRange(height, CHILD_LIMITS.heightCm)) {
     return t.form.heightOutOfRange(
-      CHILD_LIMITS.heightCm.min,
-      CHILD_LIMITS.heightCm.max,
+      asHeight(CHILD_LIMITS.heightCm.min),
+      asHeight(CHILD_LIMITS.heightCm.max),
     );
   }
 
   const weight = toNumber(values.weightKg);
   if (weight === undefined || !inRange(weight, CHILD_LIMITS.weightKg)) {
     return t.form.weightOutOfRange(
-      CHILD_LIMITS.weightKg.min,
-      CHILD_LIMITS.weightKg.max,
+      asWeight(CHILD_LIMITS.weightKg.min),
+      asWeight(CHILD_LIMITS.weightKg.max),
     );
   }
 
@@ -181,8 +193,8 @@ function validate(
   for (const parentHeight of [motherHeight, fatherHeight]) {
     if (parentHeight !== undefined && !inRange(parentHeight, PARENT_LIMITS.heightCm)) {
       return t.parents.heightOutOfRange(
-        PARENT_LIMITS.heightCm.min,
-        PARENT_LIMITS.heightCm.max,
+        asHeight(PARENT_LIMITS.heightCm.min),
+        asHeight(PARENT_LIMITS.heightCm.max),
       );
     }
   }
@@ -193,8 +205,8 @@ function validate(
   ]) {
     if (parentWeight !== undefined && !inRange(parentWeight, PARENT_LIMITS.weightKg)) {
       return t.parents.weightOutOfRange(
-        PARENT_LIMITS.weightKg.min,
-        PARENT_LIMITS.weightKg.max,
+        asWeight(PARENT_LIMITS.weightKg.min),
+        asWeight(PARENT_LIMITS.weightKg.max),
       );
     }
   }
@@ -221,6 +233,7 @@ type PredictionFormProps = {
 export function PredictionForm({ initial, initialChildId }: PredictionFormProps) {
   const router = useRouter();
   const { locale, t } = useI18n();
+  const { units } = useUnits();
   const { isLoaded: authLoaded, isSignedIn } = useAuth();
 
   const [children, setChildren] = useState<ChildProfile[]>([]);
@@ -363,6 +376,7 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
       minTargetAge,
       profileLocked,
       t,
+      units,
     );
     if (problem) {
       setError(problem);
@@ -646,24 +660,21 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
       </Section>
 
       <Section title={t.form.currentMeasurements}>
-        <Field label={t.form.heightCm}>
-          {() => (
-            <Input
-              keyboardType="decimal-pad"
-              value={values.heightCm}
-              onChangeText={set("heightCm")}
-            />
-          )}
-        </Field>
-        <Field label={t.form.weightKg}>
-          {() => (
-            <Input
-              keyboardType="decimal-pad"
-              value={values.weightKg}
-              onChangeText={set("weightKg")}
-            />
-          )}
-        </Field>
+        <HeightField
+          valueCm={values.heightCm}
+          onChangeCm={set("heightCm")}
+          units={units}
+          t={t}
+          metricLabel={t.units.heightLabel}
+          groupLabel={t.units.heightGroupLabel}
+        />
+        <WeightField
+          valueKg={values.weightKg}
+          onChangeKg={set("weightKg")}
+          units={units}
+          t={t}
+          label={t.units.weightLabel}
+        />
         <View style={styles.bmiRow}>
           <Text style={styles.bmiLabel}>{t.form.bmi}</Text>
           <Text style={styles.bmiValue}>{bmi === null ? "—" : bmi.toFixed(1)}</Text>
@@ -686,46 +697,50 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
           .filter(Boolean)
           .join(" ")}
       >
-        <Field label={t.form.mothersHeightCm}>
-          {() => (
-            <Input
-              keyboardType="decimal-pad"
-              value={values.motherHeight}
-              onChangeText={set("motherHeight")}
-              placeholder={t.common.egPlaceholder("165")}
-            />
+        <HeightField
+          valueCm={values.motherHeight}
+          onChangeCm={set("motherHeight")}
+          units={units}
+          t={t}
+          metricLabel={t.units.mothersHeightLabel}
+          groupLabel={t.units.mothersHeightGroupLabel}
+          placeholder={t.common.egPlaceholder(
+            units === "imperial" ? "5" : "165",
           )}
-        </Field>
-        <Field label={t.form.fathersHeightCm}>
-          {() => (
-            <Input
-              keyboardType="decimal-pad"
-              value={values.fatherHeight}
-              onChangeText={set("fatherHeight")}
-              placeholder={t.common.egPlaceholder("178")}
-            />
+        />
+        <HeightField
+          valueCm={values.fatherHeight}
+          onChangeCm={set("fatherHeight")}
+          units={units}
+          t={t}
+          metricLabel={t.units.fathersHeightLabel}
+          groupLabel={t.units.fathersHeightGroupLabel}
+          placeholder={t.common.egPlaceholder(
+            units === "imperial" ? "5" : "178",
           )}
-        </Field>
-        <Field label={t.form.mothersWeightKg} hint={t.form.parentWeightHelp}>
-          {() => (
-            <Input
-              keyboardType="decimal-pad"
-              value={values.motherWeight}
-              onChangeText={set("motherWeight")}
-              placeholder={t.common.egPlaceholder("60")}
-            />
+        />
+        <WeightField
+          valueKg={values.motherWeight}
+          onChangeKg={set("motherWeight")}
+          units={units}
+          t={t}
+          label={t.units.mothersWeightLabel}
+          hint={t.form.parentWeightHelp}
+          placeholder={t.common.egPlaceholder(
+            units === "imperial" ? "132" : "60",
           )}
-        </Field>
-        <Field label={t.form.fathersWeightKg} hint={t.form.parentWeightHelp}>
-          {() => (
-            <Input
-              keyboardType="decimal-pad"
-              value={values.fatherWeight}
-              onChangeText={set("fatherWeight")}
-              placeholder={t.common.egPlaceholder("82")}
-            />
+        />
+        <WeightField
+          valueKg={values.fatherWeight}
+          onChangeKg={set("fatherWeight")}
+          units={units}
+          t={t}
+          label={t.units.fathersWeightLabel}
+          hint={t.form.parentWeightHelp}
+          placeholder={t.common.egPlaceholder(
+            units === "imperial" ? "181" : "82",
           )}
-        </Field>
+        />
       </Section>
 
       <Section

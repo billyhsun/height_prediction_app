@@ -7,6 +7,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   calculateBmi,
   fetchPredictionHistory,
+  formatHeight,
+  formatWeight,
+  heightInDisplayUnit,
+  heightMeasurement,
+  heightUnitLabel,
   inputsToParamRecord,
   loadPredictionSession,
   type ChartPoint,
@@ -15,6 +20,7 @@ import {
 } from "@notch/core";
 
 import { useTranslations } from "@/components/i18n";
+import { useUnits } from "@/components/units";
 import {
   Badge,
   Button,
@@ -29,6 +35,7 @@ export default function ResultsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const t = useTranslations();
+  const { units } = useUnits();
   const { isSignedIn } = useAuth();
 
   /**
@@ -84,23 +91,36 @@ export default function ResultsScreen() {
 
   // The measurement behind this prediction is always plotted; prior ones are
   // added when available. dedupeByAge in the chart collapses repeats.
-  const observed: ChartPoint[] = [
-    ...history,
-    { ageYears: inputs.current_age_years, heightCm: inputs.height_cm },
-  ];
+  const observed: ChartPoint[] = [...history, {
+    ageYears: inputs.current_age_years,
+    heightCm: inputs.height_cm,
+  }].map((point) => ({
+    ...point,
+    heightCm: heightInDisplayUnit(point.heightCm, units),
+  }));
 
   const inputRows: { label: string; value: string }[] = [
     { label: t.results.sex, value: inputs.sex === 1 ? t.common.male : t.common.female },
     { label: t.results.currentAge, value: t.common.years(inputs.current_age_years) },
-    { label: t.results.height, value: `${inputs.height_cm} cm` },
-    { label: t.results.weight, value: `${inputs.weight_kg} kg` },
+    { label: t.results.height, value: formatHeight(inputs.height_cm, units, t) },
+    { label: t.results.weight, value: formatWeight(inputs.weight_kg, units, t) },
     { label: t.results.currentBmi, value: currentBmi.toFixed(1) },
     { label: t.results.targetAge, value: t.common.years(inputs.target_age_years) },
     ...(inputs.mother_height_cm
-      ? [{ label: t.results.motherHeight, value: `${inputs.mother_height_cm} cm` }]
+      ? [
+          {
+            label: t.results.motherHeight,
+            value: formatHeight(inputs.mother_height_cm, units, t),
+          },
+        ]
       : []),
     ...(inputs.father_height_cm
-      ? [{ label: t.results.fatherHeight, value: `${inputs.father_height_cm} cm` }]
+      ? [
+          {
+            label: t.results.fatherHeight,
+            value: formatHeight(inputs.father_height_cm, units, t),
+          },
+        ]
       : []),
   ];
 
@@ -120,8 +140,8 @@ export default function ResultsScreen() {
           {t.results.basedOn(
             inputs.current_age_years,
             t.common.sexNoun(inputs.sex),
-            inputs.height_cm,
-            inputs.weight_kg,
+            formatHeight(inputs.height_cm, units, t),
+            formatWeight(inputs.weight_kg, units, t),
           )}
         </Text>
       </View>
@@ -136,14 +156,13 @@ export default function ResultsScreen() {
           </View>
           <Stat
             label={t.results.predictedHeight}
-            value={result.pred_height_cm.toFixed(1)}
-            unit="cm"
+            {...heightMeasurement(result.pred_height_cm, units, t)}
           />
           <View style={styles.pairRow}>
             <View style={styles.pairItem}>
               <Text style={styles.pairLabel}>{t.results.predictedWeight}</Text>
               <Text style={styles.pairValue}>
-                {result.pred_weight_kg.toFixed(1)} kg
+                {formatWeight(result.pred_weight_kg, units, t)}
               </Text>
             </View>
             <View style={styles.pairItem}>
@@ -160,18 +179,21 @@ export default function ResultsScreen() {
           observed={observed}
           predicted={{
             ageYears: result.target_age_years,
-            heightCm: result.pred_height_cm,
+            heightCm: heightInDisplayUnit(result.pred_height_cm, units),
           }}
           llmPredicted={
             llmResult
               ? {
                   ageYears: llmResult.target_age_years,
-                  heightCm: llmResult.pred_height_cm,
+                  heightCm: heightInDisplayUnit(llmResult.pred_height_cm, units),
                 }
               : null
           }
           sex={inputs.sex}
-          labels={t.results.chart}
+          labels={{
+            ...t.results.chart,
+            heightAxis: t.results.chart.heightAxis(heightUnitLabel(units, t)),
+          }}
         />
       </Card>
 
@@ -186,8 +208,7 @@ export default function ResultsScreen() {
             </View>
             <Stat
               label={t.results.predictedHeight}
-              value={llmResult.pred_height_cm.toFixed(1)}
-              unit="cm"
+              {...heightMeasurement(llmResult.pred_height_cm, units, t)}
               tone="accent"
             />
             <Text style={styles.reasoning}>
@@ -226,7 +247,7 @@ export default function ResultsScreen() {
 
             <Text style={styles.muted}>
               {t.results.midParental(
-                llmResult.mid_parental_height_cm.toFixed(1),
+                formatHeight(llmResult.mid_parental_height_cm, units, t),
                 llmResult.model,
               )}
             </Text>

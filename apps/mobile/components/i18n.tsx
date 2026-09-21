@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import * as SecureStore from "expo-secure-store";
+import { createContext, useContext, useMemo } from "react";
 
 import {
   DEFAULT_LOCALE,
@@ -16,6 +8,8 @@ import {
   type Locale,
 } from "@notch/core";
 
+import { useStoredPreference } from "@/components/stored-preference";
+
 type I18nValue = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
@@ -24,12 +18,6 @@ type I18nValue = {
 
 const I18nContext = createContext<I18nValue | null>(null);
 
-/**
- * Stored in the keychain rather than a cookie — the web's mechanism — because it
- * is the only key-value store already on the dependency list. A UI language is
- * not a secret, and SecureStore is heavier than it needs, but it beats pulling
- * in AsyncStorage for a single two-valued preference.
- */
 const LOCALE_KEY = "notch.locale";
 
 /**
@@ -37,33 +25,15 @@ const LOCALE_KEY = "notch.locale";
  *
  * The web's provider takes its initial value from a cookie read on the server,
  * so the first client render matches the markup. Nothing is server-rendered
- * here, so the stored value is read asynchronously after mount instead: the
- * first frame is the default locale and it corrects itself a tick later. Worth
- * the flash, because the alternative is blocking the whole app behind a
- * keychain read.
+ * here, so the stored value arrives a tick after mount instead — see
+ * useStoredPreference.
  */
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-
-  useEffect(() => {
-    let cancelled = false;
-    SecureStore.getItemAsync(LOCALE_KEY)
-      .then((stored) => {
-        if (!cancelled && isLocale(stored)) setLocaleState(stored);
-      })
-      // An unreadable preference is not worth surfacing; the default stands.
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const setLocale = useCallback((next: Locale) => {
-    // State first so the switch is instant; persistence is incidental and its
-    // failure must not stop the language changing for this session.
-    setLocaleState(next);
-    SecureStore.setItemAsync(LOCALE_KEY, next).catch(() => {});
-  }, []);
+  const [locale, setLocale] = useStoredPreference<Locale>(
+    LOCALE_KEY,
+    isLocale,
+    DEFAULT_LOCALE,
+  );
 
   const value = useMemo(
     () => ({ locale, setLocale, t: getDictionary(locale) }),

@@ -1,7 +1,10 @@
-import { useSignUp } from "@clerk/clerk-expo";
+import { isClerkAPIResponseError, useSignUp } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+
+import { apiUrl } from "@notch/core";
 
 import { AuthScreen, authErrorMessage } from "@/components/AuthScreen";
 import { useTranslations } from "@/components/i18n";
@@ -16,9 +19,22 @@ import { Button, Field, Input, fontSize, theme } from "@/components/ui";
  * first: a verification route reachable on its own would just be a dead end
  * after an app restart.
  *
- * The web sends a new account to /onboarding to collect parent heights. That
- * screen has no native equivalent yet, so registration lands back on the form —
- * where those fields can still be typed in directly.
+ * Two things this screen cannot do natively, both discovered by running it
+ * against the real Clerk instance rather than by reading the code:
+ *
+ * The instance requires a first and last name, so those are collected here —
+ * `signUp.create` rejects the attempt outright without them.
+ *
+ * And it has bot protection on. @clerk/clerk-expo ships no CAPTCHA widget, and
+ * `SignUpCreateParams` has no field to carry a token, so there is nothing the
+ * app can render to satisfy the check: native registration simply cannot
+ * complete while the setting is on. Rather than dead-end, the screen detects
+ * that specific failure and hands off to the browser, where Clerk's own
+ * component renders the widget. Signing *in* is unaffected and stays native.
+ *
+ * The hand-off is deliberately reactive rather than unconditional — turn bot
+ * protection off in the Clerk dashboard and the fully native flow starts
+ * working again with no code change.
  */
 export default function SignUpScreen() {
   const { signUp, setActive, isLoaded } = useSignUp();
@@ -27,6 +43,10 @@ export default function SignUpScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  /** Set when Clerk rejects the attempt for a check the app cannot render. */
+  const [captchaBlocked, setCaptchaBlocked] = useState(false);
   const [code, setCode] = useState("");
   const [pendingVerification, setPendingVerification] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -49,18 +69,43 @@ export default function SignUpScreen() {
       setError(t.auth.missingCredentials);
       return;
     }
+    if (!firstName.trim() || !lastName.trim()) {
+      setError(t.auth.namesRequired);
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
 
     try {
-      await signUp.create({ emailAddress: email.trim(), password });
+      await signUp.create({
+        emailAddress: email.trim(),
+        password,
+        // Required by this instance; `create` fails without them.
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      });
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       setPendingVerification(true);
     } catch (err) {
-      setError(authErrorMessage(err, t.auth.signUpFailed));
+      if (isCaptchaFailure(err)) {
+        setCaptchaBlocked(true);
+        setError(null);
+      } else {
+        setError(authErrorMessage(err, t.auth.signUpFailed));
+      }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function openBrowserSignUp() {
+    try {
+      // The deployed web app, which renders Clerk's own <SignUp> and with it
+      // the CAPTCHA widget this runtime cannot draw.
+      await WebBrowser.openBrowserAsync(apiUrl("/sign-up"));
+    } catch {
+      setError(t.auth.browserOpenFailed);
     }
   }
 
@@ -108,6 +153,33 @@ export default function SignUpScreen() {
     } catch (err) {
       setError(authErrorMessage(err, t.auth.signUpFailed));
     }
+  }
+
+  if (captchaBlocked) {
+    return (
+      <AuthScreen
+        title={t.auth.captchaBlockedTitle}
+        subtitle={t.auth.captchaBlockedBody}
+        error={error}
+        footerPrompt={t.auth.haveAccountPrompt}
+        footerAction={t.auth.haveAccountAction}
+        footerHref="/sign-in"
+      >
+        <View style={styles.stack}>
+          <Button size="lg" fullWidth onPress={openBrowserSignUp}>
+            {t.auth.continueInBrowser}
+          </Button>
+          <Button
+            size="lg"
+            variant="secondary"
+            fullWidth
+            onPress={() => router.replace("/sign-in")}
+          >
+            {t.auth.returnToSignIn}
+          </Button>
+        </View>
+      </AuthScreen>
+    );
   }
 
   if (pendingVerification) {
@@ -159,6 +231,32 @@ export default function SignUpScreen() {
       footerAction={t.auth.haveAccountAction}
       footerHref="/sign-in"
     >
+      <Field label={t.auth.firstNameLabel}>
+        {() => (
+          <Input
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
+            autoComplete="given-name"
+            textContentType="givenName"
+            returnKeyType="next"
+          />
+        )}
+      </Field>
+
+      <Field label={t.auth.lastNameLabel}>
+        {() => (
+          <Input
+            value={lastName}
+            onChangeText={setLastName}
+            autoCapitalize="words"
+            autoComplete="family-name"
+            textContentType="familyName"
+            returnKeyType="next"
+          />
+        )}
+      </Field>
+
       <Field label={t.auth.emailLabel}>
         {() => (
           <Input
@@ -204,7 +302,21 @@ export default function SignUpScreen() {
   );
 }
 
+/**
+ * True for the one failure the browser hand-off exists for.
+ *
+ * Matched on the code where Clerk gives one and on the message otherwise,
+ * because the widget-failed case arrives as prose rather than a typed code.
+ */
+function isCaptchaFailure(error: unknown): boolean {
+  if (!isClerkAPIResponseError(error)) return false;
+  return error.errors.some((e) =>
+    /captcha/i.test(`${e.code ?? ""} ${e.message ?? ""} ${e.longMessage ?? ""}`),
+  );
+}
+
 const styles = StyleSheet.create({
+  stack: { gap: theme.space[3] },
   resend: { alignSelf: "center", paddingVertical: theme.space[2] },
   pressed: { opacity: 0.6 },
   resendText: {

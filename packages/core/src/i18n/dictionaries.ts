@@ -111,6 +111,21 @@ const en = {
     /** Password reset, MFA and SSO are not built into the native flow yet. */
     unsupportedStep:
       "This account needs a step the app can't handle yet. Please sign in on the web to continue.",
+    firstNameLabel: "First name",
+    lastNameLabel: "Last name",
+    namesRequired: "Enter a first and last name.",
+    /**
+     * Shown when Clerk's bot protection blocks native registration.
+     * @clerk/clerk-expo ships no CAPTCHA widget, and SignUpCreateParams has no
+     * field to pass a token through, so there is nothing the app can render to
+     * satisfy it — the only paths are the browser or turning the setting off.
+     */
+    captchaBlockedTitle: "Finish signing up in your browser",
+    captchaBlockedBody:
+      "This account needs a security check that can't run inside the app. Create your account in the browser, then come back here and sign in.",
+    continueInBrowser: "Open sign-up in browser",
+    browserOpenFailed: "Could not open the browser.",
+    returnToSignIn: "I've created my account — sign in",
   },
 
   form: {
@@ -523,6 +538,15 @@ const zhCN: Dictionary = {
     signUpFailed: "无法创建账户。",
     verifyFailed: "验证码无效。请检查后重试。",
     unsupportedStep: "该账户需要应用暂不支持的验证步骤。请在网页版登录。",
+    firstNameLabel: "名字",
+    lastNameLabel: "姓氏",
+    namesRequired: "请填写名字和姓氏。",
+    captchaBlockedTitle: "请在浏览器中完成注册",
+    captchaBlockedBody:
+      "此账户需要完成应用内无法进行的安全验证。请在浏览器中创建账户，然后返回这里登录。",
+    continueInBrowser: "在浏览器中打开注册页",
+    browserOpenFailed: "无法打开浏览器。",
+    returnToSignIn: "我已创建账户——前往登录",
   },
 
   form: {

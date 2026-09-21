@@ -367,7 +367,30 @@ async function main() {
         `['Welcome back', 'Email'].every(s => document.body.innerText.includes(s))`,
       ),
     );
-    await click("Continue without an account");
+    // The instance requires a first and last name; signUp.create is rejected
+    // outright without them. Checked on sign-up rather than sign-in, and
+    // deliberately not asserting the CAPTCHA hand-off — that depends on a
+    // dashboard setting which should eventually be turned off.
+    // Navigated rather than clicked through: the footer link is a Text nested
+    // inside a Text, which the click helper cannot target.
+    await send("Page.navigate", { url: `http://localhost:${PROXY_PORT}/sign-up` });
+    for (let i = 0; i < 40; i++) {
+      if (await evaluate(`document.body.innerText.includes('Create an account')`)) break;
+      await sleep(400);
+    }
+    check(
+      "sign-up collects the names the instance requires",
+      await evaluate(
+        `['First name', 'Last name', 'Email', 'Password']` +
+          `.every(s => document.body.innerText.includes(s))`,
+      ),
+    );
+
+    await send("Page.navigate", { url: `http://localhost:${PROXY_PORT}/` });
+    for (let i = 0; i < 40; i++) {
+      if (await evaluate(`document.body.innerText.includes('Get prediction')`)) break;
+      await sleep(400);
+    }
     check(
       "guest escape hatch returns to the form",
       await evaluate(`document.body.innerText.includes('Get prediction')`),

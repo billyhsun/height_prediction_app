@@ -379,6 +379,16 @@ const en = {
     /** Shown instead of the growth chart, which needs measurements over time. */
     noChartNote:
       "No growth curve yet — that needs measurements taken over time. Come back once the baby has been measured.",
+    /** The explanation card. It carries no number of its own — see
+     *  BirthExplanation in birth-prediction.ts. */
+    explanationTitle: "What this means",
+    explaining: "Writing an explanation…",
+    birthSizeLabel: "Size at birth",
+    adultBandLabel: "As an adult",
+    birthSizeCaveat: "Compared with other newborns of the same sex.",
+    adultBandCaveat: (sexNoun: string) =>
+      `Compared with adult ${sexNoun === "male" ? "men" : "women"} generally.`,
+    explanationUnavailable: "Explanation unavailable",
   },
   /** The account-level parent measurements, shared by onboarding and account. */
   parents: {
@@ -739,6 +749,14 @@ const zhCN: Dictionary = {
     recordedLabel: "出生时记录",
     startOver: "重新开始",
     noChartNote: "暂无生长曲线——那需要一段时间内的多次测量。等宝宝有了测量记录再回来查看。",
+    explanationTitle: "结果解读",
+    explaining: "正在生成解读…",
+    birthSizeLabel: "出生时体型",
+    adultBandLabel: "成年时",
+    birthSizeCaveat: "与同性别的其他新生儿相比。",
+    adultBandCaveat: (sexNoun: string) =>
+      `与成年${sexNoun === "male" ? "男性" : "女性"}的总体水平相比。`,
+    explanationUnavailable: "暂时无法生成解读",
   },
   parents: {
     legend: "父母信息",

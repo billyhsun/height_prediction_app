@@ -592,6 +592,35 @@ async function main() {
       estimate ?? "no estimate",
     );
 
+    // The explanation arrives after the estimate and must never gate it.
+    const explained = await (async () => {
+      const deadline = Date.now() + 25_000;
+      while (Date.now() < deadline) {
+        const text = await evaluate(`document.body.innerText`);
+        if (/what this means/i.test(text)) return text;
+        await sleep(800);
+      }
+      return await evaluate(`document.body.innerText`);
+    })();
+    check(
+      "explanation card appears for the unborn case",
+      /what this means/i.test(explained),
+    );
+    // Scoped to the card. The page subtitle also contains the words "as an
+    // adult", so an unscoped match passes whether or not the band rendered.
+    const card = explained.split(/what this means/i)[1] ?? "";
+    check(
+      "explanation places the child among adults",
+      /as an adult/i.test(card),
+      (card.match(/AS AN ADULT[^\n]*/i) || ["not in card"])[0].trim(),
+    );
+    // Nothing was measured, so there is no birth size to describe — even if the
+    // model volunteers one.
+    check(
+      "no birth-size band without measurements",
+      !/size at birth/i.test(card),
+    );
+
     const shotPath = join(MOBILE_ROOT, ".verify-dist", "screenshot.png");
     const { data } = await send("Page.captureScreenshot", { format: "png" });
     await writeFile(shotPath, Buffer.from(data, "base64"));

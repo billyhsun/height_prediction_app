@@ -1,3 +1,7 @@
+import { apiFetch } from "./http";
+import { GenericRequestError } from "./request-error";
+import type { StatureBand } from "./api";
+
 /**
  * Adult height from parental height, for a newborn or a child not yet born.
  *
@@ -107,3 +111,52 @@ export const BIRTH_LIMITS = {
   lengthCm: { min: 30, max: 60 },
   weightKg: { min: 0.5, max: 7 },
 } as const;
+
+/**
+ * The explanation shown beside the estimate, written by the LLM.
+ *
+ * Carries no height of its own: the number on this page comes from
+ * `predictAdultHeightFromParents`, and a second, differently-derived figure
+ * would compete with it without being better.
+ */
+export type BirthExplanation = {
+  reasoning: string;
+  /** Absent when nothing was measured — there is no size to compare. */
+  birth_size_band?: StatureBand;
+  adult_band?: StatureBand;
+  model: string;
+  model_version: string;
+  reasoning_locale?: string;
+};
+
+export type BirthExplanationRequest = {
+  sex: number;
+  status: "born" | "expecting";
+  birth_length_cm?: number;
+  birth_weight_kg?: number;
+  mother_height_cm: number;
+  father_height_cm: number;
+  predicted_adult_height_cm: number;
+};
+
+export async function explainBirthPrediction(
+  input: BirthExplanationRequest,
+): Promise<BirthExplanation> {
+  const res = await apiFetch("/api/v1/predict/birth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const message =
+      typeof err.detail === "string" ? err.detail : "Explanation failed";
+    // 5xx is an outage and its message is not for the user — same split as the
+    // prediction routes, so the UI can substitute localized text.
+    if (res.status >= 500) throw new GenericRequestError(message, res.status);
+    throw new Error(message);
+  }
+
+  return res.json();
+}

@@ -5,16 +5,20 @@ import { useState } from "react";
 import {
   BIRTH_LIMITS,
   PARENT_LIMITS,
+  displayPredictionError,
+  explainBirthPrediction,
   formatHeight,
   formatWeight,
   heightMeasurement,
   isValidParentHeight,
   predictAdultHeightFromParents,
+  type BirthExplanation,
   type BirthPrediction,
 } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
 import {
+  Badge,
   Button,
   Card,
   HeightField,
@@ -49,6 +53,11 @@ export function BirthPredictionClient() {
   const [fatherHeight, setFatherHeight] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BirthPrediction | null>(null);
+  // The explanation is fetched after the estimate, and never blocks it: the
+  // number is local arithmetic and must appear even if the LLM is unreachable.
+  const [explanation, setExplanation] = useState<BirthExplanation | null>(null);
+  const [explaining, setExplaining] = useState(false);
+  const [explainError, setExplainError] = useState<string | null>(null);
 
   const num = (v: string) => (v.trim() === "" ? undefined : Number(v));
   const inRange = (v: number, l: { min: number; max: number }) =>
@@ -102,7 +111,31 @@ export function BirthPredictionClient() {
     }
 
     setError(null);
-    setResult(predictAdultHeightFromParents(sex, mother, father));
+    const prediction = predictAdultHeightFromParents(sex, mother, father);
+    setResult(prediction);
+
+    setExplanation(null);
+    setExplainError(null);
+    setExplaining(true);
+    explainBirthPrediction({
+      sex,
+      status,
+      birth_length_cm: status === "born" ? length : undefined,
+      birth_weight_kg: status === "born" ? weight : undefined,
+      mother_height_cm: mother,
+      father_height_cm: father,
+      predicted_adult_height_cm: prediction.predictedHeightCm,
+    })
+      .then(setExplanation)
+      .catch((err) =>
+        setExplainError(
+          displayPredictionError(err, {
+            unavailable: t.form.serviceUnavailable,
+            fallback: t.birth.explanationUnavailable,
+          }),
+        ),
+      )
+      .finally(() => setExplaining(false));
   }
 
   const recorded = [
@@ -276,10 +309,91 @@ export function BirthPredictionClient() {
           </Card>
         )}
 
+        {result && (explaining || explanation || explainError) && (
+          <Card tone="accent" padding="lg">
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-accent-600" />
+                <span className="text-xs font-semibold tracking-wide text-accent-700 uppercase">
+                  {t.birth.explanationTitle}
+                </span>
+              </div>
+
+              {explaining && (
+                <p className="text-sm text-text-secondary">{t.birth.explaining}</p>
+              )}
+
+              {explanation && (
+                <>
+                  {explanation.reasoning && (
+                    <p className="text-sm leading-relaxed text-text-primary">
+                      {explanation.reasoning}
+                    </p>
+                  )}
+
+                  {/* Neither tail is coloured as a problem: most babies are not
+                      exactly average, and both ends are ordinary. */}
+                  {explanation.birth_size_band && (
+                    <BandRow
+                      label={t.birth.birthSizeLabel}
+                      band={explanation.birth_size_band}
+                      caveat={t.birth.birthSizeCaveat}
+                      t={t}
+                    />
+                  )}
+
+                  {explanation.adult_band && (
+                    <BandRow
+                      label={t.birth.adultBandLabel}
+                      band={explanation.adult_band}
+                      caveat={t.birth.adultBandCaveat(t.common.sexNoun(sex))}
+                      t={t}
+                    />
+                  )}
+
+                  <p className="text-xs text-text-muted">
+                    {t.results.modelLabel(explanation.model)}
+                  </p>
+                </>
+              )}
+
+              {explainError && (
+                <p className="text-sm text-text-secondary">{explainError}</p>
+              )}
+            </div>
+          </Card>
+        )}
+
         <p className="text-center text-xs text-text-muted">
           {t.common.disclaimer}
         </p>
       </div>
+    </div>
+  );
+}
+
+function BandRow({
+  label,
+  band,
+  caveat,
+  t,
+}: {
+  label: string;
+  band: "below_average" | "average" | "above_average";
+  caveat: string;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <div className="flex flex-col gap-1.5 border-t border-accent-200 pt-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium tracking-wide text-text-secondary uppercase">
+          {label}
+        </span>
+        <Badge tone={band === "average" ? "neutral" : "accent"}>
+          {t.results.stature[band]}
+        </Badge>
+      </div>
+      <p className="text-xs text-text-secondary">{caveat}</p>
     </div>
   );
 }

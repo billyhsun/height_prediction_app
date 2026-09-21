@@ -117,6 +117,10 @@ function AppStack() {
         name="sign-up"
         options={{ headerShown: true, title: t.header.signUp }}
       />
+      <Stack.Screen
+        name="birth"
+        options={{ headerShown: true, title: t.birth.navLabel }}
+      />
     </Stack>
   );
 }

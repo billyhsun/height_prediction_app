@@ -17,7 +17,7 @@ import {
 } from "@notch/core";
 import { dictionaries } from "@notch/core";
 import { sanitizeEthnicities } from "@notch/core";
-import { isStatureBand, type StatureBand } from "@notch/core";
+import { isStatureBand, midParentalHeightCm, type StatureBand } from "@notch/core";
 
 /**
  * Overridable so the endpoint can be pointed at an Azure OpenAI deployment, a
@@ -78,16 +78,10 @@ export class LlmError extends Error {
   }
 }
 
-/** Tanner mid-parental target height. */
-export function midParentalHeightCm(
-  sex: number,
-  motherCm: number,
-  fatherCm: number,
-): number {
-  return sex === 1
-    ? (fatherCm + motherCm + 13) / 2
-    : (fatherCm + motherCm - 13) / 2;
-}
+// Tanner mid-parental target height. Re-exported rather than redefined: the
+// birth-prediction page rests on the same formula, and two copies of a
+// constant-plus-halving is exactly the shape of thing that silently diverges.
+export { midParentalHeightCm };
 
 /**
  * English ethnicity labels for the prompt, read from the locale dictionary
@@ -272,5 +266,189 @@ export async function predictHeightLlm(
     reasoning_locale: locale,
     stature_band: statureBand,
     guidance,
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Birth-page explanation                                                     */
+/* -------------------------------------------------------------------------- */
+
+export type BirthExplanationInputs = {
+  sex: number;
+  status: "born" | "expecting";
+  /** Absent for a baby not yet born, and optional even once it is. */
+  birth_length_cm?: number;
+  birth_weight_kg?: number;
+  mother_height_cm: number;
+  father_height_cm: number;
+  /** The mid-parental estimate the app already computed and displayed. */
+  predicted_adult_height_cm: number;
+  locale?: Locale;
+};
+
+export type BirthExplanationResult = {
+  reasoning: string;
+  /** How the baby's size compares with other newborns. Absent when there are
+   *  no birth measurements to compare. */
+  birth_size_band?: StatureBand;
+  /** How the predicted adult height compares with adults of the same sex. */
+  adult_band?: StatureBand;
+  model: string;
+  model_version: string;
+  reasoning_locale: Locale;
+};
+
+export function buildBirthPrompt(inputs: BirthExplanationInputs): string {
+  const language = LOCALE_LANGUAGE_NAMES[inputs.locale ?? DEFAULT_LOCALE];
+  const sexLabel = inputs.sex === 1 ? "boy" : "girl";
+
+  const measured =
+    inputs.status === "born" &&
+    (inputs.birth_length_cm || inputs.birth_weight_kg)
+      ? [
+          inputs.birth_length_cm
+            ? `- Birth length: ${inputs.birth_length_cm} cm`
+            : null,
+          inputs.birth_weight_kg
+            ? `- Birth weight: ${inputs.birth_weight_kg} kg`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : null;
+
+  return `Explain a predicted adult height to a parent, for an educational app.
+
+Baby:
+- Sex: ${sexLabel}
+- ${inputs.status === "born" ? "Already born" : "Not yet born"}
+${measured ?? "- No birth measurements (nothing has been measured yet)"}
+
+Parents:
+- Mother height: ${inputs.mother_height_cm} cm
+- Father height: ${inputs.father_height_cm} cm
+
+The app has already estimated this child's adult height as
+${inputs.predicted_adult_height_cm.toFixed(1)} cm, using the Tanner
+mid-parental method. Do not produce a different number. Your job is to explain
+this one.
+
+Return JSON only with:
+- adult_band: how ${inputs.predicted_adult_height_cm.toFixed(1)} cm compares with adult ${
+    inputs.sex === 1 ? "men" : "women"
+  } generally. Exactly one of "below_average", "average", or "above_average" (string). Use "average" for roughly the middle 80% of adults.
+- birth_size_band: how this baby's birth size compares with other newborns of the same sex, against a standard reference. Exactly one of "below_average", "average", or "above_average", or an empty string if no birth measurements are given above.
+- reasoning: 2-3 sentences (string). Say what the estimate is based on — the parents' heights — and what the band means in plain words. Where birth measurements exist, say how the baby's size at birth compares, and that birth size is a weak predictor of adult height.
+
+Rules:
+- Never diagnose, never name a condition, and never suggest medication, supplements, hormones or any treatment.
+- Being above or below average is not a problem. Do not imply otherwise, and do not alarm the reader.
+- Say that this is a range of likely outcomes rather than a fixed prediction.
+- Do not invent measurements that were not given.
+
+Write the "reasoning" value in ${language}. The JSON keys stay exactly as named
+above in English, and the two band values keep their English identifiers — the
+app supplies its own translated labels for them.
+`;
+}
+
+/**
+ * Narrative for the birth page.
+ *
+ * Deliberately produces no height of its own. The page already has an estimate
+ * from a formula with a known spread, and a second number from a language model
+ * would compete with it without being better — the whole value here is the
+ * explanation, and the two bands that say where the child sits.
+ */
+export async function explainBirthPrediction(
+  inputs: BirthExplanationInputs,
+): Promise<BirthExplanationResult> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new LlmError("OPENAI_API_KEY is not configured", 503);
+  }
+
+  const model = process.env.OPENAI_MODEL ?? DEFAULT_MODEL;
+
+  let response: Response;
+  try {
+    response = await fetch(openAiUrl(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a helpful assistant that returns only valid JSON. Follow the language instruction in the user message for any human-readable text.",
+          },
+          { role: "user", content: buildBirthPrompt(inputs) },
+        ],
+        response_format: { type: "json_object" },
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+      cache: "no-store",
+    });
+  } catch (error) {
+    const timedOut = error instanceof Error && error.name === "TimeoutError";
+    console.error("OpenAI request failed:", error);
+    throw new LlmError(
+      timedOut ? "The LLM request timed out" : "Could not reach the LLM service",
+      timedOut ? 504 : 502,
+    );
+  }
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const detail =
+      (payload as { error?: { message?: string } } | null)?.error?.message ??
+      `OpenAI returned ${response.status}`;
+    console.error("OpenAI API error:", detail);
+    throw new LlmError(`OpenAI API error: ${detail}`, 502);
+  }
+
+  const content = (
+    payload as { choices?: { message?: { content?: string } }[] } | null
+  )?.choices?.[0]?.message?.content;
+
+  if (typeof content !== "string") {
+    throw new LlmError("The LLM returned an empty response", 502);
+  }
+
+  let parsed: {
+    reasoning?: unknown;
+    adult_band?: unknown;
+    birth_size_band?: unknown;
+  };
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new LlmError("The LLM returned malformed JSON", 502);
+  }
+
+  const locale = inputs.locale ?? DEFAULT_LOCALE;
+  const hasMeasurements =
+    inputs.status === "born" &&
+    Boolean(inputs.birth_length_cm || inputs.birth_weight_kg);
+
+  return {
+    reasoning: String(parsed.reasoning ?? "").trim(),
+    // Dropped rather than defaulted when unrecognised: showing no band is
+    // honest, defaulting to "average" would state something never said.
+    adult_band: isStatureBand(parsed.adult_band) ? parsed.adult_band : undefined,
+    // Suppressed outright when nothing was measured, whatever the model
+    // returned — a band over measurements that do not exist is fabrication.
+    birth_size_band:
+      hasMeasurements && isStatureBand(parsed.birth_size_band)
+        ? parsed.birth_size_band
+        : undefined,
+    model,
+    model_version: "birth-llm-v1",
+    reasoning_locale: locale,
   };
 }

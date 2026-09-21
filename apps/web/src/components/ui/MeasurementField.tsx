@@ -6,7 +6,9 @@ import {
   CHILD_LIMITS,
   INCHES_PER_FOOT,
   cmFromFeetInches,
+  cmToInches,
   feetInchesFromCm,
+  inchesToCm,
   kgToPounds,
   poundsToKg,
   weightUnitLabel,
@@ -222,6 +224,62 @@ export function WeightField({
           placeholder={placeholder}
           onChange={(e) =>
             imperial ? setDisplay(e.target.value) : onChangeKg(e.target.value)
+          }
+        />
+      )}
+    </Field>
+  );
+}
+
+type LengthFieldProps = {
+  /** Length in centimetres, as text. */
+  valueCm: string;
+  onChangeCm: (cm: string) => void;
+  units: UnitSystem;
+  t: Dictionary;
+  label: (unit: string) => string;
+  hint?: React.ReactNode;
+  placeholder?: string;
+};
+
+/**
+ * A single length field that switches between centimetres and plain inches.
+ *
+ * Distinct from HeightField, which splits imperial into feet and inches. That
+ * is right for a person's height and wrong for a newborn: a baby's length is
+ * quoted as "20 inches", never "1 foot 8".
+ */
+export function LengthField({
+  valueCm,
+  onChangeCm,
+  units,
+  t,
+  label,
+  hint,
+  placeholder,
+}: LengthFieldProps) {
+  const [display, setDisplay] = useConvertedInput<string>(
+    valueCm,
+    (cm) => (cm.trim() === "" ? "" : trimWeight(cmToInches(Number(cm) || 0))),
+    (inches) =>
+      inches.trim() === "" ? "" : trimNumber(inchesToCm(Number(inches) || 0)),
+    onChangeCm,
+  );
+
+  const imperial = units === "imperial";
+
+  return (
+    <Field label={label(imperial ? t.units.in : t.units.cm)} hint={hint}>
+      {({ id }) => (
+        <Input
+          id={id}
+          type="number"
+          min={0}
+          step={0.1}
+          value={imperial ? display : valueCm}
+          placeholder={placeholder}
+          onChange={(e) =>
+            imperial ? setDisplay(e.target.value) : onChangeCm(e.target.value)
           }
         />
       )}

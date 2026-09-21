@@ -548,6 +548,79 @@ async function main() {
     check("growth chart draws axis labels", predicted.ticks >= 4,
       `${predicted.ticks} labels`);
 
+    // --- the birth / not-yet-born screen ---
+    // A different method from the growth model, and one that needs no backend:
+    // it is a formula over the two parent heights.
+    await send("Page.navigate", { url: `http://localhost:${PROXY_PORT}/birth` });
+    for (let i = 0; i < 40; i++) {
+      if (await evaluate(`document.body.innerText.includes('Estimate adult height')`)) break;
+      await sleep(400);
+    }
+    check(
+      "birth screen renders",
+      await evaluate(`document.body.innerText.includes('Estimate adult height')`),
+    );
+
+    await click("Not yet born");
+    check(
+      "unborn hides the birth measurements",
+      await evaluate(
+        `!document.body.innerText.includes('Birth length') &&` +
+          ` document.body.innerText.includes('nothing to measure')`,
+      ),
+    );
+
+    // Mother 165, father 178, boy -> Tanner gives exactly 178.0.
+    await setInput("", "165");
+    const filled = await evaluate(`(() => {
+      const empty = [...document.querySelectorAll('input')].filter(i => !i.value);
+      if (!empty.length) return false;
+      const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      set.call(empty[0], '178');
+      empty[0].dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    })()`);
+    await sleep(400);
+    await click("Estimate adult height");
+    await sleep(800);
+    const estimate = await evaluate(
+      `(document.body.innerText.match(/PREDICTED ADULT HEIGHT\\s*\\n\\s*([^\\n]+)/i) || [])[1] || null`,
+    );
+    check(
+      "unborn estimate matches the Tanner formula",
+      filled && !!estimate && estimate.trim().startsWith("178"),
+      estimate ?? "no estimate",
+    );
+
+    // The explanation arrives after the estimate and must never gate it.
+    const explained = await (async () => {
+      const deadline = Date.now() + 25_000;
+      while (Date.now() < deadline) {
+        const text = await evaluate(`document.body.innerText`);
+        if (/what this means/i.test(text)) return text;
+        await sleep(800);
+      }
+      return await evaluate(`document.body.innerText`);
+    })();
+    check(
+      "explanation card appears for the unborn case",
+      /what this means/i.test(explained),
+    );
+    // Scoped to the card. The page subtitle also contains the words "as an
+    // adult", so an unscoped match passes whether or not the band rendered.
+    const card = explained.split(/what this means/i)[1] ?? "";
+    check(
+      "explanation places the child among adults",
+      /as an adult/i.test(card),
+      (card.match(/AS AN ADULT[^\n]*/i) || ["not in card"])[0].trim(),
+    );
+    // Nothing was measured, so there is no birth size to describe — even if the
+    // model volunteers one.
+    check(
+      "no birth-size band without measurements",
+      !/size at birth/i.test(card),
+    );
+
     const shotPath = join(MOBILE_ROOT, ".verify-dist", "screenshot.png");
     const { data } = await send("Page.captureScreenshot", { format: "png" });
     await writeFile(shotPath, Buffer.from(data, "base64"));

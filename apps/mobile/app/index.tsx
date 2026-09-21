@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/clerk-expo";
 import { Link, useLocalSearchParams } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { PredictRequest } from "@notch/core";
@@ -69,6 +69,18 @@ export default function PredictScreen() {
         </View>
       ) : null}
 
+      {/* The other prediction, for a child too young for the growth model —
+          or not yet born. A different method, so a different screen. */}
+      <Link href="/birth" asChild>
+        <Pressable
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.crossLink, pressed && styles.pressed]}
+        >
+          <Text style={styles.crossLinkText}>{t.birth.title}</Text>
+          <Text style={styles.crossLinkChevron}>›</Text>
+        </Pressable>
+      </Link>
+
       <PredictionForm initial={initial} initialChildId={first(params.child)} />
     </ScrollView>
   );
@@ -88,4 +100,22 @@ const styles = StyleSheet.create({
     color: theme.semantic.textSecondary,
   },
   guestLink: { fontWeight: "600", color: theme.color.primary[700] },
+  crossLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.semantic.border,
+    backgroundColor: theme.semantic.surface,
+    paddingHorizontal: theme.space[4],
+    paddingVertical: theme.space[3],
+  },
+  pressed: { opacity: 0.85 },
+  crossLinkText: {
+    fontSize: fontSize.sm,
+    fontWeight: "500",
+    color: theme.semantic.textPrimary,
+  },
+  crossLinkChevron: { fontSize: fontSize.lg, color: theme.semantic.textMuted },
 });

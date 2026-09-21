@@ -44,8 +44,12 @@ import { useUnits } from "@/components/units";
 import {
   Button,
   Card,
+  DateOfBirthField,
   Field,
   HeightField,
+  defaultDob,
+  dobToIso,
+  type DobParts,
   Input,
   OptionGrid,
   SegmentedControl,
@@ -68,25 +72,6 @@ const DEFAULTS = {
 const QUICK_TARGET_AGES = [16, 18, 20];
 
 type AgeMode = "years-months" | "dob";
-type DobParts = { year: string; month: string; day: string };
-
-const pad = (value: string) => value.padStart(2, "0");
-const dobToIso = (dob: DobParts) =>
-  `${dob.year}-${pad(dob.month)}-${pad(dob.day)}`;
-
-/** Days in a month, so February and the 30-day months cannot offer a 31st. */
-function daysInMonth(year: string, month: string): number {
-  const y = Number(year);
-  const m = Number(month);
-  if (!y || !m) return 31;
-  return new Date(Date.UTC(y, m, 0)).getUTCDate();
-}
-
-const range = (from: number, to: number) =>
-  Array.from({ length: to - from + 1 }, (_, i) => String(from + i));
-
-const optionsOf = (values: string[]) =>
-  values.map((value) => ({ value, label: value }));
 
 /**
  * Every numeric field is held as a string, unlike the web where they are numbers.
@@ -239,11 +224,7 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [selectedChildId, setSelectedChildId] = useState(initialChildId ?? "");
   const [ageMode, setAgeMode] = useState<AgeMode>("years-months");
-  const [dob, setDob] = useState<DobParts>(() => ({
-    year: String(new Date().getFullYear() - 5),
-    month: "1",
-    day: "1",
-  }));
+  const [dob, setDob] = useState<DobParts>(() => defaultDob());
   const [ethnicities, setEthnicities] = useState<string[]>([]);
   const [parentDefaults, setParentDefaults] = useState<ParentDefaults | null>(null);
   const [loading, setLoading] = useState(false);
@@ -554,65 +535,12 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
             </View>
 
             {ageMode === "dob" ? (
-              <Field label={t.form.dateOfBirthLabel} hint={t.form.dateOfBirthHint}>
-                {() => (
-                  /*
-                   * Three sheet pickers rather than a native date picker.
-                   * @react-native-community/datetimepicker would pull in a
-                   * native module the Expo Go client would have to ship, and it
-                   * has no react-native-web implementation — which is what
-                   * scripts/verify-ui.mjs renders the tree with, so the smoke
-                   * test would go blind on this screen. Select is already the
-                   * project's answer to "there is no native <select>".
-                   */
-                  <View style={styles.dobRow}>
-                    <View style={styles.dobYear}>
-                      <Select
-                        value={dob.year}
-                        onChange={(year) => setDob((prev) => ({ ...prev, year }))}
-                        accessibilityLabel={t.form.dateOfBirthLabel}
-                        options={optionsOf(
-                          range(
-                            new Date().getFullYear() - MAX_MODEL_CURRENT_AGE,
-                            new Date().getFullYear(),
-                          ).reverse(),
-                        )}
-                      />
-                    </View>
-                    <View style={styles.dobPart}>
-                      <Select
-                        value={dob.month}
-                        onChange={(month) =>
-                          setDob((prev) => ({
-                            ...prev,
-                            month,
-                            // Clamp the day, or switching to February would
-                            // leave a 31st selected and produce an invalid date.
-                            day: String(
-                              Math.min(
-                                Number(prev.day),
-                                daysInMonth(prev.year, month),
-                              ),
-                            ),
-                          }))
-                        }
-                        accessibilityLabel={t.form.currentAgeMonthsPart}
-                        options={optionsOf(range(1, MONTHS_PER_YEAR))}
-                      />
-                    </View>
-                    <View style={styles.dobPart}>
-                      <Select
-                        value={dob.day}
-                        onChange={(day) => setDob((prev) => ({ ...prev, day }))}
-                        accessibilityLabel={t.form.dateOfBirthLabel}
-                        options={optionsOf(
-                          range(1, daysInMonth(dob.year, dob.month)),
-                        )}
-                      />
-                    </View>
-                  </View>
-                )}
-              </Field>
+              <DateOfBirthField
+                value={dob}
+                onChange={setDob}
+                label={t.form.dateOfBirthLabel}
+                hint={t.form.dateOfBirthHint}
+              />
             ) : (
               // The hint sits under the pair, not on the Years field: as a
               // per-field hint it wraps and drops the Years input a row below

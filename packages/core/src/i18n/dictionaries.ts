@@ -203,6 +203,8 @@ const en = {
     profileLegend: "Profile",
     name: "Name",
     namePlaceholder: "e.g. Alex",
+    /** Native has no `required` attribute to lean on. */
+    nameRequired: "Enter a name for this child.",
     dateOfBirth: "Date of birth",
     ethnicityLabel: "Ethnicity (optional)",
     ethnicityHelp: "Select all that apply. Used for LLM predictions only.",
@@ -596,6 +598,7 @@ const zhCN: Dictionary = {
     profileLegend: "档案",
     name: "姓名",
     namePlaceholder: "例如：小明",
+    nameRequired: "请填写孩子的姓名。",
     dateOfBirth: "出生日期",
     ethnicityLabel: "族裔（可选）",
     ethnicityHelp: "可多选。仅用于大语言模型预测。",

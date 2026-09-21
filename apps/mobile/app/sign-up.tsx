@@ -33,9 +33,13 @@ export default function SignUpScreen() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  /**
+   * A new account lands on the optional parent-details step, as on the web —
+   * where <SignUp forceRedirectUrl="/onboarding"> does the same. Replace, not
+   * push, so the back gesture cannot return into a completed sign-up.
+   */
   function leave() {
-    if (router.canGoBack()) router.back();
-    else router.replace("/");
+    router.replace("/onboarding");
   }
 
   async function handleCreate() {

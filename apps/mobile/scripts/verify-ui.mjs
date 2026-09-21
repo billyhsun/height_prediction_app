@@ -362,8 +362,9 @@ async function main() {
     check(
       "sign-in screen renders",
       await evaluate(
-        `['Welcome back', 'Email', 'Password']` +
-          `.every(s => document.body.innerText.includes(s))`,
+        // Email only: which second factor follows is the instance's choice,
+        // so the screen asks for the address before it can know.
+        `['Welcome back', 'Email'].every(s => document.body.innerText.includes(s))`,
       ),
     );
     await click("Continue without an account");
@@ -628,6 +629,34 @@ async function main() {
       "no birth-size band without measurements",
       !/size at birth/i.test(card),
     );
+
+    // --- the account-only screens ---
+    // Signed out, every one of them must offer sign-in rather than erroring or
+    // rendering an empty list as though the user simply had no data.
+    for (const [route, name] of [
+      ["/children", "children"],
+      ["/children/new", "new child"],
+      ["/history", "history"],
+      ["/account", "account"],
+      ["/onboarding", "onboarding"],
+    ]) {
+      await send("Page.navigate", { url: `http://localhost:${PROXY_PORT}${route}` });
+      // The native header title renders before the screen body, so waiting on
+      // "some text exists" reads the header and races the gate card.
+      let body = "";
+      for (let i = 0; i < 40; i++) {
+        body = await evaluate(`document.body.innerText`);
+        if (/Welcome back|Unmatched Route|Render Error/i.test(body)) break;
+        await sleep(500);
+      }
+      const gated = /Welcome back|Sign in/i.test(body);
+      const crashed = /Unmatched Route|cannot be found|Render Error/i.test(body);
+      check(
+        `${name} screen gates on sign-in`,
+        gated && !crashed,
+        crashed ? body.slice(0, 80) : "",
+      );
+    }
 
     const shotPath = join(MOBILE_ROOT, ".verify-dist", "screenshot.png");
     const { data } = await send("Page.captureScreenshot", { format: "png" });

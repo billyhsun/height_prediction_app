@@ -69,20 +69,38 @@ export default function PredictScreen() {
         </View>
       ) : null}
 
-      {/* The other prediction, for a child too young for the growth model —
-          or not yet born. A different method, so a different screen. */}
-      <Link href="/birth" asChild>
-        <Pressable
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.crossLink, pressed && styles.pressed]}
-        >
-          <Text style={styles.crossLinkText}>{t.birth.title}</Text>
-          <Text style={styles.crossLinkChevron}>›</Text>
-        </Pressable>
-      </Link>
+      {/*
+        Navigation lives here rather than in the header: two segmented controls
+        and a sign-in link already fill a 393pt row, and a phone header has no
+        space for three more destinations. A tab bar is the eventual answer.
+      */}
+      <View style={styles.nav}>
+        <NavRow href="/birth" label={t.birth.title} />
+        {isSignedIn ? (
+          <>
+            <NavRow href="/children" label={t.header.myChildren} />
+            <NavRow href="/history" label={t.header.myHistory} />
+            <NavRow href="/account" label={t.account.title} />
+          </>
+        ) : null}
+      </View>
 
       <PredictionForm initial={initial} initialChildId={first(params.child)} />
     </ScrollView>
+  );
+}
+
+function NavRow({ href, label }: { href: "/birth" | "/children" | "/history" | "/account"; label: string }) {
+  return (
+    <Link href={href} asChild>
+      <Pressable
+        accessibilityRole="button"
+        style={({ pressed }) => [styles.crossLink, pressed && styles.pressed]}
+      >
+        <Text style={styles.crossLinkText}>{label}</Text>
+        <Text style={styles.crossLinkChevron}>›</Text>
+      </Pressable>
+    </Link>
   );
 }
 
@@ -100,6 +118,7 @@ const styles = StyleSheet.create({
     color: theme.semantic.textSecondary,
   },
   guestLink: { fontWeight: "600", color: theme.color.primary[700] },
+  nav: { gap: theme.space[2] },
   crossLink: {
     flexDirection: "row",
     alignItems: "center",

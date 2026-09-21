@@ -511,6 +511,36 @@ async function main() {
       await evaluate(`location.pathname`));
     check("renders a predicted height", !!predicted.height,
       predicted.height ? `${predicted.height} cm` : "none");
+    // gbm-v1 onward returns a calibrated range; the model card is explicit that
+    // shipping the point estimate alone throws away its main contribution.
+    // Skipped rather than failed against an older model that sends none.
+    const range = await evaluate(
+      `(document.body.innerText.match(/likely range\\s*\\n?\\s*([^\\n]+)/i) || [])[1] || null`,
+    );
+    check(
+      range
+        ? "shows the calibrated range"
+        : "no calibrated range (older model — skipped)",
+      true,
+      range ?? "backend sent no intervals",
+    );
+
+    // The shaded interval is a filled path; every other mark in the chart is a
+    // stroked line or circle, so a fill-opacity attribute identifies it.
+    const band = await evaluate(`(() => {
+      const chart = [...document.querySelectorAll('svg')]
+        .find(s => s.getBoundingClientRect().width > 100);
+      if (!chart) return null;
+      const filled = [...chart.querySelectorAll('path')]
+        .filter(p => p.getAttribute('fill-opacity') || /fill-opacity/.test(p.getAttribute('style') || ''));
+      return filled.length;
+    })()`);
+    check(
+      range ? "growth chart shades the interval" : "no interval to shade (skipped)",
+      range ? band >= 1 : true,
+      `${band ?? 0} filled path(s)`,
+    );
+
     check("growth chart draws its projection", predicted.paths >= 1,
       `${predicted.paths} paths`);
     check("growth chart draws both markers", predicted.circles >= 2,

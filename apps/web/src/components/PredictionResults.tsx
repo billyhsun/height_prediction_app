@@ -118,6 +118,24 @@ export function PredictionResults({
               label={t.results.predictedHeight}
               {...heightMeasurement(result.pred_height_cm, units, t)}
             />
+            {/* The calibrated range is the main thing gbm-v1 adds over the
+                models before it; showing only the point estimate discards it.
+                Absent for older models, so it renders only when present. */}
+            {result.intervals?.height && (
+              <div className="-mt-3 flex flex-col gap-0.5">
+                <span className="text-xs text-text-secondary">
+                  {t.results.predictedRangeLabel(
+                    result.intervals.height.confidence,
+                  )}
+                </span>
+                <span className="text-sm font-medium tabular-nums text-text-primary">
+                  {t.results.predictedRange(
+                    formatHeight(result.intervals.height.low, units, t),
+                    formatHeight(result.intervals.height.high, units, t),
+                  )}
+                </span>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs text-text-secondary">
@@ -126,6 +144,14 @@ export function PredictionResults({
                 <span className="text-lg font-semibold tabular-nums text-text-primary">
                   {formatWeight(result.pred_weight_kg, units, t)}
                 </span>
+                {result.intervals?.weight && (
+                  <span className="text-xs tabular-nums text-text-secondary">
+                    {t.results.predictedRange(
+                      formatWeight(result.intervals.weight.low, units, t),
+                      formatWeight(result.intervals.weight.high, units, t),
+                    )}
+                  </span>
+                )}
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs text-text-secondary">
@@ -160,10 +186,23 @@ export function PredictionResults({
                   }
                 : null
             }
+            // Converted like every other height on this screen, so the band
+            // lines up with the axis whichever unit is showing.
+            predictedRange={
+              result.intervals?.height
+                ? {
+                    low: heightInDisplayUnit(result.intervals.height.low, units),
+                    high: heightInDisplayUnit(result.intervals.height.high, units),
+                  }
+                : null
+            }
             sex={inputs.sex}
             labels={{
               ...t.results.chart,
               heightAxis: t.results.chart.heightAxis(heightUnitLabel(units, t)),
+              range: result.intervals?.height
+                ? t.results.predictedRangeLabel(result.intervals.height.confidence)
+                : undefined,
             }}
           />
         </Card>

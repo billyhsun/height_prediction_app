@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, G, Line, Path, Text as SvgText } from "react-native-svg";
 
 import {
+  bandPath,
   buildScales,
   dedupeByAge,
   growthProjection,
@@ -19,12 +20,17 @@ export type GrowthChartLabels = {
   llmPredicted: string;
   ageAxis: string;
   heightAxis: string;
+  /** Legend text for the shaded interval. Omitted when no model supplies one. */
+  range?: string;
 };
 
 type GrowthChartProps = {
   observed: ChartPoint[];
   predicted: ChartPoint;
   llmPredicted?: ChartPoint | null;
+  /** The model's calibrated interval at the target age, in the same unit as
+   *  every other height here. Absent for models that do not report one. */
+  predictedRange?: { low: number; high: number } | null;
   sex: number;
   labels: GrowthChartLabels;
 };
@@ -47,13 +53,26 @@ export function GrowthChart({
   observed,
   predicted,
   llmPredicted,
+  predictedRange,
   sex,
   labels,
 }: GrowthChartProps) {
   const [width, setWidth] = useState(0);
 
   const points = dedupeByAge(observed);
-  const all = [...points, predicted, ...(llmPredicted ? [llmPredicted] : [])];
+  const edges: ChartPoint[] = predictedRange
+    ? [
+        { ageYears: predicted.ageYears, heightCm: predictedRange.low },
+        { ageYears: predicted.ageYears, heightCm: predictedRange.high },
+      ]
+    : [];
+  // The band's extremes join the domain, or the shading clips at the axis.
+  const all = [
+    ...points,
+    predicted,
+    ...(llmPredicted ? [llmPredicted] : []),
+    ...edges,
+  ];
 
   // Nothing sensible to draw before the first layout pass.
   const ready = width > 0 && all.length > 0;
@@ -78,6 +97,19 @@ export function GrowthChart({
       >
         {scales && last ? (
           <Svg width={width} height={HEIGHT}>
+            {/* Drawn before everything, so every line and marker sits on it. */}
+            {predictedRange ? (
+              <Path
+                d={bandPath(
+                  projectionOr(last, edges[1], sex),
+                  projectionOr(last, edges[0], sex),
+                  scales,
+                )}
+                fill={theme.color.primary[500]}
+                fillOpacity={0.12}
+              />
+            ) : null}
+
             {scales.yTicks.map((cm) => (
               <G key={`y-${cm}`}>
                 <Line
@@ -194,6 +226,13 @@ export function GrowthChart({
             ring
           />
         ) : null}
+        {predictedRange && labels.range ? (
+          <View style={styles.legendItem}>
+            {/* A wide, flat swatch rather than a dot, so it reads as an area. */}
+            <View style={styles.rangeSwatch} />
+            <Text style={styles.legendLabel}>{labels.range}</Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -244,5 +283,12 @@ const styles = StyleSheet.create({
   legend: { flexDirection: "row", flexWrap: "wrap", gap: theme.space[4] },
   legendItem: { flexDirection: "row", alignItems: "center", gap: theme.space[1] + 2 },
   swatch: { width: 10, height: 10, borderRadius: 5 },
+  rangeSwatch: {
+    width: 16,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: theme.color.primary[500],
+    opacity: 0.25,
+  },
   legendLabel: { fontSize: fontSize.xs, color: theme.semantic.textSecondary },
 });

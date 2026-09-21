@@ -158,12 +158,38 @@ export default function ResultsScreen() {
             label={t.results.predictedHeight}
             {...heightMeasurement(result.pred_height_cm, units, t)}
           />
+          {/* The calibrated range is the main thing gbm-v1 adds over the models
+              before it; showing only the point estimate discards it. Absent for
+              older models, so it renders only when present. */}
+          {result.intervals?.height ? (
+            <View style={styles.rangeBlock}>
+              <Text style={styles.pairLabel}>
+                {t.results.predictedRangeLabel(
+                  result.intervals.height.confidence,
+                )}
+              </Text>
+              <Text style={styles.rangeValue}>
+                {t.results.predictedRange(
+                  formatHeight(result.intervals.height.low, units, t),
+                  formatHeight(result.intervals.height.high, units, t),
+                )}
+              </Text>
+            </View>
+          ) : null}
           <View style={styles.pairRow}>
             <View style={styles.pairItem}>
               <Text style={styles.pairLabel}>{t.results.predictedWeight}</Text>
               <Text style={styles.pairValue}>
                 {formatWeight(result.pred_weight_kg, units, t)}
               </Text>
+              {result.intervals?.weight ? (
+                <Text style={styles.pairLabel}>
+                  {t.results.predictedRange(
+                    formatWeight(result.intervals.weight.low, units, t),
+                    formatWeight(result.intervals.weight.high, units, t),
+                  )}
+                </Text>
+              ) : null}
             </View>
             <View style={styles.pairItem}>
               <Text style={styles.pairLabel}>{t.results.predictedBmi}</Text>
@@ -189,10 +215,21 @@ export default function ResultsScreen() {
                 }
               : null
           }
+          predictedRange={
+            result.intervals?.height
+              ? {
+                  low: heightInDisplayUnit(result.intervals.height.low, units),
+                  high: heightInDisplayUnit(result.intervals.height.high, units),
+                }
+              : null
+          }
           sex={inputs.sex}
           labels={{
             ...t.results.chart,
             heightAxis: t.results.chart.heightAxis(heightUnitLabel(units, t)),
+            range: result.intervals?.height
+              ? t.results.predictedRangeLabel(result.intervals.height.confidence)
+              : undefined,
           }}
         />
       </Card>
@@ -350,6 +387,14 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   muted: { fontSize: fontSize.xs, color: theme.semantic.textMuted },
+  // Pulled up under the Stat, which carries its own bottom spacing.
+  rangeBlock: { gap: 2, marginTop: -theme.space[3] },
+  rangeValue: {
+    fontSize: fontSize.sm,
+    fontWeight: "500",
+    color: theme.semantic.textPrimary,
+    fontVariant: ["tabular-nums"],
+  },
   subSection: {
     gap: theme.space[1] + 2,
     borderTopWidth: 1,

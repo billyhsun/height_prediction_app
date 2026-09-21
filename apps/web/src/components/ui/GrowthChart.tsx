@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  bandPath,
   buildScales,
   dedupeByAge,
   linePath,
@@ -15,6 +16,8 @@ export type GrowthChartLabels = {
   llmPredicted: string;
   ageAxis: string;
   heightAxis: string;
+  /** Legend text for the shaded interval. Omitted when no model supplies one. */
+  range?: string;
 };
 
 type GrowthChartProps = {
@@ -22,6 +25,9 @@ type GrowthChartProps = {
   observed: ChartPoint[];
   predicted: ChartPoint;
   llmPredicted?: ChartPoint | null;
+  /** The model's calibrated interval at the target age, in the same unit as
+   *  every other height here. Absent for models that do not report one. */
+  predictedRange?: { low: number; high: number } | null;
   /** 1 = male, 2 = female. Selects the reference growth shape, since the
    *  pubertal spurt arrives earlier for girls. */
   sex: number;
@@ -47,11 +53,24 @@ export function GrowthChart({
   observed,
   predicted,
   llmPredicted,
+  predictedRange,
   sex,
   labels,
 }: GrowthChartProps) {
   const points = dedupeByAge(observed);
-  const all = [...points, predicted, ...(llmPredicted ? [llmPredicted] : [])];
+  const edges: ChartPoint[] = predictedRange
+    ? [
+        { ageYears: predicted.ageYears, heightCm: predictedRange.low },
+        { ageYears: predicted.ageYears, heightCm: predictedRange.high },
+      ]
+    : [];
+  // The band's extremes join the domain, or the shading clips at the axis.
+  const all = [
+    ...points,
+    predicted,
+    ...(llmPredicted ? [llmPredicted] : []),
+    ...edges,
+  ];
   const scales = buildScales(all, { ...VIEW, padding: PADDING });
 
   const last = points[points.length - 1];
@@ -65,6 +84,16 @@ export function GrowthChart({
   const projectionPath = projection.length
     ? linePath(projection, scales)
     : linePath([last, predicted], scales);
+
+  // Both edges of the interval follow the same curve as the central estimate,
+  // anchored to the interval's ends instead of the point prediction.
+  const curveTo = (target: ChartPoint) => {
+    const curve = growthProjection(last, target, sex);
+    return curve.length ? curve : [last, target];
+  };
+  const rangeArea = predictedRange
+    ? bandPath(curveTo(edges[1]), curveTo(edges[0]), scales)
+    : null;
 
   const llmProjection = llmPredicted
     ? growthProjection(last, llmPredicted, sex)
@@ -90,6 +119,11 @@ export function GrowthChart({
         role="img"
         aria-label={`${labels.title}. ${labels.heightAxis} / ${labels.ageAxis}.`}
       >
+        {/* Drawn before everything so every line and marker sits on top of it. */}
+        {rangeArea && (
+          <path d={rangeArea} fill="var(--color-primary-500)" fillOpacity={0.12} />
+        )}
+
         {/* Horizontal gridlines, drawn first so marks sit above them. */}
         {scales.yTicks.map((cm) => (
           <g key={`y-${cm}`}>
@@ -208,6 +242,16 @@ export function GrowthChart({
             label={labels.llmPredicted}
             ring
           />
+        )}
+        {rangeArea && labels.range && (
+          <span className="flex items-center gap-1.5 text-xs text-text-secondary">
+            <span
+              aria-hidden="true"
+              className="h-2.5 w-4 rounded-[2px]"
+              style={{ background: "var(--color-primary-500)", opacity: 0.25 }}
+            />
+            {labels.range}
+          </span>
         )}
       </div>
     </figure>

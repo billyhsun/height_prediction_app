@@ -15,12 +15,31 @@ export type PredictRequest = {
   ethnicities?: string[];
 };
 
+/**
+ * A calibrated range around a prediction.
+ *
+ * Present from gbm-v1 onward and absent for the models before it, so every
+ * reader has to cope with it missing. `confidence` is a fraction (0.8 = 80%)
+ * rather than a percentage, matching what the backend sends.
+ */
+export type PredictionInterval = {
+  low: number;
+  high: number;
+  confidence: number;
+};
+
 export type PredictResponse = {
   pred_height_cm: number;
   pred_weight_kg: number;
   pred_bmi: number;
   target_age_years: number;
   model_version: string;
+  /** Conformal ranges from the serving model. Absent on older models, and on
+   *  any prediction reloaded from the account — there is no column for them. */
+  intervals?: {
+    height?: PredictionInterval;
+    weight?: PredictionInterval;
+  };
 };
 
 /**

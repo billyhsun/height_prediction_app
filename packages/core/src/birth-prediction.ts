@@ -137,6 +137,14 @@ export type BirthExplanationRequest = {
   mother_height_cm: number;
   father_height_cm: number;
   predicted_adult_height_cm: number;
+  /**
+   * Context for the explanation only — the formula does not use it. The bands
+   * compare against general references, and ancestry is exactly the kind of
+   * nuance the narrative can carry that the arithmetic cannot. Parental weight
+   * is deliberately NOT here: unlike the main flow, nothing on this page could
+   * respond to it, since the number is a formula over heights alone.
+   */
+  ethnicities?: string[];
 };
 
 export async function explainBirthPrediction(

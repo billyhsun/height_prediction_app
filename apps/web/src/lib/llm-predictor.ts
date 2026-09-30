@@ -314,6 +314,8 @@ export type BirthExplanationInputs = {
   father_height_cm: number;
   /** The mid-parental estimate the app already computed and displayed. */
   predicted_adult_height_cm: number;
+  /** Context for the bands and reasoning; the formula ignores it. */
+  ethnicities?: unknown;
   locale?: Locale;
 };
 
@@ -332,6 +334,8 @@ export type BirthExplanationResult = {
 export function buildBirthPrompt(inputs: BirthExplanationInputs): string {
   const language = LOCALE_LANGUAGE_NAMES[inputs.locale ?? DEFAULT_LOCALE];
   const sexLabel = inputs.sex === 1 ? "boy" : "girl";
+  const ethnicities = formatEthnicities(inputs.ethnicities);
+  const ethnicityLine = ethnicities ? `- Ethnicity: ${ethnicities}\n` : "";
 
   const measured =
     inputs.status === "born" &&
@@ -354,7 +358,7 @@ Baby:
 - Sex: ${sexLabel}
 - ${inputs.status === "born" ? "Already born" : "Not yet born"}
 ${measured ?? "- No birth measurements (nothing has been measured yet)"}
-
+${ethnicityLine}
 Parents:
 - Mother height: ${inputs.mother_height_cm} cm
 - Father height: ${inputs.father_height_cm} cm
@@ -376,6 +380,7 @@ Rules:
 - Being above or below average is not a problem. Do not imply otherwise, and do not alarm the reader.
 - Say that this is a range of likely outcomes rather than a fixed prediction.
 - Do not invent measurements that were not given.
+- Where ethnicity is provided, you may note in "reasoning" how the estimate reads against typical adult stature for that background — general references are not stratified by ethnicity, and that context is yours to add. The parents' own heights already carry most of it, so keep the note light.
 
 Write the "reasoning" value in ${language}. The JSON keys stay exactly as named
 above in English, and the two band values keep their English identifiers — the

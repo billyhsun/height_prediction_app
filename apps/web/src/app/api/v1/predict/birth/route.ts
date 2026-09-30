@@ -7,6 +7,7 @@ import {
   PARENT_LIMITS,
   isValidParentHeight,
   resolveLocale,
+  sanitizeEthnicities,
 } from "@notch/core";
 import { LlmError, explainBirthPrediction } from "@/lib/llm-predictor";
 import { ValidationError } from "@/lib/prediction-api";
@@ -82,6 +83,9 @@ export async function POST(request: Request) {
       mother_height_cm: parent("mother_height_cm"),
       father_height_cm: parent("father_height_cm"),
       predicted_adult_height_cm: predicted,
+      // Silently drops unknown values rather than rejecting: ethnicity is
+      // optional context, not something worth failing an explanation over.
+      ethnicities: sanitizeEthnicities(raw.ethnicities),
       locale,
     });
 

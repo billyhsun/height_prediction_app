@@ -39,6 +39,9 @@ const en = {
     signIn: "Sign in",
     signUp: "Sign up",
     languageLabel: "Language",
+    /** The gear menu holding language and units, with room for more. */
+    settings: "Settings",
+    settingsDone: "Done",
   },
 
   /**
@@ -525,6 +528,8 @@ const zhCN: Dictionary = {
     signIn: "登录",
     signUp: "注册",
     languageLabel: "语言",
+    settings: "设置",
+    settingsDone: "完成",
   },
 
   units: {

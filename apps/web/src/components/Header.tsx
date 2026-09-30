@@ -10,8 +10,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 
-import { LanguageToggle } from "@/components/LanguageToggle";
-import { UnitsToggle } from "@/components/UnitsToggle";
+import { SettingsMenu } from "@/components/SettingsMenu";
 import { Button } from "@/components/ui";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -45,8 +44,7 @@ export function Header() {
           >
             {t.birth.navLabel}
           </Link>
-          <LanguageToggle />
-          <UnitsToggle />
+          <SettingsMenu />
 
           <SignedIn>
             <div className="hidden items-center gap-1 sm:flex">

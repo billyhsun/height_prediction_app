@@ -11,6 +11,14 @@
 export { Button, type ButtonVariant, type ButtonSize } from "./Button";
 export { Field, Input, Select, type SelectOption } from "./Field";
 export { HeightField, LengthField, WeightField } from "./MeasurementField";
+export {
+  DateOfBirthField,
+  daysInMonth,
+  defaultDob,
+  dobFromIso,
+  dobToIso,
+  type DobParts,
+} from "./DateOfBirthField";
 export { SegmentedControl, type SegmentOption } from "./SegmentedControl";
 export { OptionGrid, type Option } from "./OptionGrid";
 export { Card, Section, Badge, Stat } from "./Card";

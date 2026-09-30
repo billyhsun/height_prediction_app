@@ -9,7 +9,7 @@ import type { Locale } from "./config";
  */
 const en = {
   common: {
-    appName: "Notch",
+    appName: "Heightmaxxing AI",
     loading: "Loading…",
     cancel: "Cancel",
     edit: "Edit",
@@ -111,6 +111,21 @@ const en = {
     /** Password reset, MFA and SSO are not built into the native flow yet. */
     unsupportedStep:
       "This account needs a step the app can't handle yet. Please sign in on the web to continue.",
+    firstNameLabel: "First name",
+    lastNameLabel: "Last name",
+    namesRequired: "Enter a first and last name.",
+    /**
+     * Shown when Clerk's bot protection blocks native registration.
+     * @clerk/clerk-expo ships no CAPTCHA widget, and SignUpCreateParams has no
+     * field to pass a token through, so there is nothing the app can render to
+     * satisfy it — the only paths are the browser or turning the setting off.
+     */
+    captchaBlockedTitle: "Finish signing up in your browser",
+    captchaBlockedBody:
+      "This account needs a security check that can't run inside the app. Create your account in the browser, then come back here and sign in.",
+    continueInBrowser: "Open sign-up in browser",
+    browserOpenFailed: "Could not open the browser.",
+    returnToSignIn: "I've created my account — sign in",
   },
 
   form: {
@@ -203,6 +218,8 @@ const en = {
     profileLegend: "Profile",
     name: "Name",
     namePlaceholder: "e.g. Alex",
+    /** Native has no `required` attribute to lean on. */
+    nameRequired: "Enter a name for this child.",
     dateOfBirth: "Date of birth",
     ethnicityLabel: "Ethnicity (optional)",
     ethnicityHelp: "Select all that apply. Used for LLM predictions only.",
@@ -429,10 +446,10 @@ const en = {
   metadata: {
     // The brand carries the tab and the store listing; searchable keywords go in
     // the description and, on the App Store, the subtitle field — not the name.
-    title: "Notch — Child growth tracker",
+    title: "Heightmaxxing AI — Child growth tracker",
     description:
       "Track your child's growth and estimate their future height, weight, and BMI.",
-    resultsTitle: "Results | Notch",
+    resultsTitle: "Results | Heightmaxxing AI",
     resultsDescription: "Estimated height, weight, and BMI at your target age",
   },
 };
@@ -441,7 +458,7 @@ export type Dictionary = typeof en;
 
 const zhCN: Dictionary = {
   common: {
-    appName: "成长刻度",
+    appName: "Heightmaxxing AI",
     loading: "加载中…",
     cancel: "取消",
     edit: "编辑",
@@ -521,6 +538,15 @@ const zhCN: Dictionary = {
     signUpFailed: "无法创建账户。",
     verifyFailed: "验证码无效。请检查后重试。",
     unsupportedStep: "该账户需要应用暂不支持的验证步骤。请在网页版登录。",
+    firstNameLabel: "名字",
+    lastNameLabel: "姓氏",
+    namesRequired: "请填写名字和姓氏。",
+    captchaBlockedTitle: "请在浏览器中完成注册",
+    captchaBlockedBody:
+      "此账户需要完成应用内无法进行的安全验证。请在浏览器中创建账户，然后返回这里登录。",
+    continueInBrowser: "在浏览器中打开注册页",
+    browserOpenFailed: "无法打开浏览器。",
+    returnToSignIn: "我已创建账户——前往登录",
   },
 
   form: {
@@ -596,6 +622,7 @@ const zhCN: Dictionary = {
     profileLegend: "档案",
     name: "姓名",
     namePlaceholder: "例如：小明",
+    nameRequired: "请填写孩子的姓名。",
     dateOfBirth: "出生日期",
     ethnicityLabel: "族裔（可选）",
     ethnicityHelp: "可多选。仅用于大语言模型预测。",
@@ -794,9 +821,9 @@ const zhCN: Dictionary = {
   },
 
   metadata: {
-    title: "成长刻度 — 儿童成长记录",
+    title: "Heightmaxxing AI — 儿童成长记录",
     description: "记录孩子的成长，并估算未来的身高、体重和 BMI。",
-    resultsTitle: "预测结果 | 成长刻度",
+    resultsTitle: "预测结果 | Heightmaxxing AI",
     resultsDescription: "目标年龄的身高、体重和 BMI 估算",
   },
 };

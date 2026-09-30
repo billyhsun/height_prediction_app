@@ -27,7 +27,10 @@ import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const MOBILE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const API_ORIGIN = "http://localhost:3000";
+// Defaults to the local dev server; point it at a deployment to check the
+// native client against the real backend:
+//   VERIFY_API_ORIGIN=https://… npm run verify:ui --workspace @notch/mobile
+const API_ORIGIN = process.env.VERIFY_API_ORIGIN ?? "http://localhost:3000";
 const PROXY_PORT = 5050;
 const CDP_PORT = 9222;
 const VIEWPORT = { width: 393, height: 852, deviceScaleFactor: 2, mobile: true };
@@ -87,7 +90,7 @@ function startProxy(distDir) {
       try {
         const upstream = await fetch(API_ORIGIN + req.url, {
           method: req.method,
-          headers: { ...req.headers, host: "localhost:3000" },
+          headers: { ...req.headers, host: new URL(API_ORIGIN).host },
           body: ["GET", "HEAD"].includes(req.method)
             ? undefined
             : Buffer.concat(chunks),
@@ -359,11 +362,35 @@ async function main() {
     check(
       "sign-in screen renders",
       await evaluate(
-        `['Welcome back', 'Email', 'Password']` +
+        // Email only: which second factor follows is the instance's choice,
+        // so the screen asks for the address before it can know.
+        `['Welcome back', 'Email'].every(s => document.body.innerText.includes(s))`,
+      ),
+    );
+    // The instance requires a first and last name; signUp.create is rejected
+    // outright without them. Checked on sign-up rather than sign-in, and
+    // deliberately not asserting the CAPTCHA hand-off — that depends on a
+    // dashboard setting which should eventually be turned off.
+    // Navigated rather than clicked through: the footer link is a Text nested
+    // inside a Text, which the click helper cannot target.
+    await send("Page.navigate", { url: `http://localhost:${PROXY_PORT}/sign-up` });
+    for (let i = 0; i < 40; i++) {
+      if (await evaluate(`document.body.innerText.includes('Create an account')`)) break;
+      await sleep(400);
+    }
+    check(
+      "sign-up collects the names the instance requires",
+      await evaluate(
+        `['First name', 'Last name', 'Email', 'Password']` +
           `.every(s => document.body.innerText.includes(s))`,
       ),
     );
-    await click("Continue without an account");
+
+    await send("Page.navigate", { url: `http://localhost:${PROXY_PORT}/` });
+    for (let i = 0; i < 40; i++) {
+      if (await evaluate(`document.body.innerText.includes('Get prediction')`)) break;
+      await sleep(400);
+    }
     check(
       "guest escape hatch returns to the form",
       await evaluate(`document.body.innerText.includes('Get prediction')`),
@@ -594,11 +621,16 @@ async function main() {
 
     // The explanation arrives after the estimate and must never gate it.
     const explained = await (async () => {
-      const deadline = Date.now() + 25_000;
+      // The card's header renders while the request is still in flight, so
+      // waiting for it alone reads the loading state — which is fast enough to
+      // pass against a stub and slow enough to fail against a real model.
+      const deadline = Date.now() + 90_000;
       while (Date.now() < deadline) {
         const text = await evaluate(`document.body.innerText`);
-        if (/what this means/i.test(text)) return text;
-        await sleep(800);
+        if (/what this means/i.test(text) && !/Writing an explanation/i.test(text)) {
+          return text;
+        }
+        await sleep(1500);
       }
       return await evaluate(`document.body.innerText`);
     })();
@@ -620,6 +652,34 @@ async function main() {
       "no birth-size band without measurements",
       !/size at birth/i.test(card),
     );
+
+    // --- the account-only screens ---
+    // Signed out, every one of them must offer sign-in rather than erroring or
+    // rendering an empty list as though the user simply had no data.
+    for (const [route, name] of [
+      ["/children", "children"],
+      ["/children/new", "new child"],
+      ["/history", "history"],
+      ["/account", "account"],
+      ["/onboarding", "onboarding"],
+    ]) {
+      await send("Page.navigate", { url: `http://localhost:${PROXY_PORT}${route}` });
+      // The native header title renders before the screen body, so waiting on
+      // "some text exists" reads the header and races the gate card.
+      let body = "";
+      for (let i = 0; i < 40; i++) {
+        body = await evaluate(`document.body.innerText`);
+        if (/Welcome back|Unmatched Route|Render Error/i.test(body)) break;
+        await sleep(500);
+      }
+      const gated = /Welcome back|Sign in/i.test(body);
+      const crashed = /Unmatched Route|cannot be found|Render Error/i.test(body);
+      check(
+        `${name} screen gates on sign-in`,
+        gated && !crashed,
+        crashed ? body.slice(0, 80) : "",
+      );
+    }
 
     const shotPath = join(MOBILE_ROOT, ".verify-dist", "screenshot.png");
     const { data } = await send("Page.captureScreenshot", { format: "png" });

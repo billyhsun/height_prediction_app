@@ -1,7 +1,7 @@
 {
   "name": "notch",
   "private": true,
-  "description": "Notch \u2014 child growth tracking. Monorepo root.",
+  "description": "Heightmaxxing AI \u2014 child growth tracking. Monorepo root.",
   "workspaces": [
     "apps/web",
     "apps/mobile",

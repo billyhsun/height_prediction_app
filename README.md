@@ -1,8 +1,8 @@
-# Notch
+# Heightmaxxing AI
 
 Basic v0: form → API → SVR prediction + optional LLM prediction with parent heights.
 
-Child growth tracking and height prediction. Formerly "Child Height Predictor".
+Child growth tracking and height prediction. Formerly "Notch" and, before that, "Child Height Predictor".
 
 App logo: `apps/web/public/logo.png` — still the old growth-chart-and-silhouette
 mark; it has not been redesigned for the new name.

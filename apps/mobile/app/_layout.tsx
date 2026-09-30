@@ -121,6 +121,30 @@ function AppStack() {
         name="birth"
         options={{ headerShown: true, title: t.birth.navLabel }}
       />
+      <Stack.Screen
+        name="children/index"
+        options={{ headerShown: true, title: t.children.title }}
+      />
+      <Stack.Screen
+        name="children/new"
+        options={{ headerShown: true, title: t.childForm.addTitle }}
+      />
+      <Stack.Screen
+        name="children/[id]"
+        options={{ headerShown: true, title: t.childForm.editTitle }}
+      />
+      <Stack.Screen
+        name="history"
+        options={{ headerShown: true, title: t.history.title }}
+      />
+      <Stack.Screen
+        name="account"
+        options={{ headerShown: true, title: t.account.title }}
+      />
+      <Stack.Screen
+        name="onboarding"
+        options={{ headerShown: true, title: t.onboarding.title }}
+      />
     </Stack>
   );
 }

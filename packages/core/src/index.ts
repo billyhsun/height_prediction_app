@@ -29,6 +29,7 @@ export * from "./ethnicities";
 export * from "./child-profile";
 export * from "./model-domain";
 export * from "./prediction-session";
+export * from "./stature-reference";
 
 // Transport and API clients
 export * from "./http";

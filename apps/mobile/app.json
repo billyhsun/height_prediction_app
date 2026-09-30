@@ -1,17 +1,35 @@
 {
   "expo": {
     "name": "Heightmaxxing AI",
-    "slug": "notch",
-    "scheme": "notch",
+    "slug": "heightmaxxing",
+    "scheme": "heightmaxxing",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.notch.ios"
+      "bundleIdentifier": "ai.heightmaxxing.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
-    "plugins": ["expo-router", "expo-secure-store"],
-    "experiments": { "typedRoutes": true }
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#6E9FBF"
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

@@ -8,10 +8,13 @@ import {
   heightInDisplayUnit,
   heightMeasurement,
   heightUnitLabel,
+  statureReferenceBand,
+  statureStats,
 } from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
 import { Badge, Button, Card, GrowthChart, Stat } from "@/components/ui";
+import { HeightForAgeCard } from "@/components/HeightForAgeCard";
 import type { ChartPoint } from "@notch/core";
 import {
   inputsToSearchParams,
@@ -50,6 +53,41 @@ export function PredictionResults({
     ...point,
     heightCm: heightInDisplayUnit(point.heightCm, units),
   }));
+
+  // Where the child sits against the growth reference, now and if the ML
+  // prediction lands. Null outside the reference's ages (under 2), and the
+  // card simply shows whichever side exists.
+  const nowStats = statureStats(
+    inputs.sex,
+    inputs.current_age_years,
+    inputs.height_cm,
+  );
+  const futureStats = statureStats(
+    inputs.sex,
+    result.target_age_years,
+    result.pred_height_cm,
+  );
+  const hasHeightForAge = Boolean(nowStats || futureStats);
+
+  // The reference's typical-range corridor across the chart's age span,
+  // computed in cm and converted like every other height on this screen.
+  const referenceBandCm = statureReferenceBand(
+    inputs.sex,
+    Math.min(inputs.current_age_years, ...history.map((p) => p.ageYears)),
+    result.target_age_years,
+  );
+  const referenceBand = referenceBandCm
+    ? {
+        upper: referenceBandCm.upper.map((p) => ({
+          ...p,
+          heightCm: heightInDisplayUnit(p.heightCm, units),
+        })),
+        lower: referenceBandCm.lower.map((p) => ({
+          ...p,
+          heightCm: heightInDisplayUnit(p.heightCm, units),
+        })),
+      }
+    : null;
 
   const inputRows: { label: string; value: string }[] = [
     { label: t.results.sex, value: inputs.sex === 1 ? t.common.male : t.common.female },
@@ -168,6 +206,16 @@ export function PredictionResults({
           </div>
         </Card>
 
+        {hasHeightForAge && (
+          <HeightForAgeCard
+            nowStats={nowStats}
+            futureStats={futureStats}
+            currentAgeYears={inputs.current_age_years}
+            targetAgeYears={result.target_age_years}
+            guidance={llmResult?.guidance}
+          />
+        )}
+
         <Card padding="lg">
           <GrowthChart
             observed={observed}
@@ -196,6 +244,7 @@ export function PredictionResults({
                   }
                 : null
             }
+            referenceBand={referenceBand}
             sex={inputs.sex}
             labels={{
               ...t.results.chart,
@@ -225,9 +274,13 @@ export function PredictionResults({
                 {llmResult.reasoning}
               </p>
 
-              {/* Neither tail is coloured as a problem: most children are not
-                  exactly average, and both ends of the range are ordinary. */}
-              {llmResult.stature_band && (
+              {/* Height-for-age lives in its own card now, computed against
+                  the CDC reference. These blocks survive only as the fallback
+                  for ages the reference cannot speak to (under 2), where the
+                  LLM-judged band is the only assessment there is. Neither
+                  tail is coloured as a problem: most children are not exactly
+                  average, and both ends of the range are ordinary. */}
+              {!hasHeightForAge && llmResult.stature_band && (
                 <div className="flex flex-col gap-1.5 border-t border-accent-200 pt-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-medium tracking-wide text-text-secondary uppercase">
@@ -249,7 +302,7 @@ export function PredictionResults({
                 </div>
               )}
 
-              {llmResult.guidance && (
+              {!hasHeightForAge && llmResult.guidance && (
                 <div className="flex flex-col gap-1.5 border-t border-accent-200 pt-4">
                   <h3 className="text-xs font-semibold tracking-wide text-text-secondary uppercase">
                     {t.results.guidanceHeading}

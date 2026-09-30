@@ -14,11 +14,14 @@ import {
   heightUnitLabel,
   inputsToParamRecord,
   loadPredictionSession,
+  statureReferenceBand,
+  statureStats,
   type ChartPoint,
   type PredictionSession,
   type SavedPredictionSummary,
 } from "@notch/core";
 
+import { HeightForAgeCard } from "@/components/HeightForAgeCard";
 import { useTranslations } from "@/components/i18n";
 import { useUnits } from "@/components/units";
 import {
@@ -98,6 +101,41 @@ export default function ResultsScreen() {
     ...point,
     heightCm: heightInDisplayUnit(point.heightCm, units),
   }));
+
+  // Where the child sits against the growth reference, now and if the ML
+  // prediction lands. Null outside the reference's ages (under 2), and the
+  // card simply shows whichever side exists.
+  const nowStats = statureStats(
+    inputs.sex,
+    inputs.current_age_years,
+    inputs.height_cm,
+  );
+  const futureStats = statureStats(
+    inputs.sex,
+    result.target_age_years,
+    result.pred_height_cm,
+  );
+  const hasHeightForAge = Boolean(nowStats || futureStats);
+
+  // The reference's typical-range corridor across the chart's age span,
+  // computed in cm and converted like every other height on this screen.
+  const referenceBandCm = statureReferenceBand(
+    inputs.sex,
+    Math.min(inputs.current_age_years, ...history.map((p) => p.ageYears)),
+    result.target_age_years,
+  );
+  const referenceBand = referenceBandCm
+    ? {
+        upper: referenceBandCm.upper.map((p) => ({
+          ...p,
+          heightCm: heightInDisplayUnit(p.heightCm, units),
+        })),
+        lower: referenceBandCm.lower.map((p) => ({
+          ...p,
+          heightCm: heightInDisplayUnit(p.heightCm, units),
+        })),
+      }
+    : null;
 
   const inputRows: { label: string; value: string }[] = [
     { label: t.results.sex, value: inputs.sex === 1 ? t.common.male : t.common.female },
@@ -200,6 +238,16 @@ export default function ResultsScreen() {
         </View>
       </Card>
 
+      {hasHeightForAge ? (
+        <HeightForAgeCard
+          nowStats={nowStats}
+          futureStats={futureStats}
+          currentAgeYears={inputs.current_age_years}
+          targetAgeYears={result.target_age_years}
+          guidance={llmResult?.guidance}
+        />
+      ) : null}
+
       <Card padding="lg">
         <GrowthChart
           observed={observed}
@@ -223,6 +271,7 @@ export default function ResultsScreen() {
                 }
               : null
           }
+          referenceBand={referenceBand}
           sex={inputs.sex}
           labels={{
             ...t.results.chart,
@@ -252,9 +301,13 @@ export default function ResultsScreen() {
               {llmResult.reasoning || t.results.llmFallbackReasoning}
             </Text>
 
-            {/* Neither tail is coloured as a problem: most children are not
-                exactly average, and both ends of the range are ordinary. */}
-            {llmResult.stature_band ? (
+            {/* Height-for-age lives in its own card now, computed against the
+                CDC reference. These blocks survive only as the fallback for
+                ages the reference cannot speak to (under 2), where the
+                LLM-judged band is the only assessment there is. Neither tail
+                is coloured as a problem: most children are not exactly
+                average, and both ends of the range are ordinary. */}
+            {!hasHeightForAge && llmResult.stature_band ? (
               <View style={styles.subSection}>
                 <View style={styles.statureRow}>
                   <Text style={styles.inputsHeading}>
@@ -272,7 +325,7 @@ export default function ResultsScreen() {
               </View>
             ) : null}
 
-            {llmResult.guidance ? (
+            {!hasHeightForAge && llmResult.guidance ? (
               <View style={styles.subSection}>
                 <Text style={styles.inputsHeading}>
                   {t.results.guidanceHeading}

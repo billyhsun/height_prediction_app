@@ -149,6 +149,21 @@ export function heightUnitLabel(system: UnitSystem, t: Dictionary): string {
   return system === "imperial" ? t.units.in : t.units.cm;
 }
 
+/**
+ * A height *difference* as one number with a unit — "4.2 cm" or "1.7 in".
+ *
+ * Not feet-and-inches like heightMeasurement: differences are a few
+ * centimetres, and 0'2" reads as a typo where 1.7 in reads as a distance.
+ */
+export function formatHeightDelta(
+  cm: number,
+  system: UnitSystem,
+  t: Dictionary,
+): string {
+  const value = system === "imperial" ? cmToInches(cm) : cm;
+  return `${value.toFixed(1)} ${heightUnitLabel(system, t)}`;
+}
+
 export function weightUnitLabel(system: UnitSystem, t: Dictionary): string {
   return system === "imperial" ? t.units.lb : t.units.kg;
 }

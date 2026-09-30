@@ -26,5 +26,11 @@ export const config = {
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/(api|trpc)(.*)",
+    // The production Clerk instance runs on the vercel.app domain in proxy
+    // mode: clerkMiddleware serves Clerk's Frontend API under this path. The
+    // broad matcher above already catches it, but Clerk's setup requires the
+    // path spelled out — and spelled out it survives the day someone tightens
+    // the pattern above.
+    "/__clerk/:path*",
   ],
 };

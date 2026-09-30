@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { enUS, zhCN } from "@clerk/localizations";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import {
   LOCALE_COOKIE,
@@ -80,6 +81,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <UnitsProvider initialUnits={units}>
               <Header />
               {children}
+              <Footer />
             </UnitsProvider>
           </LocaleProvider>
         </body>

@@ -9,7 +9,7 @@ import type { Locale } from "./config";
  */
 const en = {
   common: {
-    appName: "Notch",
+    appName: "Heightmaxxing AI",
     loading: "Loading…",
     cancel: "Cancel",
     edit: "Edit",
@@ -446,10 +446,10 @@ const en = {
   metadata: {
     // The brand carries the tab and the store listing; searchable keywords go in
     // the description and, on the App Store, the subtitle field — not the name.
-    title: "Notch — Child growth tracker",
+    title: "Heightmaxxing AI — Child growth tracker",
     description:
       "Track your child's growth and estimate their future height, weight, and BMI.",
-    resultsTitle: "Results | Notch",
+    resultsTitle: "Results | Heightmaxxing AI",
     resultsDescription: "Estimated height, weight, and BMI at your target age",
   },
 };
@@ -458,7 +458,7 @@ export type Dictionary = typeof en;
 
 const zhCN: Dictionary = {
   common: {
-    appName: "成长刻度",
+    appName: "Heightmaxxing AI",
     loading: "加载中…",
     cancel: "取消",
     edit: "编辑",
@@ -821,9 +821,9 @@ const zhCN: Dictionary = {
   },
 
   metadata: {
-    title: "成长刻度 — 儿童成长记录",
+    title: "Heightmaxxing AI — 儿童成长记录",
     description: "记录孩子的成长，并估算未来的身高、体重和 BMI。",
-    resultsTitle: "预测结果 | 成长刻度",
+    resultsTitle: "预测结果 | Heightmaxxing AI",
     resultsDescription: "目标年龄的身高、体重和 BMI 估算",
   },
 };

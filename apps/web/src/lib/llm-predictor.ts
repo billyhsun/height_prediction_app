@@ -18,6 +18,7 @@ import {
 import { dictionaries } from "@notch/core";
 import { sanitizeEthnicities } from "@notch/core";
 import { isStatureBand, midParentalHeightCm, type StatureBand } from "@notch/core";
+import { statureStats } from "@notch/core";
 
 /**
  * Overridable so the endpoint can be pointed at an Azure OpenAI deployment, a
@@ -113,6 +114,26 @@ export function buildLlmPrompt(
       ? ` (weight ${weightKg} kg, BMI ${(weightKg / (heightCm / 100) ** 2).toFixed(1)})`
       : "";
 
+  // Where the child sits against the CDC reference, computed here so the
+  // model explains the same percentile the UI displays rather than judging
+  // its own. Null under age 2, where the model's own judgement is all we have.
+  const stats = statureStats(
+    inputs.sex,
+    inputs.current_age_years,
+    inputs.height_cm,
+  );
+  const referenceContext = stats
+    ? `
+Reference context, computed from the CDC LMS growth tables. Do not re-estimate
+these figures; they are what the app shows the parent:
+- The child's current height is at the ${stats.percentile.toFixed(0)}th percentile for ${sexLabel} children aged ${inputs.current_age_years} — "${stats.band}", where "average" means the middle 80%.
+- The typical range (10th–90th percentile) at this age is ${stats.typicalRange.lowCm.toFixed(1)}–${stats.typicalRange.highCm.toFixed(1)} cm.
+`
+    : "";
+  const statureBandInstruction = stats
+    ? `- stature_band: exactly "${stats.band}", restating the computed reference context above (string)`
+    : `- stature_band: how the child's CURRENT height of ${inputs.height_cm} cm compares with other ${sexLabel} children aged ${inputs.current_age_years}, against a standard growth reference (WHO or CDC). Exactly one of "below_average", "average", or "above_average" (string). Use "average" for roughly the middle 80% of children — that is the usual answer. Judge current height for current age only; do not use the predicted adult height.`;
+
   return `Estimate a child's future height for an educational app.
 
 Child:
@@ -127,13 +148,14 @@ Parents:
 - Mother height: ${inputs.mother_height_cm} cm${parentBuild(inputs.mother_height_cm, inputs.mother_weight_kg)}
 - Father height: ${inputs.father_height_cm} cm${parentBuild(inputs.father_height_cm, inputs.father_weight_kg)}
 - Mid-parental height (Tanner): ${mph.toFixed(1)} cm
-
+${referenceContext}
 Use the child's current measurements, parent heights, ethnicity (if provided), and typical growth patterns.
 Parental build, where given, is a secondary signal only: treat mid-parental height as the primary genetic anchor and do not let parental weight move the estimate far from it.
+Where ethnicity is provided, you may note in "reasoning" how typical growth for that background compares with the reference — the CDC tables are not stratified by ethnicity, and that context is yours to add.
 Return JSON only with:
 - pred_height_cm: predicted height in cm at target age (number)
 - reasoning: 1-2 sentences explaining the estimate (string)
-- stature_band: how the child's CURRENT height of ${inputs.height_cm} cm compares with other ${sexLabel} children aged ${inputs.current_age_years}, against a standard growth reference (WHO or CDC). Exactly one of "below_average", "average", or "above_average" (string). Use "average" for roughly the middle 80% of children — that is the usual answer. Judge current height for current age only; do not use the predicted adult height.
+${statureBandInstruction}
 - guidance: 1-2 sentences of general, everyday suggestions (string)
 
 Rules for "guidance":
@@ -235,11 +257,20 @@ export async function predictHeightLlm(
 
   const reasoning = String(parsed.reasoning ?? "").trim();
 
-  // Dropped rather than defaulted when unrecognised: showing no band is honest,
-  // whereas defaulting to "average" would state something the model did not say.
-  const statureBand = isStatureBand(parsed.stature_band)
-    ? parsed.stature_band
-    : undefined;
+  // The computed band wins whenever the reference covers the age: the prompt
+  // told the model to restate it, and if the model went its own way the UI
+  // must still match the percentile card. The model's judgement only stands
+  // where there is nothing to compute (under 2). Dropped rather than defaulted
+  // when neither exists: showing no band is honest, whereas defaulting to
+  // "average" would state something nobody assessed.
+  const computed = statureStats(
+    inputs.sex,
+    inputs.current_age_years,
+    inputs.height_cm,
+  );
+  const statureBand =
+    computed?.band ??
+    (isStatureBand(parsed.stature_band) ? parsed.stature_band : undefined);
 
   // Guidance rides on the band and never appears without one: suppressed for an
   // average child even if the model wrote something anyway, and suppressed when

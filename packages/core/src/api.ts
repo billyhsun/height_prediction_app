@@ -43,12 +43,14 @@ export type PredictResponse = {
 };
 
 /**
- * How the child's CURRENT height compares with others of the same age and sex.
+ * How a height compares with others of the same age and sex. "Average" is the
+ * middle 80% — below the 10th or above the 90th percentile is a tail.
  *
- * Three coarse bands rather than a percentile on purpose. The figure comes from
- * an LLM reading a growth reference, not from a clinical calculation against
- * LMS tables, and a number like "34th percentile" would claim a precision that
- * origin cannot support. A band is what the estimate can actually carry.
+ * Originally these bands were LLM-judged, and were deliberately coarse because
+ * a percentile would have claimed precision that origin could not support.
+ * They are now computed from the CDC LMS tables (stature-reference.ts), which
+ * also yield exact percentiles; the band survives as the coarse summary shown
+ * beside them, and in saved predictions from before the change.
  *
  * None of the three is a finding: most children are not exactly average, and
  * both tails are ordinary. The UI colours them accordingly.

@@ -14,6 +14,8 @@ export type GrowthChartLabels = {
   observed: string;
   predicted: string;
   llmPredicted: string;
+  /** Legend text for the reference corridor. Omitted when no band is drawn. */
+  typicalBand?: string;
   ageAxis: string;
   heightAxis: string;
   /** Legend text for the shaded interval. Omitted when no model supplies one. */
@@ -28,6 +30,13 @@ type GrowthChartProps = {
   /** The model's calibrated interval at the target age, in the same unit as
    *  every other height here. Absent for models that do not report one. */
   predictedRange?: { low: number; high: number } | null;
+  /**
+   * The typical-range corridor from the growth reference (10th–90th
+   * percentile curves for the child's sex), already clipped to the chart's age
+   * span and converted to display units by the caller. Drawn under everything
+   * else, so the child's line reads against it.
+   */
+  referenceBand?: { upper: ChartPoint[]; lower: ChartPoint[] } | null;
   /** 1 = male, 2 = female. Selects the reference growth shape, since the
    *  pubertal spurt arrives earlier for girls. */
   sex: number;
@@ -54,6 +63,7 @@ export function GrowthChart({
   predicted,
   llmPredicted,
   predictedRange,
+  referenceBand,
   sex,
   labels,
 }: GrowthChartProps) {
@@ -64,12 +74,13 @@ export function GrowthChart({
         { ageYears: predicted.ageYears, heightCm: predictedRange.high },
       ]
     : [];
-  // The band's extremes join the domain, or the shading clips at the axis.
+  // The bands' extremes join the domain, or the shading clips at the axis.
   const all = [
     ...points,
     predicted,
     ...(llmPredicted ? [llmPredicted] : []),
     ...edges,
+    ...(referenceBand ? [...referenceBand.upper, ...referenceBand.lower] : []),
   ];
   const scales = buildScales(all, { ...VIEW, padding: PADDING });
 
@@ -119,6 +130,19 @@ export function GrowthChart({
         role="img"
         aria-label={`${labels.title}. ${labels.heightAxis} / ${labels.ageAxis}.`}
       >
+        {/* The reference corridor is the backdrop everything else reads
+            against, so it goes down first — even under the gridlines.
+            Neutral, not a green: the palette's primary is already teal-green,
+            and two translucent greens are indistinguishable. Grey reads as
+            what it is — population context, not this child. */}
+        {referenceBand && (
+          <path
+            d={bandPath(referenceBand.upper, referenceBand.lower, scales)}
+            fill="var(--color-neutral-500)"
+            fillOpacity={0.13}
+          />
+        )}
+
         {/* Drawn before everything so every line and marker sits on top of it. */}
         {rangeArea && (
           <path d={rangeArea} fill="var(--color-primary-500)" fillOpacity={0.12} />
@@ -251,6 +275,16 @@ export function GrowthChart({
               style={{ background: "var(--color-primary-500)", opacity: 0.25 }}
             />
             {labels.range}
+          </span>
+        )}
+        {referenceBand && labels.typicalBand && (
+          <span className="flex items-center gap-1.5 text-xs text-text-secondary">
+            <span
+              aria-hidden="true"
+              className="h-2.5 w-4 rounded-[2px]"
+              style={{ background: "var(--color-neutral-500)", opacity: 0.3 }}
+            />
+            {labels.typicalBand}
           </span>
         )}
       </div>

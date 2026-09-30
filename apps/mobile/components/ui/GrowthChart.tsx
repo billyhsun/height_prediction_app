@@ -18,6 +18,8 @@ export type GrowthChartLabels = {
   observed: string;
   predicted: string;
   llmPredicted: string;
+  /** Legend text for the reference corridor. Omitted when no band is drawn. */
+  typicalBand?: string;
   ageAxis: string;
   heightAxis: string;
   /** Legend text for the shaded interval. Omitted when no model supplies one. */
@@ -31,6 +33,13 @@ type GrowthChartProps = {
   /** The model's calibrated interval at the target age, in the same unit as
    *  every other height here. Absent for models that do not report one. */
   predictedRange?: { low: number; high: number } | null;
+  /**
+   * The typical-range corridor from the growth reference (10th–90th
+   * percentile curves for the child's sex), already clipped to the chart's age
+   * span and converted to display units by the caller. Drawn under everything
+   * else, so the child's line reads against it.
+   */
+  referenceBand?: { upper: ChartPoint[]; lower: ChartPoint[] } | null;
   sex: number;
   labels: GrowthChartLabels;
 };
@@ -54,6 +63,7 @@ export function GrowthChart({
   predicted,
   llmPredicted,
   predictedRange,
+  referenceBand,
   sex,
   labels,
 }: GrowthChartProps) {
@@ -66,12 +76,13 @@ export function GrowthChart({
         { ageYears: predicted.ageYears, heightCm: predictedRange.high },
       ]
     : [];
-  // The band's extremes join the domain, or the shading clips at the axis.
+  // The bands' extremes join the domain, or the shading clips at the axis.
   const all = [
     ...points,
     predicted,
     ...(llmPredicted ? [llmPredicted] : []),
     ...edges,
+    ...(referenceBand ? [...referenceBand.upper, ...referenceBand.lower] : []),
   ];
 
   // Nothing sensible to draw before the first layout pass.
@@ -97,6 +108,20 @@ export function GrowthChart({
       >
         {scales && last ? (
           <Svg width={width} height={HEIGHT}>
+            {/* The reference corridor is the backdrop everything else reads
+                against, so it goes down first — even under the gridlines.
+                Neutral, not a green: the palette's primary is already
+                teal-green, and two translucent greens are indistinguishable.
+                Grey reads as what it is — population context, not this
+                child. */}
+            {referenceBand ? (
+              <Path
+                d={bandPath(referenceBand.upper, referenceBand.lower, scales)}
+                fill={theme.color.neutral[500]}
+                fillOpacity={0.13}
+              />
+            ) : null}
+
             {/* Drawn before everything, so every line and marker sits on it. */}
             {predictedRange ? (
               <Path
@@ -233,6 +258,12 @@ export function GrowthChart({
             <Text style={styles.legendLabel}>{labels.range}</Text>
           </View>
         ) : null}
+        {referenceBand && labels.typicalBand ? (
+          <View style={styles.legendItem}>
+            <View style={styles.typicalSwatch} />
+            <Text style={styles.legendLabel}>{labels.typicalBand}</Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -289,6 +320,13 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: theme.color.primary[500],
     opacity: 0.25,
+  },
+  typicalSwatch: {
+    width: 16,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: theme.color.neutral[500],
+    opacity: 0.3,
   },
   legendLabel: { fontSize: fontSize.xs, color: theme.semantic.textSecondary },
 });

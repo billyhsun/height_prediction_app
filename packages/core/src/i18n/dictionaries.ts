@@ -277,6 +277,8 @@ const en = {
       observed: "Measured",
       predicted: "ML prediction",
       llmPredicted: "LLM prediction",
+      /** The shaded 10th–90th percentile corridor from the growth reference. */
+      typicalBand: "Typical range for age",
       ageAxis: "age (years)",
       heightAxis: (unit: string) => `height (${unit})`,
     },
@@ -309,6 +311,47 @@ const en = {
     },
     statureCaveat:
       "Compared with other children the same age and sex. Healthy children vary widely.",
+    /** The height-for-age card: where the child sits against the CDC growth
+     *  reference now, and where the prediction would put them at the target
+     *  age. Percentiles here are computed from LMS tables, not LLM-judged —
+     *  see stature-reference.ts. */
+    heightForAge: {
+      heading: "Height for age",
+      nowColumn: (age: number) => `Now, at age ${age}`,
+      futureColumn: (age: number) => `Predicted, at age ${age}`,
+      /** Clamped at the edges: past the 1st or 99th the rounded number stops
+       *  meaning anything, and false precision alarms parents. */
+      percentile: (p: number): string => {
+        const rounded = Math.round(p);
+        if (rounded < 1) return "Below the 1st percentile";
+        if (rounded > 99) return "Above the 99th percentile";
+        const tens = rounded % 100;
+        const ones = rounded % 10;
+        const suffix =
+          tens >= 11 && tens <= 13
+            ? "th"
+            : ones === 1
+              ? "st"
+              : ones === 2
+                ? "nd"
+                : ones === 3
+                  ? "rd"
+                  : "th";
+        return `${rounded}${suffix} percentile`;
+      },
+      percentileMeaning: (p: number): string => {
+        const rounded = Math.min(99, Math.max(1, Math.round(p)));
+        return `Taller than about ${rounded} in 100 peers`;
+      },
+      taller: (delta: string) => `${delta} taller than average`,
+      shorter: (delta: string) => `${delta} shorter than average`,
+      nearAverage: "Right around average",
+      typicalRange: (low: string, high: string) => `Typical: ${low} – ${high}`,
+      basis:
+        "“Typical” is the middle 80% (10th–90th percentile) of the CDC growth reference for the same age and sex. Healthy children vary widely, and sitting outside the typical range is not by itself a problem.",
+      futureBasis:
+        "The predicted column reads the ML model's height estimate against the reference at that age.",
+    },
     guidanceHeading: "Suggestions",
     guidanceDisclaimer:
       "General information only. Speak to your pediatrician about any concerns.",
@@ -675,6 +718,7 @@ const zhCN: Dictionary = {
       observed: "实测",
       predicted: "机器学习预测",
       llmPredicted: "大语言模型预测",
+      typicalBand: "同龄典型范围",
       ageAxis: "年龄（岁）",
       heightAxis: (unit: string) => `身高（${unit}）`,
     },
@@ -702,6 +746,28 @@ const zhCN: Dictionary = {
       above_average: "高于平均",
     },
     statureCaveat: "与同龄同性别的孩子相比。健康儿童之间差异很大。",
+    heightForAge: {
+      heading: "同龄身高对比",
+      nowColumn: (age: number) => `现在（${age} 岁）`,
+      futureColumn: (age: number) => `预测（${age} 岁）`,
+      percentile: (p: number): string => {
+        const rounded = Math.round(p);
+        if (rounded < 1) return "低于第 1 百分位";
+        if (rounded > 99) return "高于第 99 百分位";
+        return `第 ${rounded} 百分位`;
+      },
+      percentileMeaning: (p: number): string => {
+        const rounded = Math.min(99, Math.max(1, Math.round(p)));
+        return `约高于 100 名同龄孩子中的 ${rounded} 名`;
+      },
+      taller: (delta: string) => `比平均身高高 ${delta}`,
+      shorter: (delta: string) => `比平均身高矮 ${delta}`,
+      nearAverage: "与平均身高相当",
+      typicalRange: (low: string, high: string) => `典型范围：${low} – ${high}`,
+      basis:
+        "“典型范围”指 CDC 生长参考标准中同龄同性别孩子的中间 80%（第 10 至第 90 百分位）。健康儿童之间差异很大，超出典型范围本身并不代表有问题。",
+      futureBasis: "“预测”一栏将机器学习模型的身高估算与该年龄的参考标准对比。",
+    },
     guidanceHeading: "建议",
     guidanceDisclaimer: "仅供一般参考。如有疑虑，请咨询儿科医生。",
     llmFallbackReasoning: "该估算基于孩子的身体数据和父母身高。",

@@ -70,14 +70,31 @@ internal testers within the hour; external testers need a (light) beta review.
 
 Before submitting **for App Store review**, App Store Connect needs:
 
-- **App Privacy labels** — declare what the app collects: email address
-  (account), health data (children's height/weight/DOB), linked to identity.
-  Answer as the data flows actually work: data goes to the app's own backend
-  (Supabase via the web API), Clerk (auth), and OpenAI (LLM predictions —
-  measurements and parent heights leave for a third party; declare it).
-- **Privacy policy URL** — required. Must exist on the web app and cover the
-  above, including the OpenAI disclosure and account deletion (which the app
-  supports in Account → Delete).
+- **Privacy policy URL** — `https://<the-deployment>/privacy`. The page exists
+  in the web app (with `/terms` beside it, both localized, linked from the web
+  footer and the mobile settings sheet), and its content is written from what
+  the code actually does — keep the two in step. The named contact
+  (`LEGAL_CONTACT_EMAIL` in `apps/web/src/components/LegalPage.tsx`) is
+  kangleelab0@gmail.com; it doubles as the listing's support contact.
+- **App Privacy labels** — the questionnaire answers, derived from the actual
+  data flows (Supabase via the web API, Clerk for auth, OpenAI for LLM
+  predictions, Google Cloud for the ML model):
+
+  | App Store category | Collected? | Linked to identity? | Used for tracking? | Purpose |
+  |---|---|---|---|---|
+  | Contact info → Email address | Yes (account) | Yes | No | App functionality |
+  | Health & fitness → Health | Yes (child height/weight/DOB) | Yes, on an account | No | App functionality |
+  | Sensitive info | Yes — ethnicity, when the user opts to enter it | Yes, on an account | No | App functionality |
+  | Identifiers → User ID | Yes (Clerk user id) | Yes | No | App functionality |
+  | Everything else (location, browsing, purchases, diagnostics, ads) | No | — | — | — |
+
+  Guest-mode caveat: with `ENABLE_GUEST_DATA_COLLECTION` off (the default),
+  guest predictions are not collected at all. If that flag is ever turned on,
+  the labels above still hold — the guest rows carry no identifiers — but
+  "Health & fitness" then also applies to users without accounts, collected
+  "not linked to identity".
+- **Tracking**: none. No ATT prompt is needed; answer "no" to tracking
+  throughout.
 - **Listing assets** — description, keywords, support URL, screenshots for
   6.9" and 6.5" iPhones (and 13" iPad while `supportsTablet` is true — drop
   tablet support if nobody will maintain iPad screenshots).

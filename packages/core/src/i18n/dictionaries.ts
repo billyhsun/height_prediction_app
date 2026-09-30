@@ -400,6 +400,123 @@ const en = {
     failed: "Could not delete your account",
   },
 
+  footer: {
+    privacy: "Privacy policy",
+    terms: "Terms of use",
+  },
+
+  /**
+   * The privacy policy and terms pages. Written from what the app actually
+   * does — the service list, the guest-mode flag, deletion — so keep them in
+   * step with the code: a policy that promises less than the app collects is a
+   * compliance failure, and one that promises more scares people for nothing.
+   * The App Store listing's privacy answers derive from the same facts (see
+   * docs/ios-release.md in the repo).
+   */
+  legal: {
+    lastUpdated: (date: string) => `Last updated: ${date}`,
+    contactIntro: "Questions about any of this can go to",
+    privacy: {
+      title: "Privacy policy",
+      intro:
+        "Heightmaxxing AI is a child growth tracker: it estimates a child's future height, weight, and BMI from measurements you enter. This page says what information the service handles, where it goes, and how to remove it. The short version: we collect only what the predictions and your account need, we do not run ads, and we never sell data.",
+      sections: [
+        {
+          heading: "Information you provide",
+          paragraphs: [
+            "An account holds your email address, managed by our sign-in provider. Signing up is optional — predictions work without one.",
+            "To make and save predictions you may enter: a child's name, sex, date of birth or age, height and weight measurements, and optionally their ethnicity; and the parents' heights and optionally weights. Predictions generated from these inputs are saved to your account alongside them.",
+          ],
+        },
+        {
+          heading: "Guest mode",
+          paragraphs: [
+            "Without an account, predictions run without being saved to any profile, and we never ask for a name or date of birth. The service can be configured to record anonymized prediction inputs and results for model improvement — never names, account references, IP addresses, or device identifiers. This recording is switched off unless we say otherwise here.",
+          ],
+        },
+        {
+          heading: "How information is used",
+          paragraphs: [
+            "To compute predictions, show your history, and run your account. Nothing else: no advertising, no sale of data, no sharing for marketing.",
+          ],
+        },
+        {
+          heading: "Services that process data on our behalf",
+          paragraphs: [
+            "Like most apps, we run on infrastructure operated by others, each receiving only what its job needs:",
+          ],
+          bullets: [
+            "Clerk — sign-in and account management (your email address).",
+            "Supabase — the database holding profiles and saved predictions.",
+            "Vercel — hosting for the app and its API.",
+            "Google Cloud — runs the ML growth model; it receives measurements only, never names or account details.",
+            "OpenAI — generates the LLM-based estimates and explanations; it receives measurements, parent heights, and ethnicity where provided, never names or account details.",
+          ],
+        },
+        {
+          heading: "Children's privacy",
+          paragraphs: [
+            "The service is for parents and guardians, who enter information about their own children. It is not directed at children, and accounts are for adults. A child's information exists in the service only because an account holder entered it, and the account holder can delete it at any time.",
+          ],
+        },
+        {
+          heading: "Retention and deletion",
+          paragraphs: [
+            "Saved data is kept while your account exists. Deleting your account (Account → Delete) permanently removes the account, every child profile, and every saved prediction. This is immediate and cannot be undone.",
+          ],
+        },
+        {
+          heading: "Security",
+          paragraphs: [
+            "Data moves over encrypted connections and is held by the providers above under access controls. No system is perfectly secure, which is one more reason we collect little.",
+          ],
+        },
+        {
+          heading: "Changes",
+          paragraphs: [
+            "If this policy changes, the date above changes with it. Material changes to what is collected would be announced in the app, not slipped into this page.",
+          ],
+        },
+      ],
+    },
+    terms: {
+      title: "Terms of use",
+      intro:
+        "These terms cover the Heightmaxxing AI website and app. They are short because the service is simple: you enter measurements, it estimates growth.",
+      sections: [
+        {
+          heading: "Not medical advice",
+          paragraphs: [
+            "Everything the service produces is an informational estimate for education and curiosity. It is not medical advice, diagnosis, or treatment, and it is no substitute for a pediatrician. If you have any concern about a child's growth, talk to a clinician — not an app.",
+          ],
+        },
+        {
+          heading: "Estimates, not promises",
+          paragraphs: [
+            "Predictions are statistical. Healthy children vary enormously, models carry error, and no number here is a guarantee of anything. The service is provided as-is, without warranties, and we are not liable for decisions made on the basis of an estimate.",
+          ],
+        },
+        {
+          heading: "Your account",
+          paragraphs: [
+            "Accounts are for adults — parents and guardians entering information about their own children. You are responsible for what you enter and for keeping your sign-in to yourself. You can delete your account, and everything in it, at any time.",
+          ],
+        },
+        {
+          heading: "Fair use",
+          paragraphs: [
+            "Do not abuse the service: no scraping, no probing for other people's data, no using it for anything unlawful. We may suspend access that does.",
+          ],
+        },
+        {
+          heading: "Changes",
+          paragraphs: [
+            "The service and these terms may change; the date above tracks the terms. Continuing to use the service after a change means accepting it.",
+          ],
+        },
+      ],
+    },
+  },
 
   /**
    * The newborn / not-yet-born page. A separate estimate from a separate
@@ -818,6 +935,115 @@ const zhCN: Dictionary = {
     failed: "无法删除您的账户",
   },
 
+  footer: {
+    privacy: "隐私政策",
+    terms: "使用条款",
+  },
+
+  legal: {
+    lastUpdated: (date: string) => `最近更新：${date}`,
+    contactIntro: "如对以上内容有任何疑问，请联系",
+    privacy: {
+      title: "隐私政策",
+      intro:
+        "Heightmaxxing AI 是一款儿童成长记录工具：根据您输入的测量数据估算孩子未来的身高、体重和 BMI。本页说明本服务处理哪些信息、信息流向何处，以及如何删除。简而言之：我们只收集预测和账户运行所必需的信息，不投放广告，也绝不出售数据。",
+      sections: [
+        {
+          heading: "您提供的信息",
+          paragraphs: [
+            "账户保存您的电子邮箱地址，由我们的登录服务商管理。注册是可选的——不注册也可以使用预测功能。",
+            "进行并保存预测时，您可能输入：孩子的姓名、性别、出生日期或年龄、身高体重测量值，以及可选的族裔信息；还有父母的身高和可选的体重。由这些输入生成的预测结果会与输入一起保存到您的账户。",
+          ],
+        },
+        {
+          heading: "访客模式",
+          paragraphs: [
+            "未登录时，预测不会保存到任何档案，我们也不会询问姓名或出生日期。本服务可配置为记录匿名化的预测输入和结果用于改进模型——绝不包含姓名、账户信息、IP 地址或设备标识符。除非本页另有说明，该记录功能处于关闭状态。",
+          ],
+        },
+        {
+          heading: "信息的用途",
+          paragraphs: [
+            "用于计算预测、展示历史记录和运行您的账户。仅此而已：没有广告，不出售数据，不用于营销目的的共享。",
+          ],
+        },
+        {
+          heading: "代表我们处理数据的服务商",
+          paragraphs: [
+            "与大多数应用一样，我们运行在第三方基础设施上，每家服务商只接收其职能所需的数据：",
+          ],
+          bullets: [
+            "Clerk——登录与账户管理（您的邮箱地址）。",
+            "Supabase——存放档案和已保存预测的数据库。",
+            "Vercel——应用及其 API 的托管。",
+            "Google Cloud——运行机器学习生长模型；只接收测量数据，绝不接收姓名或账户信息。",
+            "OpenAI——生成基于大语言模型的估算和说明；接收测量数据、父母身高以及（如提供的）族裔信息，绝不接收姓名或账户信息。",
+          ],
+        },
+        {
+          heading: "儿童隐私",
+          paragraphs: [
+            "本服务面向父母和监护人，由他们输入自己孩子的信息。本服务不面向儿童，账户仅供成年人使用。孩子的信息之所以存在于本服务中，仅因为账户持有人输入了它，且账户持有人可以随时删除。",
+          ],
+        },
+        {
+          heading: "保存与删除",
+          paragraphs: [
+            "已保存的数据在您的账户存续期间保留。删除账户（账户 → 删除）将永久移除账户、所有孩子档案和所有已保存的预测。删除立即生效且无法撤销。",
+          ],
+        },
+        {
+          heading: "安全",
+          paragraphs: [
+            "数据通过加密连接传输，由上述服务商在访问控制下保存。没有绝对安全的系统——这也是我们尽量少收集的又一个理由。",
+          ],
+        },
+        {
+          heading: "变更",
+          paragraphs: [
+            "如本政策有变，上方的日期会随之更新。对收集内容的重大变更会在应用内公告，而不是悄悄改动本页。",
+          ],
+        },
+      ],
+    },
+    terms: {
+      title: "使用条款",
+      intro:
+        "本条款适用于 Heightmaxxing AI 网站和应用。条款很短，因为服务很简单：您输入测量数据，它估算成长。",
+      sections: [
+        {
+          heading: "不构成医疗建议",
+          paragraphs: [
+            "本服务产出的一切内容都是用于学习和了解的参考性估算，不构成医疗建议、诊断或治疗，也不能替代儿科医生。如对孩子的成长有任何疑虑，请咨询医生——而不是一款应用。",
+          ],
+        },
+        {
+          heading: "是估算，不是承诺",
+          paragraphs: [
+            "预测是统计性的。健康儿童之间差异巨大，模型存在误差，这里的任何数字都不构成保证。本服务按现状提供，不附带任何担保；对基于估算做出的决定，我们不承担责任。",
+          ],
+        },
+        {
+          heading: "您的账户",
+          paragraphs: [
+            "账户仅供成年人使用——由父母和监护人输入自己孩子的信息。您对所输入的内容负责，并应妥善保管登录凭证。您可以随时删除账户及其中的一切。",
+          ],
+        },
+        {
+          heading: "合理使用",
+          paragraphs: [
+            "请勿滥用本服务：不得抓取数据、试探他人数据，或将其用于任何违法用途。违者可能被中止访问。",
+          ],
+        },
+        {
+          heading: "变更",
+          paragraphs: [
+            "服务和本条款可能变更；上方日期对应条款版本。变更后继续使用即视为接受。",
+          ],
+        },
+      ],
+    },
+  },
 
   birth: {
     navLabel: "婴儿",

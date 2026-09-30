@@ -1,7 +1,8 @@
+import { openBrowserAsync } from "expo-web-browser";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
-import { LOCALES, LOCALE_SHORT_LABELS, UNIT_SYSTEMS } from "@notch/core";
+import { LOCALES, LOCALE_SHORT_LABELS, UNIT_SYSTEMS, apiUrl } from "@notch/core";
 
 import { useI18n } from "@/components/i18n";
 import { useUnits } from "@/components/units";
@@ -72,6 +73,24 @@ export function SettingsSheet({ visible, onClose }: SettingsSheetProps) {
             />
           </View>
 
+          {/* The legal pages live on the web app; apiUrl points there in a
+              release build. In the sheet rather than the account screen so a
+              signed-out reviewer (or parent) can always reach them. */}
+          <View style={styles.legalRow}>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => openBrowserAsync(apiUrl("/privacy"))}
+            >
+              <Text style={styles.legalLink}>{t.footer.privacy}</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => openBrowserAsync(apiUrl("/terms"))}
+            >
+              <Text style={styles.legalLink}>{t.footer.terms}</Text>
+            </Pressable>
+          </View>
+
           <Button variant="secondary" size="lg" fullWidth onPress={onClose}>
             {t.header.settingsDone}
           </Button>
@@ -120,4 +139,11 @@ const styles = StyleSheet.create({
   },
   row: { gap: theme.space[1] + 2 },
   rowLabel: { fontSize: fontSize.xs, color: theme.semantic.textSecondary },
+  legalRow: { flexDirection: "row", gap: theme.space[5] },
+  legalLink: {
+    fontSize: fontSize.xs,
+    fontWeight: "500",
+    color: theme.color.primary[700],
+    textDecorationLine: "underline",
+  },
 });

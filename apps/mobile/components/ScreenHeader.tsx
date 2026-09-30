@@ -1,12 +1,11 @@
 import { useAuth, useClerk } from "@clerk/clerk-expo";
 import { Link } from "expo-router";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { LOCALES, LOCALE_SHORT_LABELS, UNIT_SYSTEMS } from "@notch/core";
-
 import { useI18n } from "@/components/i18n";
-import { useUnits } from "@/components/units";
-import { Badge, SegmentedControl, fontSize, theme } from "@/components/ui";
+import { GearIcon, SettingsSheet } from "@/components/SettingsSheet";
+import { Badge, fontSize, theme } from "@/components/ui";
 
 type ScreenHeaderProps = {
   /** Shown as the screen's own title, since the native header is hidden. */
@@ -22,25 +21,35 @@ type ScreenHeaderProps = {
  *
  * The web can afford a persistent bar because a desktop viewport has the room.
  * At phone height a fixed 64px chrome costs a form field, so the same contents —
- * brand, language, session — scroll with the page and each screen renders its
- * own. Sign-out lives here rather than behind Clerk's <UserButton>, which has no
- * React Native equivalent; the account screen will take it over when it lands.
+ * brand, settings, session — scroll with the page and each screen renders its
+ * own. Language and units live behind the gear, mirroring the web header's
+ * settings menu; as their own row they cost a form field too. Sign-out lives
+ * here rather than behind Clerk's <UserButton>, which has no React Native
+ * equivalent; the account screen will take it over when it lands.
  */
 export function ScreenHeader({
   title,
   subtitle,
   showGuestBadge = false,
 }: ScreenHeaderProps) {
-  const { locale, setLocale, t } = useI18n();
-  const { units, setUnits } = useUnits();
+  const { t } = useI18n();
   const { isSignedIn } = useAuth();
   const { signOut } = useClerk();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <View style={styles.header}>
       <View style={styles.topRow}>
         <Text style={styles.brand}>{t.common.appName}</Text>
         <View style={styles.actions}>
+          <Pressable
+            onPress={() => setSettingsOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t.header.settings}
+            style={({ pressed }) => [styles.link, pressed && styles.pressed]}
+          >
+            <GearIcon color={theme.color.primary[700]} />
+          </Pressable>
           {isSignedIn ? (
             <Pressable
               onPress={() => signOut()}
@@ -62,41 +71,10 @@ export function ScreenHeader({
         </View>
       </View>
 
-      {/*
-        Both preferences share a row of their own rather than sitting beside the
-        brand. Two segmented controls plus a sign-in link do not fit across a
-        393pt phone, and the first thing to overflow would be the units toggle.
-
-        The units control is labelled "cm"/"ft" rather than "Metric"/"Imperial",
-        which would be twice as wide for no extra clarity next to a language
-        picker. The web header, which has the room, spells them out.
-      */}
-      <View style={styles.prefsRow}>
-        <View style={styles.localeControl}>
-          <SegmentedControl
-            size="sm"
-            label={t.header.languageLabel}
-            value={locale}
-            onChange={setLocale}
-            options={LOCALES.map((option) => ({
-              value: option,
-              label: LOCALE_SHORT_LABELS[option],
-            }))}
-          />
-        </View>
-        <View style={styles.unitsControl}>
-          <SegmentedControl
-            size="sm"
-            label={t.units.settingLabel}
-            value={units}
-            onChange={setUnits}
-            options={UNIT_SYSTEMS.map((option) => ({
-              value: option,
-              label: option === "metric" ? t.units.cm : t.units.ft,
-            }))}
-          />
-        </View>
-      </View>
+      <SettingsSheet
+        visible={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
 
       <View style={styles.titleRow}>
         <Text style={styles.title}>{title}</Text>
@@ -126,9 +104,6 @@ const styles = StyleSheet.create({
     color: theme.color.primary[700],
   },
   actions: { flexDirection: "row", alignItems: "center", gap: theme.space[2] },
-  prefsRow: { flexDirection: "row", gap: theme.space[2] },
-  localeControl: { width: 118 },
-  unitsControl: { width: 104 },
   link: { paddingVertical: theme.space[1], paddingHorizontal: theme.space[1] },
   pressed: { opacity: 0.6 },
   linkText: {

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import {
   BIRTH_LIMITS,
+  ETHNICITY_VALUES,
   PARENT_LIMITS,
   displayPredictionError,
   explainBirthPrediction,
@@ -14,6 +15,7 @@ import {
   predictAdultHeightFromParents,
   type BirthExplanation,
   type BirthPrediction,
+  type EthnicityValue,
 } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
@@ -23,6 +25,7 @@ import {
   Card,
   HeightField,
   LengthField,
+  OptionGrid,
   SegmentedControl,
   Section,
   Stat,
@@ -51,6 +54,7 @@ export function BirthPredictionClient() {
   const [weightKg, setWeightKg] = useState("");
   const [motherHeight, setMotherHeight] = useState("");
   const [fatherHeight, setFatherHeight] = useState("");
+  const [ethnicities, setEthnicities] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BirthPrediction | null>(null);
   // The explanation is fetched after the estimate, and never blocks it: the
@@ -62,6 +66,14 @@ export function BirthPredictionClient() {
   const num = (v: string) => (v.trim() === "" ? undefined : Number(v));
   const inRange = (v: number, l: { min: number; max: number }) =>
     v >= l.min && v <= l.max;
+
+  function toggleEthnicity(value: EthnicityValue) {
+    setEthnicities((prev) =>
+      prev.includes(value)
+        ? prev.filter((entry) => entry !== value)
+        : [...prev, value],
+    );
+  }
 
   function estimate() {
     const mother = num(motherHeight);
@@ -125,6 +137,7 @@ export function BirthPredictionClient() {
       mother_height_cm: mother,
       father_height_cm: father,
       predicted_adult_height_cm: prediction.predictedHeightCm,
+      ethnicities,
     })
       .then(setExplanation)
       .catch((err) =>
@@ -252,6 +265,18 @@ export function BirthPredictionClient() {
               )}
             />
           </div>
+        </Section>
+
+        <Section title={t.form.ethnicityLegend} description={t.birth.ethnicityHelp}>
+          <OptionGrid
+            label={t.form.ethnicityLegend}
+            options={ETHNICITY_VALUES.map((value) => ({
+              value,
+              label: t.ethnicity[value],
+            }))}
+            selected={ethnicities}
+            onToggle={toggleEthnicity}
+          />
         </Section>
 
         {error && (

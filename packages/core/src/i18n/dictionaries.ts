@@ -39,6 +39,9 @@ const en = {
     signIn: "Sign in",
     signUp: "Sign up",
     languageLabel: "Language",
+    /** The gear menu holding language and units, with room for more. */
+    settings: "Settings",
+    settingsDone: "Done",
   },
 
   /**
@@ -423,6 +426,10 @@ const en = {
       "Without the baby there is nothing to measure, so the estimate rests entirely on the parents.",
     parentsLegend: "Parents",
     parentsHelp: "Both heights are required — they are what this estimate is built from.",
+    /** Same picker as the main form, but the promise is narrower: here it can
+     *  only colour the explanation, since the number is a formula. */
+    ethnicityHelp:
+      "Select all that apply. Used only to add context to the explanation — the estimate itself comes from the parents' heights.",
     submit: "Estimate adult height",
     parentsRequired: "Enter both parents' heights.",
     lengthOutOfRange: (min: string, max: string) =>
@@ -525,6 +532,8 @@ const zhCN: Dictionary = {
     signIn: "登录",
     signUp: "注册",
     languageLabel: "语言",
+    settings: "设置",
+    settingsDone: "完成",
   },
 
   units: {
@@ -828,6 +837,8 @@ const zhCN: Dictionary = {
     expectingHelp: "宝宝尚未出生，无法测量，因此估算完全依据父母的身高。",
     parentsLegend: "父母",
     parentsHelp: "两项身高均为必填——本估算正是基于这两个数值。",
+    ethnicityHelp:
+      "可多选。仅用于为说明提供背景——估算结果本身来自父母身高。",
     submit: "估算成年身高",
     parentsRequired: "请填写父母双方的身高。",
     lengthOutOfRange: (min: string, max: string) =>

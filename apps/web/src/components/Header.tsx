@@ -10,6 +10,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 
+import { NavMenu } from "@/components/NavMenu";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { Button } from "@/components/ui";
 import { useTranslations } from "@/lib/i18n/context";
@@ -22,7 +23,7 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-4 px-4">
         <Link
           href="/"
-          className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
+          className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-80"
         >
           <Image
             src="/logo.png"
@@ -32,18 +33,21 @@ export function Header() {
             className="rounded-md"
             priority
           />
-          <span className="text-sm font-semibold tracking-tight text-text-primary">
+          {/* Wordmark drops below sm so the menus and sign-in buttons fit on
+              phones; the logo still links home and carries the name as alt. */}
+          <span className="hidden text-sm font-semibold tracking-tight text-text-primary sm:inline">
             {t.common.appName}
           </span>
         </Link>
 
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-1 sm:gap-2">
           <Link
             href="/birth"
             className="hidden rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-neutral-100 hover:text-text-primary sm:block"
           >
             {t.birth.navLabel}
           </Link>
+          <NavMenu />
           <SettingsMenu />
 
           <SignedIn>

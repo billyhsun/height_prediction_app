@@ -6,6 +6,9 @@ import {
   BIRTH_LIMITS,
   ETHNICITY_VALUES,
   PARENT_LIMITS,
+  adultStatureStats,
+  birthLengthStats,
+  birthWeightStats,
   displayPredictionError,
   explainBirthPrediction,
   formatHeight,
@@ -15,7 +18,12 @@ import {
   predictAdultHeightFromParents,
   type BirthExplanation,
   type BirthPrediction,
+  type BirthSizeStats,
+  type Dictionary,
   type EthnicityValue,
+  type StatureBand,
+  type StatureStats,
+  type UnitSystem,
 } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
@@ -33,6 +41,12 @@ import {
 } from "@/components/ui";
 
 type Status = "born" | "expecting";
+
+type Percentiles = {
+  adult: StatureStats | null;
+  length: BirthSizeStats | null;
+  weight: BirthSizeStats | null;
+};
 
 /**
  * Adult height for a baby, from the parents.
@@ -57,6 +71,9 @@ export function BirthPredictionClient() {
   const [ethnicities, setEthnicities] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BirthPrediction | null>(null);
+  // Taken at submit time, like the estimate, so editing a field afterwards
+  // cannot leave the percentiles describing different numbers.
+  const [percentiles, setPercentiles] = useState<Percentiles | null>(null);
   // The explanation is fetched after the estimate, and never blocks it: the
   // number is local arithmetic and must appear even if the LLM is unreachable.
   const [explanation, setExplanation] = useState<BirthExplanation | null>(null);
@@ -125,6 +142,17 @@ export function BirthPredictionClient() {
     setError(null);
     const prediction = predictAdultHeightFromParents(sex, mother, father);
     setResult(prediction);
+    setPercentiles({
+      adult: adultStatureStats(sex, prediction.predictedHeightCm),
+      length:
+        status === "born" && length !== undefined
+          ? birthLengthStats(sex, length)
+          : null,
+      weight:
+        status === "born" && weight !== undefined
+          ? birthWeightStats(sex, weight)
+          : null,
+    });
 
     setExplanation(null);
     setExplainError(null);
@@ -334,6 +362,10 @@ export function BirthPredictionClient() {
           </Card>
         )}
 
+        {result && percentiles && (
+          <PercentilesCard percentiles={percentiles} sex={sex} t={t} units={units} />
+        )}
+
         {result && (explaining || explanation || explainError) && (
           <Card tone="accent" padding="lg">
             <div className="flex flex-col gap-5">
@@ -350,30 +382,13 @@ export function BirthPredictionClient() {
 
               {explanation && (
                 <>
+                  {/* The LLM's birth_size_band and adult_band are not shown:
+                      the percentile card above computes the same comparison
+                      from the published references. */}
                   {explanation.reasoning && (
                     <p className="text-sm leading-relaxed text-text-primary">
                       {explanation.reasoning}
                     </p>
-                  )}
-
-                  {/* Neither tail is coloured as a problem: most babies are not
-                      exactly average, and both ends are ordinary. */}
-                  {explanation.birth_size_band && (
-                    <BandRow
-                      label={t.birth.birthSizeLabel}
-                      band={explanation.birth_size_band}
-                      caveat={t.birth.birthSizeCaveat}
-                      t={t}
-                    />
-                  )}
-
-                  {explanation.adult_band && (
-                    <BandRow
-                      label={t.birth.adultBandLabel}
-                      band={explanation.adult_band}
-                      caveat={t.birth.adultBandCaveat(t.common.sexNoun(sex))}
-                      t={t}
-                    />
                   )}
 
                   <p className="text-xs text-text-muted">
@@ -397,28 +412,108 @@ export function BirthPredictionClient() {
   );
 }
 
-function BandRow({
+/**
+ * Where the baby sits against published references: the predicted adult
+ * height among adults, and — when measured — size at birth among newborns.
+ * Same tile as HeightForAgeCard, so a percentile looks the same everywhere.
+ */
+function PercentilesCard({
+  percentiles,
+  sex,
+  t,
+  units,
+}: {
+  percentiles: Percentiles;
+  sex: number;
+  t: Dictionary;
+  units: UnitSystem;
+}) {
+  const { adult, length, weight } = percentiles;
+  if (!adult && !length && !weight) return null;
+
+  return (
+    <Card tone="raised" padding="lg">
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center gap-2">
+          <span className="size-2 rounded-full bg-success-600" />
+          <span className="text-xs font-semibold tracking-wide text-success-700 uppercase">
+            {t.birth.percentilesTitle}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {adult && (
+            <PercentileTile
+              label={t.birth.adultColumn}
+              band={adult.band}
+              percentile={adult.percentile}
+              meaning={t.birth.adultMeaning(adult.percentile, sex)}
+              detail={t.results.heightForAge.typicalRange(
+                formatHeight(adult.typicalRange.lowCm, units, t),
+                formatHeight(adult.typicalRange.highCm, units, t),
+              )}
+              t={t}
+            />
+          )}
+          {length && (
+            <PercentileTile
+              label={t.birth.lengthColumn}
+              band={length.band}
+              percentile={length.percentile}
+              meaning={t.birth.lengthMeaning(length.percentile)}
+              t={t}
+            />
+          )}
+          {weight && (
+            <PercentileTile
+              label={t.birth.weightColumn}
+              band={weight.band}
+              percentile={weight.percentile}
+              meaning={t.birth.weightMeaning(weight.percentile)}
+              t={t}
+            />
+          )}
+        </div>
+
+        <p className="text-xs leading-relaxed text-text-muted">
+          {t.birth.percentilesBasis}
+          {(length || weight) && ` ${t.birth.birthPercentilesBasis}`}
+        </p>
+      </div>
+    </Card>
+  );
+}
+
+function PercentileTile({
   label,
   band,
-  caveat,
+  percentile,
+  meaning,
+  detail,
   t,
 }: {
   label: string;
-  band: "below_average" | "average" | "above_average";
-  caveat: string;
-  t: ReturnType<typeof useI18n>["t"];
+  band: StatureBand;
+  percentile: number;
+  meaning: string;
+  detail?: string;
+  t: Dictionary;
 }) {
   return (
-    <div className="flex flex-col gap-1.5 border-t border-accent-200 pt-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium tracking-wide text-text-secondary uppercase">
-          {label}
-        </span>
-        <Badge tone={band === "average" ? "neutral" : "accent"}>
-          {t.results.stature[band]}
-        </Badge>
-      </div>
-      <p className="text-xs text-text-secondary">{caveat}</p>
+    <div className="flex flex-col items-start gap-1.5 rounded-md bg-surface-sunk p-3">
+      <span className="text-xs text-text-secondary">{label}</span>
+      {/* Neither tail is coloured as a problem: most babies are not exactly
+          average, and both ends are ordinary. */}
+      <Badge tone={band === "average" ? "neutral" : "accent"}>
+        {t.results.stature[band]}
+      </Badge>
+      <span className="text-lg font-semibold tabular-nums text-text-primary">
+        {t.results.heightForAge.percentile(percentile)}
+      </span>
+      <span className="text-xs text-text-secondary">{meaning}</span>
+      {detail && (
+        <span className="text-xs tabular-nums text-text-muted">{detail}</span>
+      )}
     </div>
   );
 }

@@ -81,7 +81,7 @@ function lmsAt(
 }
 
 /** Standard normal CDF, Abramowitz & Stegun 26.2.17 — error < 7.5e-8. */
-function normalCdf(z: number): number {
+export function normalCdf(z: number): number {
   const sign = z < 0 ? -1 : 1;
   const x = Math.abs(z) / Math.SQRT2;
   const t = 1 / (1 + 0.3275911 * x);
@@ -103,6 +103,13 @@ function heightAtZ(l: number, m: number, s: number, z: number): number {
     : m * Math.pow(1 + l * s * z, 1 / l);
 }
 
+/** z of a measurement against LMS parameters (Cole's Box-Cox transform). */
+export function lmsZScore(l: number, m: number, s: number, value: number): number {
+  return Math.abs(l) < 1e-9
+    ? Math.log(value / m) / s
+    : (Math.pow(value / m, l) - 1) / (l * s);
+}
+
 export function statureBandFromPercentile(percentile: number): StatureBand {
   if (percentile < BAND_LOW_PERCENTILE) return "below_average";
   if (percentile > BAND_HIGH_PERCENTILE) return "above_average";
@@ -122,10 +129,7 @@ export function statureStats(
   if (!lms || !Number.isFinite(heightCm) || heightCm <= 0) return null;
 
   const { l, m, s } = lms;
-  const z =
-    Math.abs(l) < 1e-9
-      ? Math.log(heightCm / m) / s
-      : (Math.pow(heightCm / m, l) - 1) / (l * s);
+  const z = lmsZScore(l, m, s, heightCm);
 
   return {
     percentile: normalCdf(z) * 100,

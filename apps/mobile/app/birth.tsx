@@ -6,6 +6,9 @@ import {
   BIRTH_LIMITS,
   ETHNICITY_VALUES,
   PARENT_LIMITS,
+  adultStatureStats,
+  birthLengthStats,
+  birthWeightStats,
   displayPredictionError,
   explainBirthPrediction,
   formatHeight,
@@ -15,8 +18,10 @@ import {
   predictAdultHeightFromParents,
   type BirthExplanation,
   type BirthPrediction,
+  type BirthSizeStats,
   type EthnicityValue,
   type StatureBand,
+  type StatureStats,
 } from "@notch/core";
 
 import { useTranslations } from "@/components/i18n";
@@ -37,6 +42,12 @@ import {
 } from "@/components/ui";
 
 type Status = "born" | "expecting";
+
+type Percentiles = {
+  adult: StatureStats | null;
+  length: BirthSizeStats | null;
+  weight: BirthSizeStats | null;
+};
 
 /**
  * Adult height for a baby, from the parents.
@@ -62,6 +73,9 @@ export default function BirthScreen() {
   const [ethnicities, setEthnicities] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BirthPrediction | null>(null);
+  // Taken at submit time, like the estimate, so editing a field afterwards
+  // cannot leave the percentiles describing different numbers.
+  const [percentiles, setPercentiles] = useState<Percentiles | null>(null);
   // Fetched after the estimate and never blocking it: the number is local
   // arithmetic and must appear even if the LLM is unreachable.
   const [explanation, setExplanation] = useState<BirthExplanation | null>(null);
@@ -129,6 +143,17 @@ export default function BirthScreen() {
     setError(null);
     const prediction = predictAdultHeightFromParents(sex, mother, father);
     setResult(prediction);
+    setPercentiles({
+      adult: adultStatureStats(sex, prediction.predictedHeightCm),
+      length:
+        status === "born" && length !== undefined
+          ? birthLengthStats(sex, length)
+          : null,
+      weight:
+        status === "born" && weight !== undefined
+          ? birthWeightStats(sex, weight)
+          : null,
+    });
 
     setExplanation(null);
     setExplainError(null);
@@ -328,6 +353,58 @@ export default function BirthScreen() {
         </Card>
       ) : null}
 
+      {result && percentiles &&
+      (percentiles.adult || percentiles.length || percentiles.weight) ? (
+        <Card tone="raised" padding="lg">
+          <View style={styles.cardStack}>
+            <View style={styles.eyebrowRow}>
+              <View style={[styles.dot, styles.dotSuccess]} />
+              <Text style={[styles.eyebrow, styles.eyebrowSuccess]}>
+                {t.birth.percentilesTitle}
+              </Text>
+            </View>
+
+            <View style={styles.tiles}>
+              {percentiles.adult ? (
+                <PercentileTile
+                  label={t.birth.adultColumn}
+                  band={percentiles.adult.band}
+                  percentile={percentiles.adult.percentile}
+                  meaning={t.birth.adultMeaning(percentiles.adult.percentile, sex)}
+                  detail={t.results.heightForAge.typicalRange(
+                    formatHeight(percentiles.adult.typicalRange.lowCm, units, t),
+                    formatHeight(percentiles.adult.typicalRange.highCm, units, t),
+                  )}
+                />
+              ) : null}
+              {percentiles.length ? (
+                <PercentileTile
+                  label={t.birth.lengthColumn}
+                  band={percentiles.length.band}
+                  percentile={percentiles.length.percentile}
+                  meaning={t.birth.lengthMeaning(percentiles.length.percentile)}
+                />
+              ) : null}
+              {percentiles.weight ? (
+                <PercentileTile
+                  label={t.birth.weightColumn}
+                  band={percentiles.weight.band}
+                  percentile={percentiles.weight.percentile}
+                  meaning={t.birth.weightMeaning(percentiles.weight.percentile)}
+                />
+              ) : null}
+            </View>
+
+            <Text style={styles.basis}>
+              {t.birth.percentilesBasis}
+              {percentiles.length || percentiles.weight
+                ? ` ${t.birth.birthPercentilesBasis}`
+                : ""}
+            </Text>
+          </View>
+        </Card>
+      ) : null}
+
       {result && (explaining || explanation || explainError) ? (
         <Card tone="accent" padding="lg">
           <View style={styles.cardStack}>
@@ -344,28 +421,11 @@ export default function BirthScreen() {
 
             {explanation ? (
               <>
+                {/* The LLM's birth_size_band and adult_band are not shown:
+                    the percentile card above computes the same comparison
+                    from the published references. */}
                 {explanation.reasoning ? (
                   <Text style={styles.reasoning}>{explanation.reasoning}</Text>
-                ) : null}
-
-                {/* Neither tail is coloured as a problem: most babies are not
-                    exactly average, and both ends are ordinary. */}
-                {explanation.birth_size_band ? (
-                  <BandRow
-                    label={t.birth.birthSizeLabel}
-                    band={explanation.birth_size_band}
-                    caveat={t.birth.birthSizeCaveat}
-                    label2={t.results.stature[explanation.birth_size_band]}
-                  />
-                ) : null}
-
-                {explanation.adult_band ? (
-                  <BandRow
-                    label={t.birth.adultBandLabel}
-                    band={explanation.adult_band}
-                    caveat={t.birth.adultBandCaveat(t.common.sexNoun(sex))}
-                    label2={t.results.stature[explanation.adult_band]}
-                  />
                 ) : null}
 
                 <Text style={styles.muted}>
@@ -386,24 +446,37 @@ export default function BirthScreen() {
   );
 }
 
-function BandRow({
+/** Same tile as HeightForAgeCard's column, so a percentile looks the same everywhere. */
+function PercentileTile({
   label,
   band,
-  caveat,
-  label2,
+  percentile,
+  meaning,
+  detail,
 }: {
   label: string;
   band: StatureBand;
-  caveat: string;
-  label2: string;
+  percentile: number;
+  meaning: string;
+  detail?: string;
 }) {
+  const t = useTranslations();
   return (
-    <View style={styles.bandBlock}>
-      <View style={styles.bandRow}>
-        <Text style={styles.bandLabel}>{label}</Text>
-        <Badge tone={band === "average" ? "neutral" : "accent"}>{label2}</Badge>
+    <View style={styles.tile}>
+      <Text style={styles.tileLabel}>{label}</Text>
+      {/* Neither tail is coloured as a problem: most babies are not exactly
+          average, and both ends are ordinary. The row keeps the Badge hugging
+          its text rather than stretching across the column. */}
+      <View style={styles.badgeRow}>
+        <Badge tone={band === "average" ? "neutral" : "accent"}>
+          {t.results.stature[band]}
+        </Badge>
       </View>
-      <Text style={styles.muted}>{caveat}</Text>
+      <Text style={styles.tilePercentile}>
+        {t.results.heightForAge.percentile(percentile)}
+      </Text>
+      <Text style={styles.tileDetail}>{meaning}</Text>
+      {detail ? <Text style={styles.tileRange}>{detail}</Text> : null}
     </View>
   );
 }
@@ -466,24 +539,33 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: theme.semantic.textPrimary,
   },
-  bandBlock: {
+  dotSuccess: { backgroundColor: theme.color.success[600] },
+  eyebrowSuccess: { color: theme.color.success[700] },
+  tiles: { gap: theme.space[3] },
+  tile: {
     gap: theme.space[1] + 2,
-    borderTopWidth: 1,
-    borderTopColor: theme.color.accent[200],
-    paddingTop: theme.space[4],
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.semantic.surfaceSunk,
+    padding: theme.space[3],
   },
-  bandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: theme.space[2],
-  },
-  bandLabel: {
-    fontSize: fontSize.xs,
+  tileLabel: { fontSize: fontSize.xs, color: theme.semantic.textSecondary },
+  badgeRow: { flexDirection: "row" },
+  tilePercentile: {
+    fontSize: fontSize.lg,
     fontWeight: "600",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    color: theme.semantic.textSecondary,
+    color: theme.semantic.textPrimary,
+    fontVariant: ["tabular-nums"],
+  },
+  tileDetail: { fontSize: fontSize.xs, color: theme.semantic.textSecondary },
+  tileRange: {
+    fontSize: fontSize.xs,
+    color: theme.semantic.textMuted,
+    fontVariant: ["tabular-nums"],
+  },
+  basis: {
+    fontSize: fontSize.xs,
+    lineHeight: 17,
+    color: theme.semantic.textMuted,
   },
   error: { fontSize: fontSize.sm, color: theme.color.danger[700] },
   disclaimer: {

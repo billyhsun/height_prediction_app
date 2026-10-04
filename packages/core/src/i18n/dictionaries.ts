@@ -1,5 +1,10 @@
 import type { Locale } from "./config";
 
+/** Percentiles read as "N in 100", clamped so the tails never say 0 or 100. */
+function clampPercentile(p: number): number {
+  return Math.min(99, Math.max(1, Math.round(p)));
+}
+
 /**
  * English is the source of truth. `Dictionary` is derived from it, so every
  * other locale must supply every key with a matching signature or the build
@@ -42,6 +47,8 @@ const en = {
     /** The gear menu holding language and units, with room for more. */
     settings: "Settings",
     settingsDone: "Done",
+    /** The phone-width overflow menu holding the page links. */
+    menu: "Menu",
   },
 
   /**
@@ -567,11 +574,23 @@ const en = {
      *  BirthExplanation in birth-prediction.ts. */
     explanationTitle: "What this means",
     explaining: "Writing an explanation…",
-    birthSizeLabel: "Size at birth",
-    adultBandLabel: "As an adult",
-    birthSizeCaveat: "Compared with other newborns of the same sex.",
-    adultBandCaveat: (sexNoun: string) =>
-      `Compared with adult ${sexNoun === "male" ? "men" : "women"} generally.`,
+    /** The percentile card. Computed from published references
+     *  (birth-reference.ts), so it shows numbers, not the LLM's bands. */
+    percentilesTitle: "Compared with others",
+    adultColumn: "As an adult",
+    lengthColumn: "Birth length",
+    weightColumn: "Birth weight",
+    adultMeaning: (p: number, sex: number) =>
+      `Taller than about ${clampPercentile(p)} in 100 adult ${sex === 1 ? "men" : "women"}`,
+    lengthMeaning: (p: number) =>
+      `Longer than about ${clampPercentile(p)} in 100 newborns`,
+    weightMeaning: (p: number) =>
+      `Heavier than about ${clampPercentile(p)} in 100 newborns`,
+    /** The term-baby caveat only appears when birth size is shown. */
+    percentilesBasis:
+      "Adult height is compared with the CDC reference for 20-year-olds of the same sex.",
+    birthPercentilesBasis:
+      "Birth size is compared with the WHO standard for full-term newborns of the same sex. A baby born early is naturally smaller, so its birth percentiles will read low.",
     explanationUnavailable: "Explanation unavailable",
   },
   /** The account-level parent measurements, shared by onboarding and account. */
@@ -651,6 +670,7 @@ const zhCN: Dictionary = {
     languageLabel: "语言",
     settings: "设置",
     settingsDone: "完成",
+    menu: "菜单",
   },
 
   units: {
@@ -1081,11 +1101,19 @@ const zhCN: Dictionary = {
     noChartNote: "暂无生长曲线——那需要一段时间内的多次测量。等宝宝有了测量记录再回来查看。",
     explanationTitle: "结果解读",
     explaining: "正在生成解读…",
-    birthSizeLabel: "出生时体型",
-    adultBandLabel: "成年时",
-    birthSizeCaveat: "与同性别的其他新生儿相比。",
-    adultBandCaveat: (sexNoun: string) =>
-      `与成年${sexNoun === "male" ? "男性" : "女性"}的总体水平相比。`,
+    percentilesTitle: "与他人相比",
+    adultColumn: "成年时",
+    lengthColumn: "出生身长",
+    weightColumn: "出生体重",
+    adultMeaning: (p: number, sex: number) =>
+      `约高于 100 名成年${sex === 1 ? "男性" : "女性"}中的 ${clampPercentile(p)} 名`,
+    lengthMeaning: (p: number) =>
+      `身长约超过 100 名新生儿中的 ${clampPercentile(p)} 名`,
+    weightMeaning: (p: number) =>
+      `体重约超过 100 名新生儿中的 ${clampPercentile(p)} 名`,
+    percentilesBasis: "成年身高与 CDC 参考标准中同性别 20 岁人群相比。",
+    birthPercentilesBasis:
+      "出生体型与 WHO 足月新生儿标准中的同性别婴儿相比。早产的宝宝本来就较小，因此出生百分位会偏低。",
     explanationUnavailable: "暂时无法生成解读",
   },
   parents: {

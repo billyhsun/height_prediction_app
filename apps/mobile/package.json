@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.20.0",
+    "@clerk/shared": "^3.48.0",
     "@notch/core": "*",
     "expo": "~57.0.26",
     "expo-constants": "~57.0.20",
@@ -19,6 +20,7 @@
     "expo-secure-store": "~57.0.4",
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
+    "expo-updates": "~57.0.27",
     "expo-web-browser": "~57.0.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",

@@ -3,12 +3,12 @@
     "name": "Heightmaxxing AI",
     "slug": "heightmaxxing",
     "scheme": "heightmaxxing",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "ai.heightmaxxing.app",
       "buildNumber": "1",
       "infoPlist": {
@@ -30,6 +30,20 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "84b79d54-aeba-41f9-be60-59e5a86338d0"
+      }
+    },
+    "owner": "bilyhsun",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/84b79d54-aeba-41f9-be60-59e5a86338d0"
+    },
+    "android": {}
   }
 }

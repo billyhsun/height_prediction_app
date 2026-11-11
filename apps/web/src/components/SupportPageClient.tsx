@@ -32,6 +32,7 @@ const COPY = {
     ],
     privacy: "Privacy policy",
     terms: "Terms of use",
+    deleteAccount: "Delete your account",
     disclaimer: "Heightmaxxing AI provides estimates for informational purposes only. It is not medical advice. If you're worried about your child's growth, talk to your pediatrician.",
   },
   "zh-CN": {
@@ -52,6 +53,7 @@ const COPY = {
     ],
     privacy: "隐私政策",
     terms: "使用条款",
+    deleteAccount: "删除账户",
     disclaimer: "Heightmaxxing AI 提供的估算结果仅供参考，不构成医疗建议。如对孩子的生长发育有疑虑，请咨询儿科医生。",
   },
 } as const;
@@ -92,9 +94,10 @@ export function SupportPageClient() {
       </div>
 
       <footer className="mt-10 flex flex-col gap-3 border-t border-border pt-6">
-        <nav className="flex gap-4 text-sm">
+        <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
           <Link href="/privacy" className="font-medium text-primary-700 underline underline-offset-2">{c.privacy}</Link>
           <Link href="/terms" className="font-medium text-primary-700 underline underline-offset-2">{c.terms}</Link>
+          <Link href="/delete-account" className="font-medium text-primary-700 underline underline-offset-2">{c.deleteAccount}</Link>
         </nav>
         <p className="text-xs leading-relaxed text-text-muted">{c.disclaimer}</p>
       </footer>

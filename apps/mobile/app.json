@@ -44,6 +44,20 @@
     "updates": {
       "url": "https://u.expo.dev/84b79d54-aeba-41f9-be60-59e5a86338d0"
     },
-    "android": {}
+    "android": {
+      "package": "ai.heightmaxxing.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#6FA0BF"
+      },
+      "permissions": [],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    }
   }
 }

@@ -40,3 +40,4 @@ export * from "./children";
 export * from "./parent-profile";
 export * from "./saved-predictions";
 export * from "./account";
+export * from "./billing";

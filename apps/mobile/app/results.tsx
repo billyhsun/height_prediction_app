@@ -89,7 +89,7 @@ export default function ResultsScreen() {
     );
   }
 
-  const { inputs, result, llmResult, llmError } = session;
+  const { inputs, result, llmResult, llmError, llmLocked } = session;
   const currentBmi = calculateBmi(inputs.weight_kg, inputs.height_cm);
 
   // The measurement behind this prediction is always plotted; prior ones are
@@ -352,7 +352,15 @@ export default function ResultsScreen() {
         </Card>
       ) : null}
 
-      {!llmResult && !llmError && !inputs.mother_height_cm ? (
+      {/* Neutral on purpose: App Store guideline 3.1.1 rules out pointing to
+          the web checkout from inside the app. */}
+      {llmLocked ? (
+        <Card tone="muted" padding="sm">
+          <Text style={styles.subtitle}>{t.billing.locked.llmNative}</Text>
+        </Card>
+      ) : null}
+
+      {!llmResult && !llmError && !llmLocked && !inputs.mother_height_cm ? (
         <Card tone="muted" padding="sm">
           <Text style={styles.subtitle}>{t.results.addParentHeightsHint}</Text>
         </Card>

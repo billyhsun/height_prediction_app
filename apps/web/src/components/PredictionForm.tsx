@@ -37,7 +37,12 @@ import { CHILD_LIMITS, MAX_MODEL_CURRENT_AGE, MAX_TARGET_AGE } from "@notch/core
 import { useI18n } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
 
-import { displayPredictionError, formatHeight, formatWeight } from "@notch/core";
+import {
+  displayPredictionError,
+  formatHeight,
+  formatWeight,
+  isPremiumRequired,
+} from "@notch/core";
 import {
   Badge,
   Button,
@@ -437,17 +442,24 @@ export function PredictionForm() {
       const result = await predict(inputs);
       let llmResult = null;
       let llmError: string | null = null;
+      let llmLocked = false;
 
       if (hasParentHeights(inputs)) {
         try {
           llmResult = await predictLlm(inputs);
         } catch (err) {
-          // An LLM outage reads the same way to a user as a prediction one,
-          // and its upstream text is just as unhelpful.
-          llmError = displayPredictionError(err, {
-            unavailable: t.form.serviceUnavailable,
-            fallback: t.form.llmFailed,
-          });
+          if (isPremiumRequired(err)) {
+            // Free plan: not a failure, so no error text — the results screen
+            // shows an upgrade card instead.
+            llmLocked = true;
+          } else {
+            // An LLM outage reads the same way to a user as a prediction one,
+            // and its upstream text is just as unhelpful.
+            llmError = displayPredictionError(err, {
+              unavailable: t.form.serviceUnavailable,
+              fallback: t.form.llmFailed,
+            });
+          }
         }
       }
 
@@ -456,6 +468,7 @@ export function PredictionForm() {
         result,
         llmResult,
         llmError,
+        llmLocked,
         childId: selectedChildId || null,
       };
       savePredictionSession(session);

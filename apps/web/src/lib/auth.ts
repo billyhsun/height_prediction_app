@@ -7,7 +7,17 @@ export type DbUser = {
   id: string;
   clerkId: string;
   email: string | null;
+  // Billing mirror, read by the entitlement checks in src/lib/entitlements.ts.
+  // Loaded with the user so gating a request needs no second query.
+  stripeCustomerId: string | null;
+  subscriptionStatus: string | null;
+  stripePriceId: string | null;
+  subscriptionPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
 };
+
+const DB_USER_SELECT =
+  "id, clerkId, email, stripeCustomerId, subscriptionStatus, stripePriceId, subscriptionPeriodEnd, cancelAtPeriodEnd";
 
 type RequireDbUserResult =
   | { user: DbUser; errorResponse: null }
@@ -34,7 +44,7 @@ export async function getOrCreateDbUser(): Promise<DbUser | null> {
   const { data, error } = await supabase
     .from("User")
     .upsert({ clerkId: userId, email }, { onConflict: "clerkId" })
-    .select("id, clerkId, email")
+    .select(DB_USER_SELECT)
     .single();
 
   if (error) {

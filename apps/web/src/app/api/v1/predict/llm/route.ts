@@ -10,15 +10,27 @@ import {
   resolveLocale,
 } from "@notch/core";
 import { ValidationError, validateInputs } from "@/lib/prediction-api";
+import { getAuthUserId, requireDbUser } from "@/lib/auth";
+import { hasPremium, isPaywallEnabled, premiumRequired } from "@/lib/entitlements";
 
 /**
  * LLM height estimate.
  *
  * Runs in this app rather than on the Google Cloud backend, which serves the ML
- * model only. This is the endpoint with a real per-request cost, so it is the
- * first place rate limiting and premium gating should be applied.
+ * model only. This is the endpoint with a real per-request cost, so it is
+ * premium-only, and the gate runs before anything else so a free caller costs
+ * nothing.
  */
 export async function POST(request: Request) {
+  if (isPaywallEnabled()) {
+    // A guest gets 402, not 401: the remedy is the same upgrade prompt, which
+    // starts with signing up.
+    if (!(await getAuthUserId())) return premiumRequired("llm");
+    const { user, errorResponse } = await requireDbUser();
+    if (errorResponse) return errorResponse;
+    if (!hasPremium(user)) return premiumRequired("llm");
+  }
+
   let body: unknown;
   try {
     body = await request.json();

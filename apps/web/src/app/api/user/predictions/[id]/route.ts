@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireDbUser } from "@/lib/auth";
+import { hasPremium, premiumRequired } from "@/lib/entitlements";
 import { toIsoString } from "@notch/core";
 import { getSupabase } from "@/lib/supabase";
 
@@ -9,6 +10,9 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, context: RouteContext) {
   const { user, errorResponse } = await requireDbUser();
   if (errorResponse) return errorResponse;
+  // Part of history. DELETE stays open on every plan: removing your own data is
+  // never paywalled.
+  if (!hasPremium(user)) return premiumRequired("history");
 
   const { id } = await context.params;
 

@@ -65,6 +65,9 @@ export function NavMenu() {
           <Link href="/birth" onClick={close} className={itemClassName}>
             {t.birth.navLabel}
           </Link>
+          <Link href="/pricing" onClick={close} className={itemClassName}>
+            {t.billing.navLabel}
+          </Link>
           <SignedIn>
             <Link href="/children" onClick={close} className={itemClassName}>
               {t.header.myChildren}

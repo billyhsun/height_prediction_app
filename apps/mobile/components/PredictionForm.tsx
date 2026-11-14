@@ -26,6 +26,7 @@ import {
   isValidDateOfBirth,
   predict,
   predictLlm,
+  isPremiumRequired,
   reportGuestPrediction,
   resolveParentHeights,
   savePredictionSession,
@@ -412,17 +413,22 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
       const result = await predict(inputs);
       let llmResult = null;
       let llmError: string | null = null;
+      let llmLocked = false;
 
       if (hasParentHeights(inputs)) {
         try {
           llmResult = await predictLlm(inputs);
         } catch (err) {
-          // An LLM outage reads the same way to a user as a prediction one,
-          // and its upstream text is just as unhelpful.
-          llmError = displayPredictionError(err, {
-            unavailable: t.form.serviceUnavailable,
-            fallback: t.form.llmFailed,
-          });
+          if (isPremiumRequired(err)) {
+            llmLocked = true;
+          } else {
+            // An LLM outage reads the same way to a user as a prediction one,
+            // and its upstream text is just as unhelpful.
+            llmError = displayPredictionError(err, {
+              unavailable: t.form.serviceUnavailable,
+              fallback: t.form.llmFailed,
+            });
+          }
         }
       }
 
@@ -431,6 +437,7 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
         result,
         llmResult,
         llmError,
+        llmLocked,
         childId: selectedChildId || null,
       };
       savePredictionSession(session);

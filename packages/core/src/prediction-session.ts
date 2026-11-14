@@ -5,6 +5,9 @@ export type PredictionSession = {
   result: PredictResponse;
   llmResult?: LlmPredictResponse | null;
   llmError?: string | null;
+  /** The LLM step was skipped because the account is on the free plan. Kept
+   *  apart from llmError so the UI can offer an upgrade instead of an apology. */
+  llmLocked?: boolean;
   childId?: string | null;
 };
 

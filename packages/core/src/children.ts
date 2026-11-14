@@ -1,4 +1,5 @@
 import { GenericRequestError } from "./request-error";
+import { premiumErrorFrom } from "./billing";
 import { apiFetch } from "./http";
 
 export type ChildProfile = {
@@ -42,6 +43,8 @@ export async function createChild(input: ChildInput): Promise<ChildProfile> {
     body: JSON.stringify(input),
   });
   if (!res.ok) {
+    const premium = await premiumErrorFrom(res);
+    if (premium) throw premium;
     const err = await res.json().catch(() => ({}));
     if (err.error) throw new Error(err.error);
     throw new GenericRequestError("POST /children failed", res.status);

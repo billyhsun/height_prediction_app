@@ -107,12 +107,21 @@ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "fatherWeightKg" DOUBLE PRECISION;
 -- guidance by design.
 ALTER TABLE "Prediction" ADD COLUMN IF NOT EXISTS "llmStatureBand" TEXT;
 ALTER TABLE "Prediction" ADD COLUMN IF NOT EXISTS "llmGuidance" TEXT;
+-- Billing: a mirror of the user's Stripe subscription, written only by the
+-- Stripe webhook and the post-checkout sync. See docs/billing.md.
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "stripeCustomerId" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "stripeSubscriptionId" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionStatus" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "stripePriceId" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionPeriodEnd" TIMESTAMP(3);
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "cancelAtPeriodEnd" BOOLEAN NOT NULL DEFAULT false;
 
 -- ---------------------------------------------------------------------------
 -- 2. Indexes and foreign keys
 -- ---------------------------------------------------------------------------
 
 CREATE UNIQUE INDEX IF NOT EXISTS "User_clerkId_key" ON "User"("clerkId");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_stripeCustomerId_key" ON "User"("stripeCustomerId");
 CREATE INDEX IF NOT EXISTS "Child_userId_idx" ON "Child"("userId");
 CREATE INDEX IF NOT EXISTS "Prediction_userId_createdAt_idx" ON "Prediction"("userId", "createdAt" DESC);
 CREATE INDEX IF NOT EXISTS "Prediction_childId_idx" ON "Prediction"("childId");

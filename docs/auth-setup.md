@@ -53,7 +53,7 @@ Run schema migrations separately (not during the Vercel build):
 | `GET /api/user/predictions/[id]` | Required | Load one saved prediction |
 | `DELETE /api/user/predictions/[id]` | Required | Delete a saved prediction |
 
-ML/LLM prediction endpoints (`/api/v1/predict`) remain public for guest mode.
+The ML prediction endpoint (`/api/v1/predict`) remains public for guest mode. The LLM endpoint and the history reads are Premium-only; see [billing](billing.md).
 
 ## 5. Local development
 

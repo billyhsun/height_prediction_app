@@ -1,3 +1,4 @@
+import { premiumErrorFrom } from "./billing";
 import { apiFetch } from "./http";
 import { GenericRequestError } from "./request-error";
 export type PredictRequest = {
@@ -167,7 +168,10 @@ export async function predictLlm(
   });
 
   if (!res.ok) {
-    throw await predictionError(res, "LLM prediction failed");
+    throw (
+      (await premiumErrorFrom(res)) ??
+      (await predictionError(res, "LLM prediction failed"))
+    );
   }
 
   return res.json();

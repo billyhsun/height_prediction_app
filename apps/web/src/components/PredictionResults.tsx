@@ -15,6 +15,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
 import { Badge, Button, Card, GrowthChart, Stat } from "@/components/ui";
 import { HeightForAgeCard } from "@/components/HeightForAgeCard";
+import { UpgradeCard } from "@/components/UpgradeCard";
 import type { ChartPoint } from "@notch/core";
 import {
   inputsToSearchParams,
@@ -31,16 +32,19 @@ type PredictionResultsProps = {
    * the projection.
    */
   history?: ChartPoint[];
+  /** Earlier measurements exist but the free plan cannot show them. */
+  historyLocked?: boolean;
 };
 
 export function PredictionResults({
   session,
   savedToAccount = false,
   history = [],
+  historyLocked = false,
 }: PredictionResultsProps) {
   const t = useTranslations();
   const { units } = useUnits();
-  const { inputs, result, llmResult, llmError } = session;
+  const { inputs, result, llmResult, llmError, llmLocked } = session;
   const currentBmi = calculateBmi(inputs.weight_kg, inputs.height_cm);
   const editHref = `/?${inputsToSearchParams(inputs)}`;
 
@@ -254,6 +258,16 @@ export function PredictionResults({
                 : undefined,
             }}
           />
+          {historyLocked && (
+            <p className="mt-3 text-xs text-text-muted">
+              <Link
+                href="/pricing"
+                className="font-medium text-primary-700 underline underline-offset-2"
+              >
+                {t.billing.locked.chartHint}
+              </Link>
+            </p>
+          )}
         </Card>
 
         {llmResult && (
@@ -335,7 +349,14 @@ export function PredictionResults({
           </Card>
         )}
 
-        {!llmResult && !llmError && !inputs.mother_height_cm && (
+        {llmLocked && (
+          <UpgradeCard
+            title={t.billing.locked.llmTitle}
+            body={t.billing.locked.llmBody}
+          />
+        )}
+
+        {!llmResult && !llmError && !llmLocked && !inputs.mother_height_cm && (
           <Card tone="muted" padding="sm">
             <p className="text-sm text-text-secondary">
               {t.results.addParentHeightsHint}

@@ -397,7 +397,7 @@ const en = {
     subtitle: "Manage your account and data.",
     dangerHeading: "Delete account",
     dangerBody:
-      "This permanently deletes your account, every child profile, and every saved prediction. It cannot be undone.",
+      "This permanently deletes your account, every child profile, and every saved prediction, and cancels any Premium subscription immediately. It cannot be undone.",
     /** Typed by the user to confirm. Localised so the prompt matches the UI. */
     confirmWord: "DELETE",
     confirmPrompt: (word: string) => `Type ${word} to confirm`,
@@ -405,6 +405,72 @@ const en = {
     deleteButton: "Delete my account",
     deleting: "Deleting…",
     failed: "Could not delete your account",
+  },
+
+  /**
+   * Plans, checkout and the locked-feature prompts.
+   *
+   * The `locked.*Native` strings are for the iOS app and deliberately say
+   * nothing about buying, prices or the website: App Store guideline 3.1.1
+   * forbids pointing to purchases made outside Apple's in-app purchase.
+   */
+  billing: {
+    navLabel: "Pricing",
+    free: "Free",
+    premium: "Premium",
+    title: "Heightmaxxing AI Premium",
+    subtitle:
+      "The ML prediction is free, always. Premium adds the AI estimate, every child in your family, and growth tracking over time.",
+    freeFeatures: [
+      "ML height prediction",
+      "Height-for-age percentiles",
+      "One child profile",
+    ],
+    premiumFeatures: [
+      "Everything in Free",
+      "AI estimate using parent heights, with guidance",
+      "Unlimited child profiles",
+      "Full prediction history and growth chart over time",
+    ],
+    monthly: "Monthly",
+    yearly: "Yearly",
+    perMonth: (price: string) => `${price} / month`,
+    perYear: (price: string) => `${price} / year`,
+    yearlySaving: (percent: number) => `Save ${percent}%`,
+    subscribe: "Subscribe",
+    signUpToSubscribe: "Create an account to subscribe",
+    redirecting: "Redirecting…",
+    currentPlan: "Your plan",
+    youArePremium: "You're on Premium.",
+    manageBilling: "Manage billing",
+    seePlans: "See plans",
+    renewsOn: (date: string) => `Renews on ${date}`,
+    endsOn: (date: string) => `Premium ends on ${date}`,
+    pastDue:
+      "Your last payment didn't go through. Update your card to keep Premium.",
+    checkoutSuccess: "Thanks for subscribing. Premium is now active.",
+    checkoutPending:
+      "Payment received. Premium will switch on within a minute; refresh if it hasn't.",
+    checkoutCancelled: "Checkout cancelled. You have not been charged.",
+    failed: "Something went wrong with billing. Please try again.",
+    pricesUnavailable: "Prices couldn't be loaded right now.",
+    locked: {
+      upgrade: "Upgrade to Premium",
+      llmTitle: "AI estimate is a Premium feature",
+      llmBody:
+        "Premium adds a second, AI-based estimate that factors in parent heights, with guidance when your child is above or below average.",
+      childrenTitle: "Add more children with Premium",
+      childrenBody: (limit: number) =>
+        `The free plan includes ${limit} child profile. Upgrade to track every child in your family.`,
+      historyTitle: "History is a Premium feature",
+      historyBody:
+        "Your predictions are still being saved. Upgrade to see them all and chart growth over time.",
+      chartHint:
+        "Upgrade to Premium to plot earlier measurements on this chart.",
+      llmNative: "The AI estimate isn't included in your current plan.",
+      childrenNative: "Your current plan doesn't include more child profiles.",
+      historyNative: "History isn't included in your current plan.",
+    },
   },
 
   footer: {
@@ -458,6 +524,7 @@ const en = {
             "Vercel — hosting for the app and its API.",
             "Google Cloud — runs the ML growth model; it receives measurements only, never names or account details.",
             "OpenAI — generates the LLM-based estimates and explanations; it receives measurements, parent heights, and ethnicity where provided, never names or account details.",
+            "Stripe — processes Premium subscription payments; it receives your email address and payment details, never child or measurement data.",
           ],
         },
         {
@@ -946,13 +1013,64 @@ const zhCN: Dictionary = {
     subtitle: "管理您的账户和数据。",
     dangerHeading: "删除账户",
     dangerBody:
-      "这将永久删除您的账户、所有孩子档案以及所有已保存的预测记录，且无法恢复。",
+      "这将永久删除您的账户、所有孩子档案以及所有已保存的预测记录，并立即取消高级版订阅，且无法恢复。",
     confirmWord: "删除",
     confirmPrompt: (word: string) => `请输入“${word}”以确认`,
     confirmPlaceholder: "删除",
     deleteButton: "删除我的账户",
     deleting: "正在删除…",
     failed: "无法删除您的账户",
+  },
+
+  billing: {
+    navLabel: "价格",
+    free: "免费版",
+    premium: "高级版",
+    title: "Heightmaxxing AI 高级版",
+    subtitle:
+      "机器学习预测永久免费。高级版增加 AI 估算、支持家中所有孩子，并可长期追踪生长情况。",
+    freeFeatures: ["机器学习身高预测", "同龄身高百分位", "1 个孩子档案"],
+    premiumFeatures: [
+      "包含免费版全部功能",
+      "结合父母身高的 AI 估算及建议",
+      "不限数量的孩子档案",
+      "完整预测记录及长期生长曲线",
+    ],
+    monthly: "按月",
+    yearly: "按年",
+    perMonth: (price: string) => `${price} / 月`,
+    perYear: (price: string) => `${price} / 年`,
+    yearlySaving: (percent: number) => `节省 ${percent}%`,
+    subscribe: "订阅",
+    signUpToSubscribe: "创建账户后订阅",
+    redirecting: "正在跳转…",
+    currentPlan: "您的方案",
+    youArePremium: "您正在使用高级版。",
+    manageBilling: "管理账单",
+    seePlans: "查看方案",
+    renewsOn: (date: string) => `将于 ${date} 续订`,
+    endsOn: (date: string) => `高级版将于 ${date} 结束`,
+    pastDue: "您的上一笔付款未成功。请更新银行卡以继续使用高级版。",
+    checkoutSuccess: "感谢订阅，高级版已开通。",
+    checkoutPending: "已收到付款。高级版将在一分钟内开通，如未开通请刷新页面。",
+    checkoutCancelled: "已取消结账，您未被扣款。",
+    failed: "账单操作出错，请重试。",
+    pricesUnavailable: "暂时无法加载价格。",
+    locked: {
+      upgrade: "升级到高级版",
+      llmTitle: "AI 估算为高级版功能",
+      llmBody:
+        "高级版提供第二个结合父母身高的 AI 估算，并在孩子高于或低于平均水平时给出建议。",
+      childrenTitle: "升级高级版以添加更多孩子",
+      childrenBody: (limit: number) =>
+        `免费版包含 ${limit} 个孩子档案。升级后可追踪家中每个孩子。`,
+      historyTitle: "预测记录为高级版功能",
+      historyBody: "您的预测仍在保存中。升级后即可查看全部记录并绘制长期生长曲线。",
+      chartHint: "升级到高级版，即可在此图表上显示以往的测量数据。",
+      llmNative: "您当前的方案不包含 AI 估算。",
+      childrenNative: "您当前的方案不支持更多孩子档案。",
+      historyNative: "您当前的方案不包含预测记录。",
+    },
   },
 
   footer: {
@@ -998,6 +1116,7 @@ const zhCN: Dictionary = {
             "Vercel——应用及其 API 的托管。",
             "Google Cloud——运行机器学习生长模型；只接收测量数据，绝不接收姓名或账户信息。",
             "OpenAI——生成基于大语言模型的估算和说明；接收测量数据、父母身高以及（如提供的）族裔信息，绝不接收姓名或账户信息。",
+            "Stripe——处理高级版订阅付款；接收您的电子邮件地址和付款信息，绝不接收孩子或测量数据。",
           ],
         },
         {

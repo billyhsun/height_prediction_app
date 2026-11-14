@@ -2,6 +2,7 @@ import type { LlmPredictResponse, PredictRequest, PredictResponse } from "./api"
 import { isStatureBand } from "./api";
 import type { PredictionSession } from "./prediction-session";
 import { GenericRequestError } from "./request-error";
+import { premiumErrorFrom } from "./billing";
 import { apiFetch } from "./http";
 
 export type SavedPredictionSummary = {
@@ -80,6 +81,8 @@ export async function reportGuestPrediction(
 export async function fetchPredictionHistory(): Promise<SavedPredictionSummary[]> {
   const res = await apiFetch("/api/user/predictions");
   if (res.status === 401) return [];
+  const premium = await premiumErrorFrom(res);
+  if (premium) throw premium;
   if (!res.ok) throw new GenericRequestError("GET /predictions failed", res.status);
   return res.json();
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireDbUser } from "@/lib/auth";
+import { FREE_CHILD_LIMIT, hasPremium, premiumRequired } from "@/lib/entitlements";
 import { toChildProfile, type ChildRow } from "@notch/core";
 import { sanitizeEthnicities } from "@notch/core";
 import { getSupabase } from "@/lib/supabase";
@@ -54,6 +55,19 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Counted only when adding. A subscriber who lapses keeps every profile
+    // they already have; they just cannot add more.
+    if (!hasPremium(user)) {
+      const { count, error: countError } = await getSupabase()
+        .from("Child")
+        .select("id", { count: "exact", head: true })
+        .eq("userId", user.id)
+        .is("deletedAt", null);
+
+      if (countError) throw new Error(countError.message);
+      if ((count ?? 0) >= FREE_CHILD_LIMIT) return premiumRequired("children");
+    }
+
     const { data, error } = await getSupabase()
       .from("Child")
       .insert({

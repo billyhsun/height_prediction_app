@@ -7,6 +7,7 @@ import {
   apiFetch,
   displayError,
   fetchPredictionHistory,
+  isPremiumRequired,
   formatHeight,
   type SavedPredictionSummary,
 } from "@notch/core";
@@ -38,7 +39,15 @@ function History() {
       let cancelled = false;
       fetchPredictionHistory()
         .then((rows) => !cancelled && setPredictions(rows))
-        .catch((err) => !cancelled && setError(displayError(err, t.history.failedToLoad)))
+        .catch((err) => {
+          if (cancelled) return;
+          // No purchase link here: see billing.locked in the dictionaries.
+          setError(
+            isPremiumRequired(err)
+              ? t.billing.locked.historyNative
+              : displayError(err, t.history.failedToLoad),
+          );
+        })
         .finally(() => !cancelled && setLoading(false));
       return () => {
         cancelled = true;

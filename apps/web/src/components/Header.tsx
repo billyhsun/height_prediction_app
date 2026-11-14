@@ -47,6 +47,12 @@ export function Header() {
           >
             {t.birth.navLabel}
           </Link>
+          <Link
+            href="/pricing"
+            className="hidden rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-neutral-100 hover:text-text-primary sm:block"
+          >
+            {t.billing.navLabel}
+          </Link>
           <NavMenu />
           <SettingsMenu />
 

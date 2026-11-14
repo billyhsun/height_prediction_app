@@ -23,7 +23,7 @@ import {
 import { useTranslations } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
 import { HeightField } from "@/components/ui";
-import { displayError } from "@notch/core";
+import { displayError, FREE_CHILD_LIMIT, isPremiumRequired } from "@notch/core";
 
 type ChildFormProps = {
   childId?: string;
@@ -134,7 +134,11 @@ export function ChildForm({ childId }: ChildFormProps) {
       }
       router.push("/children");
     } catch (err) {
-      setError(displayError(err, t.childForm.failedToSave));
+      setError(
+        isPremiumRequired(err)
+          ? t.billing.locked.childrenBody(FREE_CHILD_LIMIT)
+          : displayError(err, t.childForm.failedToSave),
+      );
     } finally {
       setSaving(false);
     }

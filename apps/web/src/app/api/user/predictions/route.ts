@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import type { PredictionSession } from "@notch/core";
 import { requireDbUser } from "@/lib/auth";
+import { hasPremium, premiumRequired } from "@/lib/entitlements";
 import { toIsoString } from "@notch/core";
 import { getSupabase } from "@/lib/supabase";
 
@@ -41,9 +42,15 @@ function toSummary(prediction: PredictionRow) {
   };
 }
 
+/**
+ * History is premium. Saving (POST) is not: free accounts keep accumulating
+ * history, so upgrading reveals everything they have measured rather than
+ * starting from empty, and lapsing never loses data.
+ */
 export async function GET() {
   const { user, errorResponse } = await requireDbUser();
   if (errorResponse) return errorResponse;
+  if (!hasPremium(user)) return premiumRequired("history");
 
   try {
     const { data, error } = await getSupabase()

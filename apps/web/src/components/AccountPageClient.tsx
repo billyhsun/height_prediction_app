@@ -6,6 +6,7 @@ import { useClerk } from "@clerk/nextjs";
 import { deleteAccount } from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
 import { displayError } from "@notch/core";
+import { BillingSection } from "@/components/BillingSection";
 import { ParentDefaultsForm } from "@/components/ParentDefaultsForm";
 
 export function AccountPageClient() {
@@ -43,6 +44,8 @@ export function AccountPageClient() {
         </h1>
         <p className="text-sm text-text-secondary">{t.account.subtitle}</p>
       </header>
+
+      <BillingSection />
 
       {/*
         Collected at sign-up, but that step is skippable and people move house,

@@ -10,7 +10,8 @@ import {
 } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
-import { displayError } from "@notch/core";
+import { displayError, isPremiumRequired } from "@notch/core";
+import { UpgradeCard } from "@/components/UpgradeCard";
 
 export function HistoryPageClient() {
   const router = useRouter();
@@ -19,11 +20,16 @@ export function HistoryPageClient() {
   const [predictions, setPredictions] = useState<SavedPredictionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [locked, setLocked] = useState(false);
 
   useEffect(() => {
     fetchPredictionHistory()
       .then(setPredictions)
-      .catch((err) => setError(displayError(err, t.history.failedToLoad)))
+      .catch((err) =>
+        isPremiumRequired(err)
+          ? setLocked(true)
+          : setError(displayError(err, t.history.failedToLoad)),
+      )
       .finally(() => setLoading(false));
     // Runs once on mount; t is only used for a fallback message.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -41,6 +47,22 @@ export function HistoryPageClient() {
 
   if (error) {
     return <p className="text-sm text-danger-700">{error}</p>;
+  }
+
+  if (locked) {
+    return (
+      <div className="w-full max-w-lg space-y-6">
+        <header className="space-y-2">
+          <h1 className="text-2xl font-semibold text-text-primary">
+            {t.history.title}
+          </h1>
+        </header>
+        <UpgradeCard
+          title={t.billing.locked.historyTitle}
+          body={t.billing.locked.historyBody}
+        />
+      </div>
+    );
   }
 
   return (

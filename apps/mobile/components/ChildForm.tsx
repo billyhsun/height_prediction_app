@@ -16,6 +16,7 @@ import {
   type ChildInput,
   type EthnicityValue,
   type ParentDefaults,
+  isPremiumRequired,
 } from "@notch/core";
 
 import { useTranslations } from "@/components/i18n";
@@ -130,7 +131,11 @@ export function ChildForm({ childId }: Props) {
       else await createChild(input);
       router.replace("/children");
     } catch (err) {
-      setError(displayError(err, t.childForm.failedToSave));
+      setError(
+        isPremiumRequired(err)
+          ? t.billing.locked.childrenNative
+          : displayError(err, t.childForm.failedToSave),
+      );
     } finally {
       setSaving(false);
     }

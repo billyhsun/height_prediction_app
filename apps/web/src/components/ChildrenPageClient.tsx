@@ -17,7 +17,9 @@ import {
 import { formatEthnicities } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
-import { displayError } from "@notch/core";
+import { displayError, FREE_CHILD_LIMIT } from "@notch/core";
+import { UpgradeCard } from "@/components/UpgradeCard";
+import { useBilling } from "@/lib/use-billing";
 
 export function ChildrenPageClient() {
   const router = useRouter();
@@ -26,6 +28,7 @@ export function ChildrenPageClient() {
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const billing = useBilling();
 
   useEffect(() => {
     fetchChildren()
@@ -65,12 +68,21 @@ export function ChildrenPageClient() {
         <p className="text-sm text-text-secondary">{t.children.subtitle}</p>
       </header>
 
-      <Link
-        href="/children/new"
-        className="inline-flex rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
-      >
-        {t.children.addChild}
-      </Link>
+      {billing.status &&
+      !billing.isPremium &&
+      children.length >= FREE_CHILD_LIMIT ? (
+        <UpgradeCard
+          title={t.billing.locked.childrenTitle}
+          body={t.billing.locked.childrenBody(FREE_CHILD_LIMIT)}
+        />
+      ) : (
+        <Link
+          href="/children/new"
+          className="inline-flex rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+        >
+          {t.children.addChild}
+        </Link>
+      )}
 
       {children.length === 0 ? (
         <div className="rounded-lg border border-border bg-surface p-6 text-center">

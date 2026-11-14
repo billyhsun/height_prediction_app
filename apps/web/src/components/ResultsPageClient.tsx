@@ -6,7 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { PredictionResults } from "@/components/PredictionResults";
 import { useTranslations } from "@/lib/i18n/context";
-import { displayError, displayPredictionError } from "@notch/core";
+import {
+  displayError,
+  displayPredictionError,
+  isPremiumRequired,
+} from "@notch/core";
 import {
   loadPredictionSession,
   savePredictionSession,
@@ -66,6 +70,7 @@ export function ResultsPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState<SavedPredictionSummary[]>([]);
+  const [historyLocked, setHistoryLocked] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -105,19 +110,24 @@ export function ResultsPageClient() {
         const result = await predict(inputs);
         let llmResult = null;
         let llmError: string | null = null;
+        let llmLocked = false;
 
         if (hasParentHeights(inputs)) {
           try {
             llmResult = await predictLlm(inputs);
           } catch (err) {
-            llmError = displayPredictionError(err, {
-              unavailable: t.form.serviceUnavailable,
-              fallback: t.form.llmFailed,
-            });
+            if (isPremiumRequired(err)) {
+              llmLocked = true;
+            } else {
+              llmError = displayPredictionError(err, {
+                unavailable: t.form.serviceUnavailable,
+                fallback: t.form.llmFailed,
+              });
+            }
           }
         }
 
-        const nextSession = { inputs, result, llmResult, llmError };
+        const nextSession = { inputs, result, llmResult, llmError, llmLocked };
         savePredictionSession(nextSession);
         setSession(nextSession);
         setSavedToAccount(isSignedIn ?? false);
@@ -141,12 +151,13 @@ export function ResultsPageClient() {
 
   // Fetched unconditionally for signed-in users, then narrowed per child below.
   // Best-effort: a failure leaves the chart with only the current measurement,
-  // which still renders correctly.
+  // which still renders correctly. On the free plan that is also the outcome,
+  // plus a hint that earlier points exist.
   useEffect(() => {
     if (!isSignedIn) return;
     fetchPredictionHistory()
       .then(setSaved)
-      .catch(() => {});
+      .catch((err) => setHistoryLocked(isPremiumRequired(err)));
   }, [isSignedIn]);
 
   // Derived rather than stored, so switching to a different child cannot leave
@@ -205,6 +216,8 @@ export function ResultsPageClient() {
       session={session}
       savedToAccount={savedToAccount}
       history={history}
+      // Only worth mentioning when there is a child whose past could be plotted.
+      historyLocked={historyLocked && Boolean(session.childId)}
     />
   );
 }

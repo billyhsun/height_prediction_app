@@ -57,7 +57,7 @@ curl -X POST http://localhost:8000/api/v1/predict/llm \
 ## Predictions
 
 - **ML (SVR)** — always runs from child measurements; served by the Google Cloud backend
-- **LLM** — runs in this app when both parent heights are provided; uses OpenAI (`gpt-5.4-mini` by default, via `OPENAI_MODEL`)
+- **LLM** — Premium only. Runs in this app when both parent heights are provided; uses OpenAI (`gpt-5.4-mini` by default, via `OPENAI_MODEL`)
 
 ## Docs
 
@@ -65,6 +65,7 @@ curl -X POST http://localhost:8000/api/v1/predict/llm \
 - [Prediction backend](docs/prediction-api.md) — the ML endpoint contract and auth
 - [Auth & profiles setup](docs/auth-setup.md) — Clerk, Postgres, guest vs signed-in
 - [Model retraining plan](docs/model-retraining.md) — why the backend is failing, and what a retrain has to fix
+- [Billing & paywall](docs/billing.md) — Stripe setup, what is premium, webhook, iOS rules
 - [iOS release runbook](docs/ios-release.md) — EAS build profiles, store submission, and review-risk checklist
 
 ## Disclaimer
@@ -98,6 +99,11 @@ In Vercel → Project → Settings → Environment Variables:
 | `SUPABASE_SECRET_KEY` | Yes | Server-only. Never prefix with `NEXT_PUBLIC_` |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | From Clerk dashboard |
 | `CLERK_SECRET_KEY` | Yes | From Clerk dashboard |
+| `STRIPE_SECRET_KEY` | Yes | Server-only. See [billing](docs/billing.md) |
+| `STRIPE_WEBHOOK_SECRET` | Yes | Signing secret of the `/api/stripe/webhook` endpoint |
+| `STRIPE_PRICE_ID_MONTHLY` | Yes | Premium monthly price |
+| `STRIPE_PRICE_ID_YEARLY` | Yes | Premium yearly price |
+| `PAYWALL_ENABLED` | Optional | Gating is on unless exactly `false` |
 
 Do **not** set a `/api/*` rewrite on Vercel. It would be applied before dynamic routes and would hijack `/api/user/children/[id]`.
 

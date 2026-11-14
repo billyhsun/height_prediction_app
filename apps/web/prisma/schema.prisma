@@ -20,6 +20,17 @@ model User {
   motherWeightKg Float?
   fatherWeightKg Float?
 
+  // Billing. A mirror of Stripe, written only by the webhook and the
+  // post-checkout sync (src/lib/stripe.ts) -- never from client input. Stripe
+  // stays the source of truth; these exist so gating a request costs no API call.
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?
+  /// Raw Stripe subscription status. isPremiumStatus() decides what it grants.
+  subscriptionStatus    String?
+  stripePriceId         String?
+  subscriptionPeriodEnd DateTime?
+  cancelAtPeriodEnd     Boolean   @default(false)
+
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   children    Child[]

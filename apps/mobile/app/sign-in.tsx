@@ -21,6 +21,12 @@ import { Button, Field, Input, fontSize, theme } from "@/components/ui";
  * asked what it supports, and the matching second screen is shown — password
  * where a password is accepted, a six-digit code where it is not. That works
  * against either configuration rather than betting on one.
+ *
+ * A correct first factor is not always the end. With Clerk's Device Trust on, a
+ * password sign-in from a device Clerk hasn't seen comes back
+ * `needs_second_factor` (newer API versions call it `needs_client_trust`) and
+ * wants an emailed code too. That lands on the same code screen, as a second
+ * factor.
  */
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
@@ -30,8 +36,10 @@ export default function SignInScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
-  /** Which second step the instance asked for, once it has been asked. */
-  const [factor, setFactor] = useState<"password" | "email_code" | null>(null);
+  /** Which step the instance asked for, once it has been asked. */
+  const [factor, setFactor] = useState<
+    "password" | "email_code" | "second_email_code" | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -102,13 +110,36 @@ export default function SignInScreen() {
       const result =
         factor === "password"
           ? await signIn.attemptFirstFactor({ strategy: "password", password })
-          : await signIn.attemptFirstFactor({ strategy: "email_code", code: secret });
+          : factor === "email_code"
+            ? await signIn.attemptFirstFactor({ strategy: "email_code", code: secret })
+            : await signIn.attemptSecondFactor({ strategy: "email_code", code: secret });
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
         // Back to whatever was underneath — normally the prediction form, with
         // anything already typed into it still there.
         finish();
+        return;
+      }
+
+      // Device Trust (or email 2FA): one more emailed code. The status string is
+      // widened because SDK 2.x's types predate `needs_client_trust`.
+      const status: string = result.status ?? "";
+      const secondCode = result.supportedSecondFactors?.find(
+        (f) => f.strategy === "email_code",
+      );
+      if (
+        factor !== "second_email_code" &&
+        (status === "needs_second_factor" || status === "needs_client_trust") &&
+        secondCode
+      ) {
+        await signIn.prepareSecondFactor({
+          strategy: "email_code",
+          emailAddressId:
+            "emailAddressId" in secondCode ? secondCode.emailAddressId : undefined,
+        });
+        setCode("");
+        setFactor("second_email_code");
         return;
       }
 
@@ -129,7 +160,7 @@ export default function SignInScreen() {
     <AuthScreen
       title={t.auth.signInTitle}
       subtitle={
-        factor === "email_code"
+        factor === "email_code" || factor === "second_email_code"
           ? t.auth.verifySubtitle(email.trim())
           : t.auth.signInSubtitle
       }

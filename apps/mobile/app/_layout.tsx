@@ -106,6 +106,9 @@ function AppStack() {
         headerStyle: { backgroundColor: tokens.semantic.surface },
         headerTitleStyle: { color: tokens.semantic.textPrimary },
         headerTintColor: tokens.color.primary[700],
+        // Just the chevron. iOS otherwise labels it with the previous screen's
+        // title, and the headerless home screen's title is its filename: "index".
+        headerBackButtonDisplayMode: "minimal",
         contentStyle: { backgroundColor: tokens.semantic.canvas },
       }}
     >

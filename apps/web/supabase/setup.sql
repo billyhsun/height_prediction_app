@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS "User" (
     "fatherHeightCm" DOUBLE PRECISION,
     "motherWeightKg" DOUBLE PRECISION,
     "fatherWeightKg" DOUBLE PRECISION,
+    "ethnicities" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
@@ -101,6 +102,8 @@ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "motherHeightCm" DOUBLE PRECISION;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "fatherHeightCm" DOUBLE PRECISION;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "motherWeightKg" DOUBLE PRECISION;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "fatherWeightKg" DOUBLE PRECISION;
+-- The family's ethnicities, so predictions don't ask for them every time.
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "ethnicities" TEXT[] DEFAULT ARRAY[]::TEXT[];
 -- How the child's height compared with peers at the time of the prediction, and
 -- the suggestions shown with it. Both are LLM output and both are nullable:
 -- rows saved before this shipped have neither, and an average child has no

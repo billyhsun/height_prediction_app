@@ -607,6 +607,9 @@ const en = {
       `Height must be between ${min} and ${max}.`,
     weightOutOfRange: (min: string, max: string) =>
       `Weight must be between ${min} and ${max}.`,
+    ethnicityLabel: "Family ethnicity (optional)",
+    ethnicityHelp:
+      "Select all that apply. Filled in on every prediction and used for the LLM estimate only.",
   },
 
   onboarding: {
@@ -1129,6 +1132,8 @@ const zhCN: Dictionary = {
       `身高需在 ${min} 至 ${max} 之间。`,
     weightOutOfRange: (min: string, max: string) =>
       `体重需在 ${min} 至 ${max} 之间。`,
+    ethnicityLabel: "家庭族裔（可选）",
+    ethnicityHelp: "可多选。会自动填入每次预测，仅用于大语言模型预测。",
   },
 
   onboarding: {

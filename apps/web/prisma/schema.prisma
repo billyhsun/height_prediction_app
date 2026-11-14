@@ -19,6 +19,8 @@ model User {
   fatherHeightCm Float?
   motherWeightKg Float?
   fatherWeightKg Float?
+  // Shared by the family, so asked once like the measurements above.
+  ethnicities    String[]  @default([])
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

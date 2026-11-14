@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import {
   EMPTY_PARENT_DEFAULTS,
+  ETHNICITY_VALUES,
   fetchParentDefaults,
   isValidParentHeight,
   isValidParentWeight,
@@ -12,6 +13,7 @@ import {
   displayError,
   formatHeight,
   formatWeight,
+  type EthnicityValue,
   type ParentDefaults,
 } from "@notch/core";
 import { useTranslations } from "@/lib/i18n/context";
@@ -66,6 +68,7 @@ export function ParentDefaultsForm({
   const t = useTranslations();
   const { units } = useUnits();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [ethnicities, setEthnicities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,13 +76,23 @@ export function ParentDefaultsForm({
 
   useEffect(() => {
     fetchParentDefaults()
-      .then((defaults) => setForm(toForm(defaults)))
+      .then((defaults) => {
+        setForm(toForm(defaults));
+        setEthnicities(defaults.ethnicities);
+      })
       .catch(() => setForm(EMPTY_FORM))
       .finally(() => setLoading(false));
   }, []);
 
   function update(key: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
+    setSaved(false);
+  }
+
+  function toggleEthnicity(value: EthnicityValue) {
+    setEthnicities((prev) =>
+      prev.includes(value) ? prev.filter((entry) => entry !== value) : [...prev, value],
+    );
     setSaved(false);
   }
 
@@ -124,8 +137,10 @@ export function ParentDefaultsForm({
         fatherHeightCm: form.fatherHeightCm ? Number(form.fatherHeightCm) : null,
         motherWeightKg: form.motherWeightKg ? Number(form.motherWeightKg) : null,
         fatherWeightKg: form.fatherWeightKg ? Number(form.fatherWeightKg) : null,
+        ethnicities,
       });
       setForm(toForm(defaults));
+      setEthnicities(defaults.ethnicities);
       setSaved(true);
       onSaved?.(defaults);
     } catch (err) {
@@ -177,6 +192,29 @@ export function ParentDefaultsForm({
           placeholder={t.parents.optionalPlaceholder}
         />
       </div>
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm text-text-secondary">
+          {t.parents.ethnicityLabel}
+        </legend>
+        <p className="text-xs text-text-muted">{t.parents.ethnicityHelp}</p>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {ETHNICITY_VALUES.map((value) => (
+            <label
+              key={value}
+              className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-text-primary hover:bg-neutral-50"
+            >
+              <input
+                type="checkbox"
+                checked={ethnicities.includes(value)}
+                onChange={() => toggleEthnicity(value)}
+                className="rounded border-border-strong"
+              />
+              {t.ethnicity[value]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       {error && (
         <p role="alert" className="text-sm font-medium text-danger">

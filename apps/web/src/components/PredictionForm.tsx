@@ -26,6 +26,7 @@ import {
   fetchParentDefaults,
   isParentDefaultsEmpty,
   PARENT_LIMITS,
+  resolveEthnicities,
   resolveParentHeights,
   type ParentDefaults,
 } from "@notch/core";
@@ -133,11 +134,14 @@ function applyResolvedParents(
   setters: {
     setMotherHeight: (v: string) => void;
     setFatherHeight: (v: string) => void;
+    setEthnicities: (v: string[]) => void;
   },
 ) {
   const parents = resolveParentHeights(child, accountDefaults);
   setters.setMotherHeight(toField(parents.motherHeightCm));
   setters.setFatherHeight(toField(parents.fatherHeightCm));
+  // A child with no ethnicity of its own takes the family's.
+  setters.setEthnicities(resolveEthnicities(child, accountDefaults));
 }
 
 export function PredictionForm() {
@@ -257,6 +261,8 @@ export function PredictionForm() {
     setFatherHeight((prev) => prev || toField(parentDefaults.fatherHeightCm));
     setMotherWeight((prev) => prev || toField(parentDefaults.motherWeightKg));
     setFatherWeight((prev) => prev || toField(parentDefaults.fatherWeightKg));
+    // Same rule for the family's ethnicities: fill only an empty selection.
+    setEthnicities((prev) => (prev.length > 0 ? prev : parentDefaults.ethnicities));
   }, [parentDefaults]);
 
   /**
@@ -299,6 +305,7 @@ export function PredictionForm() {
     applyResolvedParents(selectedChild, parentDefaults, {
       setMotherHeight,
       setFatherHeight,
+      setEthnicities,
     });
   }, [selectedChild, parentDefaults]);
 

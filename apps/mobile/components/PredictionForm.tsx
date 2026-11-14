@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/clerk-expo";
-import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import {
@@ -27,6 +27,7 @@ import {
   predict,
   predictLlm,
   reportGuestPrediction,
+  resolveEthnicities,
   resolveParentHeights,
   savePredictionSession,
   savePredictionToAccount,
@@ -266,11 +267,39 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
    * calls them unconditionally. Native waits for Clerk to load first: until it
    * has, the bearer-token provider resolves to no token and the request would go
    * out unauthenticated and come back empty for a user who is in fact signed in.
+   *
+   * Refetched every time the form comes back into view, not once. This screen
+   * is the root of the stack and stays mounted underneath everything else, so a
+   * child added on the Children screen, or details saved during onboarding or on
+   * Account, would otherwise never reach it until the app restarted. Unchanged
+   * data is not re-set: a fresh object would re-run the effects below and wipe
+   * edits already typed into the form.
    */
+  useFocusEffect(
+    useCallback(() => {
+      if (!authLoaded || !isSignedIn) return;
+      let cancelled = false;
+      const keepIfSame = <T,>(next: T) => (prev: T) =>
+        JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
+      fetchChildren()
+        .then((rows) => !cancelled && setChildren(keepIfSame(rows)))
+        .catch(() => {});
+      fetchParentDefaults()
+        .then((d) => !cancelled && setParentDefaults(keepIfSame<ParentDefaults | null>(d)))
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }, [authLoaded, isSignedIn]),
+  );
+
+  // Signing out empties what a signed-in user had loaded.
   useEffect(() => {
-    if (!authLoaded || !isSignedIn) return;
-    fetchChildren().then(setChildren).catch(() => {});
-    fetchParentDefaults().then(setParentDefaults).catch(() => {});
+    if (authLoaded && !isSignedIn) {
+      setChildren([]);
+      setSelectedChildId("");
+      setParentDefaults(null);
+    }
   }, [authLoaded, isSignedIn]);
 
   /**
@@ -290,6 +319,8 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
       motherWeight: prev.motherWeight || toField(parentDefaults.motherWeightKg),
       fatherWeight: prev.fatherWeight || toField(parentDefaults.fatherWeightKg),
     }));
+    // Same rule for the family's ethnicities: fill only an empty selection.
+    setEthnicities((prev) => (prev.length > 0 ? prev : parentDefaults.ethnicities));
   }, [parentDefaults]);
 
   useEffect(() => {
@@ -306,7 +337,7 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
       motherHeight: toField(parents.motherHeightCm),
       fatherHeight: toField(parents.fatherHeightCm),
     }));
-    setEthnicities(selectedChild.ethnicities);
+    setEthnicities(resolveEthnicities(selectedChild, parentDefaults));
   }, [selectedChild, parentDefaults]);
 
   const dobIso = dobToIso(dob);

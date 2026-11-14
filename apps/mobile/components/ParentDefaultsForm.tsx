@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import {
   EMPTY_PARENT_DEFAULTS,
+  ETHNICITY_VALUES,
   PARENT_LIMITS,
   displayError,
   fetchParentDefaults,
@@ -12,12 +13,20 @@ import {
   isValidParentHeight,
   isValidParentWeight,
   saveParentDefaults,
+  type EthnicityValue,
   type ParentDefaults,
 } from "@notch/core";
 
 import { useTranslations } from "@/components/i18n";
 import { useUnits } from "@/components/units";
-import { Button, HeightField, WeightField, fontSize, theme } from "@/components/ui";
+import {
+  Button,
+  HeightField,
+  OptionGrid,
+  WeightField,
+  fontSize,
+  theme,
+} from "@/components/ui";
 
 type FormState = {
   motherHeightCm: string;
@@ -65,6 +74,7 @@ export function ParentDefaultsForm({
   const t = useTranslations();
   const { units } = useUnits();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [ethnicities, setEthnicities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +82,10 @@ export function ParentDefaultsForm({
 
   useEffect(() => {
     fetchParentDefaults()
-      .then((d) => setForm(toForm(d)))
+      .then((d) => {
+        setForm(toForm(d));
+        setEthnicities(d.ethnicities);
+      })
       .catch(() => setForm(toForm(EMPTY_PARENT_DEFAULTS)))
       .finally(() => setLoading(false));
   }, []);
@@ -81,6 +94,13 @@ export function ParentDefaultsForm({
     setForm((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
   };
+
+  function toggleEthnicity(value: EthnicityValue) {
+    setEthnicities((prev) =>
+      prev.includes(value) ? prev.filter((entry) => entry !== value) : [...prev, value],
+    );
+    setSaved(false);
+  }
 
   async function handleSave() {
     setError(null);
@@ -119,6 +139,7 @@ export function ParentDefaultsForm({
         fatherHeightCm: form.fatherHeightCm ? Number(form.fatherHeightCm) : null,
         motherWeightKg: form.motherWeightKg ? Number(form.motherWeightKg) : null,
         fatherWeightKg: form.fatherWeightKg ? Number(form.fatherWeightKg) : null,
+        ethnicities,
       });
       setSaved(true);
       onSaved?.(defaults);
@@ -170,6 +191,17 @@ export function ParentDefaultsForm({
         placeholder={t.parents.optionalPlaceholder}
       />
 
+      <View style={styles.group}>
+        <Text style={styles.groupLabel}>{t.parents.ethnicityLabel}</Text>
+        <Text style={styles.muted}>{t.parents.ethnicityHelp}</Text>
+        <OptionGrid
+          label={t.parents.ethnicityLabel}
+          options={ETHNICITY_VALUES.map((value) => ({ value, label: t.ethnicity[value] }))}
+          selected={ethnicities}
+          onToggle={toggleEthnicity}
+        />
+      </View>
+
       {error ? (
         <Text style={styles.error} accessibilityRole="alert">
           {error}
@@ -190,6 +222,12 @@ export function ParentDefaultsForm({
 const styles = StyleSheet.create({
   form: { gap: theme.space[4] },
   actions: { gap: theme.space[3] },
+  group: { gap: theme.space[2] },
+  groupLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: theme.semantic.textPrimary,
+  },
   muted: { fontSize: fontSize.sm, color: theme.semantic.textSecondary },
   error: { fontSize: fontSize.sm, color: theme.color.danger[700] },
   saved: { fontSize: fontSize.sm, color: theme.color.success[700] },

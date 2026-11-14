@@ -2,11 +2,12 @@ import { GenericRequestError } from "./request-error";
 import { apiFetch } from "./http";
 
 /**
- * Parent measurements held against the account.
+ * Family details held against the account.
  *
  * These describe the parents, not a child: they are the same for every child of
  * one family and an adult's height does not change, so asking for them once at
- * registration is better than asking on every prediction. Each field is
+ * registration is better than asking on every prediction. Ethnicity is here for
+ * the same reason, since it is shared by the family. Each field is
  * independently optional — the whole thing is skippable.
  */
 export type ParentDefaults = {
@@ -14,6 +15,8 @@ export type ParentDefaults = {
   fatherHeightCm: number | null;
   motherWeightKg: number | null;
   fatherWeightKg: number | null;
+  /** EthnicityValue strings; empty when not given. */
+  ethnicities: string[];
 };
 
 export const EMPTY_PARENT_DEFAULTS: ParentDefaults = {
@@ -21,6 +24,7 @@ export const EMPTY_PARENT_DEFAULTS: ParentDefaults = {
   fatherHeightCm: null,
   motherWeightKg: null,
   fatherWeightKg: null,
+  ethnicities: [],
 };
 
 /**
@@ -75,13 +79,28 @@ export function resolveParentHeights(
   };
 }
 
+/**
+ * Resolves which ethnicities a prediction starts with, child first.
+ *
+ * A child's own selection wins when it has one. Otherwise the family's, so a
+ * parent who answered once on the account is not asked again per prediction.
+ */
+export function resolveEthnicities(
+  child: { ethnicities: string[] } | null | undefined,
+  account: ParentDefaults | null | undefined,
+): string[] {
+  if (child && child.ethnicities.length > 0) return child.ethnicities;
+  return account?.ethnicities ?? [];
+}
+
 /** True when the account has nothing recorded, i.e. onboarding was skipped. */
 export function isParentDefaultsEmpty(defaults: ParentDefaults): boolean {
   return (
     defaults.motherHeightCm === null &&
     defaults.fatherHeightCm === null &&
     defaults.motherWeightKg === null &&
-    defaults.fatherWeightKg === null
+    defaults.fatherWeightKg === null &&
+    (defaults.ethnicities ?? []).length === 0
   );
 }
 
@@ -95,7 +114,9 @@ export async function fetchParentDefaults(): Promise<ParentDefaults> {
   if (!res.ok) {
     throw new GenericRequestError("GET /user/profile failed", res.status);
   }
-  return res.json();
+  const data = (await res.json()) as ParentDefaults;
+  // Tolerate a server that predates the column.
+  return { ...data, ethnicities: data.ethnicities ?? [] };
 }
 
 export async function saveParentDefaults(
@@ -111,5 +132,6 @@ export async function saveParentDefaults(
     if (err.error) throw new Error(err.error);
     throw new GenericRequestError("PATCH /user/profile failed", res.status);
   }
-  return res.json();
+  const data = (await res.json()) as ParentDefaults;
+  return { ...data, ethnicities: data.ethnicities ?? [] };
 }

@@ -5,12 +5,13 @@ import {
   isValidParentHeight,
   isValidParentWeight,
   PARENT_LIMITS,
+  sanitizeEthnicities,
   type ParentDefaults,
 } from "@notch/core";
 import { getSupabase } from "@/lib/supabase";
 
 const PARENT_COLUMNS =
-  "motherHeightCm, fatherHeightCm, motherWeightKg, fatherWeightKg";
+  "motherHeightCm, fatherHeightCm, motherWeightKg, fatherWeightKg, ethnicities";
 
 /** Fields a client may write, and how each is validated. */
 const WRITABLE = [
@@ -21,7 +22,7 @@ const WRITABLE = [
 ] as const;
 
 /**
- * The account's parent measurements.
+ * The account's parent measurements and the family's ethnicities.
  *
  * Every field is optional and independently clearable — the onboarding step that
  * collects them is skippable, and a user who fills in one parent and not the
@@ -60,7 +61,15 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const updates: Record<string, number | null> = {};
+  const updates: Record<string, number | null | string[]> = {};
+
+  // Ethnicities: absent leaves them alone; anything else is cleaned to the
+  // known values, so [] (or null) clears them.
+  if ("ethnicities" in body) {
+    updates.ethnicities = sanitizeEthnicities(
+      (body as Record<string, unknown>).ethnicities,
+    );
+  }
 
   for (const { key, kind } of WRITABLE) {
     // Absent means "leave alone"; null or "" means "clear".

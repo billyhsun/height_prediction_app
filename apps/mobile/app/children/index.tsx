@@ -5,19 +5,24 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   ageBreakdownFromDateOfBirth,
+  childGrowthChartData,
   deleteChild,
   displayError,
   fetchChildren,
+  fetchPredictionHistory,
   formatDateOfBirth,
   formatEthnicities,
   formatHeight,
+  heightInDisplayUnit,
+  heightUnitLabel,
   type ChildProfile,
+  type SavedPredictionSummary,
 } from "@notch/core";
 
 import { useI18n } from "@/components/i18n";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useUnits } from "@/components/units";
-import { Button, Card, fontSize, theme } from "@/components/ui";
+import { Button, Card, GrowthChart, fontSize, theme } from "@/components/ui";
 
 export default function ChildrenScreen() {
   return (
@@ -33,6 +38,8 @@ function ChildrenList() {
   const { locale, t } = useI18n();
   const { units } = useUnits();
   const [children, setChildren] = useState<ChildProfile[]>([]);
+  // Saved predictions double as each child's height history for the charts.
+  const [history, setHistory] = useState<SavedPredictionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +52,10 @@ function ChildrenList() {
         .then((rows) => !cancelled && setChildren(rows))
         .catch((err) => !cancelled && setError(displayError(err, t.children.failedToLoad)))
         .finally(() => !cancelled && setLoading(false));
+      // Best-effort: without it the cards just show no chart.
+      fetchPredictionHistory()
+        .then((rows) => !cancelled && setHistory(rows))
+        .catch(() => {});
       return () => {
         cancelled = true;
       };
@@ -107,6 +118,9 @@ function ChildrenList() {
 
       {children.map((child) => {
         const age = ageBreakdownFromDateOfBirth(child.dateOfBirth);
+        const growth = childGrowthChartData(history, child, (cm) =>
+          heightInDisplayUnit(cm, units),
+        );
         return (
           <Card key={child.id} padding="md">
             <View style={styles.rowGap}>
@@ -142,6 +156,27 @@ function ChildrenList() {
                   )}
                 </Text>
               ) : null}
+
+              {growth ? (
+                <View style={styles.chart}>
+                  <GrowthChart
+                    observed={growth.observed}
+                    predicted={growth.predicted}
+                    llmPredicted={growth.llmPredicted}
+                    referenceBand={growth.referenceBand}
+                    sex={child.sex}
+                    labels={{
+                      ...t.results.chart,
+                      heightAxis: t.results.chart.heightAxis(heightUnitLabel(units, t)),
+                    }}
+                  />
+                  <Text style={styles.muted}>
+                    {t.children.growthBasis(growth.measurementCount)}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.muted}>{t.children.growthEmpty}</Text>
+              )}
 
               <View style={styles.actions}>
                 <Button
@@ -188,6 +223,7 @@ const styles = StyleSheet.create({
   body: { fontSize: fontSize.sm, color: theme.semantic.textSecondary },
   muted: { fontSize: fontSize.xs, color: theme.semantic.textMuted },
   error: { fontSize: fontSize.sm, color: theme.color.danger[700] },
+  chart: { gap: theme.space[2], marginTop: theme.space[2] },
   actions: {
     flexDirection: "row",
     gap: theme.space[2],

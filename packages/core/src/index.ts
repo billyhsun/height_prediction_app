@@ -28,6 +28,7 @@ export * from "./birth-prediction";
 export * from "./birth-reference";
 export * from "./ethnicities";
 export * from "./child-profile";
+export * from "./child-growth";
 export * from "./model-domain";
 export * from "./prediction-session";
 export * from "./stature-reference";

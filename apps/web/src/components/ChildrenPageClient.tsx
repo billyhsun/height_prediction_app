@@ -6,14 +6,20 @@ import { useEffect, useState } from "react";
 
 import {
   ageBreakdownFromDateOfBirth,
+  childGrowthChartData,
   formatDateOfBirth,
   formatHeight,
+  heightInDisplayUnit,
+  heightUnitLabel,
 } from "@notch/core";
 import {
   deleteChild,
   fetchChildren,
+  fetchPredictionHistory,
   type ChildProfile,
+  type SavedPredictionSummary,
 } from "@notch/core";
+import { GrowthChart } from "@/components/ui";
 import { formatEthnicities } from "@notch/core";
 import { useI18n } from "@/lib/i18n/context";
 import { useUnits } from "@/lib/units/context";
@@ -24,6 +30,8 @@ export function ChildrenPageClient() {
   const { locale, t } = useI18n();
   const { units } = useUnits();
   const [children, setChildren] = useState<ChildProfile[]>([]);
+  // Saved predictions double as each child's height history for the charts.
+  const [history, setHistory] = useState<SavedPredictionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +40,8 @@ export function ChildrenPageClient() {
       .then(setChildren)
       .catch((err) => setError(displayError(err, t.children.failedToLoad)))
       .finally(() => setLoading(false));
+    // Best-effort: without it the cards just show no chart.
+    fetchPredictionHistory().then(setHistory).catch(() => {});
     // Runs once on mount; t is only used for a fallback message.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -81,6 +91,9 @@ export function ChildrenPageClient() {
         <ul className="space-y-3">
           {children.map((child) => {
             const age = ageBreakdownFromDateOfBirth(child.dateOfBirth);
+            const growth = childGrowthChartData(history, child, (cm) =>
+              heightInDisplayUnit(cm, units),
+            );
             return (
               <li
                 key={child.id}
@@ -147,6 +160,26 @@ export function ChildrenPageClient() {
                     </button>
                   </div>
                 </div>
+                {growth ? (
+                  <div className="mt-4 space-y-2">
+                    <GrowthChart
+                      observed={growth.observed}
+                      predicted={growth.predicted}
+                      llmPredicted={growth.llmPredicted}
+                      referenceBand={growth.referenceBand}
+                      sex={child.sex}
+                      labels={{
+                        ...t.results.chart,
+                        heightAxis: t.results.chart.heightAxis(heightUnitLabel(units, t)),
+                      }}
+                    />
+                    <p className="text-xs text-text-muted">
+                      {t.children.growthBasis(growth.measurementCount)}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-text-muted">{t.children.growthEmpty}</p>
+                )}
               </li>
             );
           })}

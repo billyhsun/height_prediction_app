@@ -266,6 +266,10 @@ const en = {
     fatherHeight: (height: string) => `father ${height}`,
     ethnicityLabel: (list: string) => `Ethnicity: ${list}`,
     predict: "Predict",
+    growthEmpty: "Run a prediction for this child to start their growth chart.",
+    /** Under the chart: where the points come from. */
+    growthBasis: (count: number) =>
+      `${count} ${count === 1 ? "measurement" : "measurements"} from saved predictions. The dashed lines run to the latest prediction.`,
   },
 
   history: {
@@ -847,6 +851,9 @@ const zhCN: Dictionary = {
     fatherHeight: (height: string) => `父亲 ${height}`,
     ethnicityLabel: (list: string) => `族裔：${list}`,
     predict: "预测",
+    growthEmpty: "为这个孩子运行一次预测，即可开始记录生长曲线。",
+    growthBasis: (count: number) =>
+      `共 ${count} 次测量，来自已保存的预测。虚线延伸至最近一次预测。`,
   },
 
   history: {

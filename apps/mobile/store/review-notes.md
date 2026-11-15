@@ -16,9 +16,11 @@ The audience is parents and guardians (adults). The app is not directed at child
 2. HOW TO USE IT AND LOGIN
 No account is needed for the main features. Launch the app, keep the sample values or enter your own, and tap "Get prediction". Tap "A baby's adult height" on the home screen for the Baby estimate.
 An optional free account saves child profiles and prediction history.
-Demo account:
-  Email: [review email]
-  [Password: … / Verification code: …]
+Demo account (tap Sign in on the home screen):
+  Email: review+clerk_test@heightmaxxing-ai.app
+  Password: [password]
+  Verification code: 424242
+After the password, the app asks for a 6-digit code because the reviewer's device is new to the account. No email is sent for this demo address; enter 424242. The same code works if you choose to sign in by code instead of password.
 Account deletion: sign in → Account (on the home screen) → "Delete my account" → confirm. This permanently deletes the account, all child profiles and all saved predictions immediately.
 Settings (gear icon) switches between English and Simplified Chinese and between metric and imperial units.
 There is no paid content, no in-app purchase and no subscription. There is no content shared between users (no posts, messages, comments or public profiles), so content reporting and blocking do not apply.

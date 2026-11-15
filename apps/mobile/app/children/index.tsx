@@ -1,6 +1,6 @@
-import { Link, useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -83,13 +83,12 @@ function ChildrenList() {
     >
       <Text style={styles.subtitle}>{t.children.subtitle}</Text>
 
-      <Link href="/children/new" asChild>
-        <Pressable>
-          <Button size="lg" fullWidth>
-            {t.children.addChild}
-          </Button>
-        </Pressable>
-      </Link>
+      {/* Navigates from its own onPress. Wrapped in <Link asChild><Pressable>,
+          the Button (itself a Pressable) took the touch and the link never
+          fired, so the button did nothing. */}
+      <Button size="lg" fullWidth onPress={() => router.push("/children/new")}>
+        {t.children.addChild}
+      </Button>
 
       {loading ? <Text style={styles.muted}>{t.common.loading}</Text> : null}
 

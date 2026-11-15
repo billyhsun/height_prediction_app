@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/clerk-expo";
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { useTranslations } from "@/components/i18n";
 import { Button, Card, fontSize, theme } from "@/components/ui";
@@ -18,6 +18,7 @@ import { Button, Card, fontSize, theme } from "@/components/ui";
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
   const t = useTranslations();
 
   if (!isLoaded) {
@@ -35,13 +36,11 @@ export function RequireAuth({ children }: { children: ReactNode }) {
           <View style={styles.stack}>
             <Text style={styles.title}>{t.auth.signInTitle}</Text>
             <Text style={styles.body}>{t.auth.signInSubtitle}</Text>
-            <Link href="/sign-in" asChild>
-              <Pressable>
-                <Button size="lg" fullWidth>
-                  {t.header.signIn}
-                </Button>
-              </Pressable>
-            </Link>
+            {/* Own onPress: a Button nested in <Link asChild><Pressable> takes
+                the touch itself, and the link never fires. */}
+            <Button size="lg" fullWidth onPress={() => router.push("/sign-in")}>
+              {t.header.signIn}
+            </Button>
           </View>
         </Card>
       </View>

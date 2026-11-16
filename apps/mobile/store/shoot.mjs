@@ -3,7 +3,9 @@
 //   ios:     iPhone 6.9" (440x956pt @3x = 1320x2868px)
 //   android: 9:16 at 1080x1920px. Google Play rejects a long side more than
 //            twice the short one, so the iPhone frames can't be reused there.
-// usage: node shoot.mjs <mobileRoot> <outDir> [skipExport] [ios|android]
+//   tablet7:  Play 7" tablet, 9:16 at 603x1072dp @2 = 1206x2144px
+//   tablet10: Play 10" tablet, 9:16 at 810x1440dp @2 = 1620x2880px
+// usage: node shoot.mjs <mobileRoot> <outDir> [skipExport] [ios|android|tablet7|tablet10]
 import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:http";
 import { mkdtemp, readFile, mkdir, writeFile } from "node:fs/promises";
@@ -11,13 +13,17 @@ import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
 
 const [MOBILE, OUT, SKIP, PLATFORM = "ios"] = process.argv.slice(2);
-const ANDROID = PLATFORM === "android";
+const ANDROID = PLATFORM !== "ios"; // phones and tablets share the Android status bar
 const API = "https://heightmaxxing-ai.vercel.app"; // same deployment; corp proxy blocks the new domain
 const PORT = 5050, CDP = 9233;
 const DIST = join(OUT, "..", "dist");
-const VIEWPORT = ANDROID
-  ? { width: 405, height: 720, deviceScaleFactor: 8 / 3, mobile: true }
-  : { width: 440, height: 956, deviceScaleFactor: 3, mobile: true };
+const VIEWPORT = {
+  ios: { width: 440, height: 956, deviceScaleFactor: 3, mobile: true },
+  android: { width: 405, height: 720, deviceScaleFactor: 8 / 3, mobile: true },
+  tablet7: { width: 603, height: 1072, deviceScaleFactor: 2, mobile: true },
+  tablet10: { width: 810, height: 1440, deviceScaleFactor: 2, mobile: true },
+}[PLATFORM];
+if (!VIEWPORT) throw new Error("unknown platform " + PLATFORM);
 const SB = ANDROID ? 32 : 62; // status bar height
 const SB_STYLE = ANDROID
   ? "padding:0 18px;font:500 14px Roboto,system-ui;letter-spacing:.2px"

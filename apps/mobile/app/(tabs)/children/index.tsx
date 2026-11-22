@@ -13,7 +13,6 @@ import {
   formatDateOfBirth,
   formatEthnicities,
   formatHeight,
-  heightInDisplayUnit,
   heightUnitLabel,
   type ChildProfile,
   type SavedPredictionSummary,
@@ -144,9 +143,7 @@ function ChildrenList() {
 
       {children.map((child) => {
         const age = ageBreakdownFromDateOfBirth(child.dateOfBirth);
-        const growth = childGrowthChartData(history, child, (cm) =>
-          heightInDisplayUnit(cm, units),
-        );
+        const growth = childGrowthChartData(history, child, { units, locale, t });
         return (
           <Card key={child.id} padding="md">
             <View style={styles.rowGap}>
@@ -185,6 +182,9 @@ function ChildrenList() {
 
               {growth ? (
                 <View style={styles.chart}>
+                  {growth.predictionChange ? (
+                    <Text style={styles.body}>{growth.predictionChange}</Text>
+                  ) : null}
                   <GrowthChart
                     observed={growth.observed}
                     predicted={growth.predicted}

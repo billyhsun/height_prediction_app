@@ -9,7 +9,6 @@ import {
   childGrowthChartData,
   formatDateOfBirth,
   formatHeight,
-  heightInDisplayUnit,
   heightUnitLabel,
 } from "@notch/core";
 import {
@@ -91,9 +90,7 @@ export function ChildrenPageClient() {
         <ul className="space-y-3">
           {children.map((child) => {
             const age = ageBreakdownFromDateOfBirth(child.dateOfBirth);
-            const growth = childGrowthChartData(history, child, (cm) =>
-              heightInDisplayUnit(cm, units),
-            );
+            const growth = childGrowthChartData(history, child, { units, locale, t });
             return (
               <li
                 key={child.id}
@@ -162,6 +159,9 @@ export function ChildrenPageClient() {
                 </div>
                 {growth ? (
                   <div className="mt-4 space-y-2">
+                    {growth.predictionChange ? (
+                      <p className="text-sm text-text-secondary">{growth.predictionChange}</p>
+                    ) : null}
                     <GrowthChart
                       observed={growth.observed}
                       predicted={growth.predicted}

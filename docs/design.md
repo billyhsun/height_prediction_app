@@ -559,7 +559,7 @@ Merges former “Phase 3” / LLM table with model work in [model-retraining.md]
 Merges former history polish leftovers, compliance, and family-sharing ideas.
 
 - [ ] Export child / history data (CSV)
-- [ ] Prediction comparison across visits (“predicted adult height updated from … to …”)
+- [x] Prediction comparison across visits (“predicted adult height updated from … to …”)
 - [ ] Rate limiting, monitoring, alerting on predict endpoints
 - [ ] Optional family sharing / pediatrician read-only link (see §10 v2)
 

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { deleteAccount, displayError } from "@notch/core";
 
+import { useEntitlements } from "@/components/entitlements";
 import { useTranslations } from "@/components/i18n";
 import { ParentDefaultsForm } from "@/components/ParentDefaultsForm";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -31,6 +32,7 @@ function Account() {
   const router = useRouter();
   const t = useTranslations();
   const { signOut } = useClerk();
+  const { isPremium } = useEntitlements();
 
   const [confirmation, setConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -66,6 +68,21 @@ function Account() {
       automaticallyAdjustKeyboardInsets
     >
       <Text style={styles.subtitle}>{t.account.subtitle}</Text>
+
+      <Card tone="raised" padding="md">
+        <View style={styles.plan}>
+          <Text style={styles.planLabel}>
+            {isPremium ? t.paywall.active : t.paywall.freePlan}
+          </Text>
+          <Button
+            size="sm"
+            variant={isPremium ? "secondary" : "primary"}
+            onPress={() => router.push("/paywall")}
+          >
+            {isPremium ? t.paywall.manage : t.paywall.upgrade}
+          </Button>
+        </View>
+      </Card>
 
       {/* Collected at sign-up, but that step is skippable and people remeasure
           or change their mind. Above the danger zone, so the destructive
@@ -117,6 +134,18 @@ function Account() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.semantic.canvas },
   page: { paddingHorizontal: theme.space[5], gap: theme.space[4] },
+  plan: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.space[3],
+  },
+  planLabel: {
+    flex: 1,
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: theme.semantic.textPrimary,
+  },
   danger: { gap: theme.space[4] },
   dangerHeading: {
     fontSize: fontSize.sm,

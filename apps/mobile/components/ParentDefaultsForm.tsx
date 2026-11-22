@@ -22,6 +22,7 @@ import { useUnits } from "@/components/units";
 import {
   Button,
   HeightField,
+  LoadingBlock,
   OptionGrid,
   WeightField,
   fontSize,
@@ -151,7 +152,7 @@ export function ParentDefaultsForm({
   }
 
   if (loading) {
-    return <Text style={styles.muted}>{t.common.loading}</Text>;
+    return <LoadingBlock rows={3} />;
   }
 
   return (

@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -21,6 +21,7 @@ import {
   type SavedPredictionSummary,
 } from "@notch/core";
 
+import { useEntitlements } from "@/components/entitlements";
 import { HeightForAgeCard } from "@/components/HeightForAgeCard";
 import { useTranslations } from "@/components/i18n";
 import { useUnits } from "@/components/units";
@@ -40,6 +41,8 @@ export default function ResultsScreen() {
   const t = useTranslations();
   const { units } = useUnits();
   const { isSignedIn } = useAuth();
+  const { isPremium } = useEntitlements();
+  const fade = useRef(new Animated.Value(0)).current;
 
   /**
    * Read once on mount rather than held in a route param.
@@ -51,6 +54,14 @@ export default function ResultsScreen() {
    */
   const [session] = useState<PredictionSession | null>(() => loadPredictionSession());
   const [saved, setSaved] = useState<SavedPredictionSummary[]>([]);
+
+  useEffect(() => {
+    Animated.timing(fade, {
+      toValue: 1,
+      duration: 320,
+      useNativeDriver: true,
+    }).start();
+  }, [fade]);
 
   // Best-effort: a failure leaves the chart with only the current measurement,
   // which still renders correctly.
@@ -163,8 +174,8 @@ export default function ResultsScreen() {
   ];
 
   return (
-    <ScrollView
-      style={styles.screen}
+    <Animated.ScrollView
+      style={[styles.screen, { opacity: fade }]}
       contentContainerStyle={[styles.page, pagePadding]}
     >
       <View style={styles.header}>
@@ -352,7 +363,18 @@ export default function ResultsScreen() {
         </Card>
       ) : null}
 
-      {!llmResult && !llmError && !inputs.mother_height_cm ? (
+      {!isPremium ? (
+        <Card tone="accent" padding="md">
+          <View style={styles.cardStack}>
+            <Text style={styles.subtitle}>{t.paywall.lockedAi}</Text>
+            <Button size="sm" onPress={() => router.push("/paywall")}>
+              {t.paywall.upgrade}
+            </Button>
+          </View>
+        </Card>
+      ) : null}
+
+      {!llmResult && !llmError && isPremium && !inputs.mother_height_cm ? (
         <Card tone="muted" padding="sm">
           <Text style={styles.subtitle}>{t.results.addParentHeightsHint}</Text>
         </Card>
@@ -391,7 +413,7 @@ export default function ResultsScreen() {
           {t.results.newPrediction}
         </Button>
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

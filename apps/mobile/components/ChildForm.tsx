@@ -27,6 +27,7 @@ import {
   Field,
   HeightField,
   Input,
+  LoadingBlock,
   OptionGrid,
   SegmentedControl,
   Section,
@@ -137,11 +138,7 @@ export function ChildForm({ childId }: Props) {
   }
 
   if (loading) {
-    return (
-      <View style={styles.centre}>
-        <Text style={styles.muted}>{t.common.loading}</Text>
-      </View>
-    );
+    return <LoadingBlock fill rows={4} />;
   }
 
   const parentPlaceholder = (accountValue: number | null | undefined, metric: string) =>

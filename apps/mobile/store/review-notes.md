@@ -23,7 +23,7 @@ Demo account (tap Sign in on the home screen):
 After the password, the app asks for a 6-digit code because the reviewer's device is new to the account. No email is sent for this demo address; enter 424242.
 Account deletion: sign in → Account (on the home screen) → "Delete my account" → confirm. This permanently deletes the account, all child profiles and all saved predictions immediately.
 Settings (gear icon) switches between English and Simplified Chinese and between metric and imperial units.
-There is no paid content, no in-app purchase and no subscription. There is no content shared between users (no posts, messages, comments or public profiles), so content reporting and blocking do not apply.
+Core prediction and the Baby estimate are free. Premium (auto-renewable subscription via App Store / Play Billing, managed with RevenueCat) unlocks AI insight, unlimited history, and multiple child profiles. Restore Purchases is on the paywall and Account screens. There is no content shared between users (no posts, messages, comments or public profiles), so content reporting and blocking do not apply.
 
 3. EXTERNAL SERVICES
 - Clerk (clerk.com): account sign-up, sign-in and email verification codes
@@ -32,7 +32,7 @@ There is no paid content, no in-app purchase and no subscription. There is no co
 - Google Cloud Run: runs our own machine-learning growth model (receives measurements only)
 - OpenAI API: the optional AI estimate and explanation (receives measurements, parents' heights and optional ethnicity; never names or account details)
 - CDC growth reference data (public domain) for percentiles
-No ads, analytics or tracking SDKs.
+Ads: Google AdMob banners for free-tier users only (Premium hides ads). No cross-app tracking SDKs beyond what AdMob requires for serving ads.
 
 4. REGIONAL DIFFERENCES
 None. The app works the same in every region. The language follows the in-app setting (English or Simplified Chinese).

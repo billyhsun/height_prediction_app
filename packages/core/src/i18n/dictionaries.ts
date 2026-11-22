@@ -645,6 +645,37 @@ const en = {
     resultsTitle: "Results | Heightmaxxing AI",
     resultsDescription: "Estimated height, weight, and BMI at your target age",
   },
+
+  tabs: {
+    predict: "Predict",
+    birth: "Birth",
+    children: "Children",
+    history: "History",
+    account: "Account",
+  },
+
+  paywall: {
+    title: "Go Premium",
+    subtitle:
+      "Unlock AI height insight, unlimited history, and multiple child profiles.",
+    featureAi: "AI insight on every prediction",
+    featureHistory: "Unlimited prediction history",
+    featureChildren: "Multiple child profiles",
+    cta: "Start Premium",
+    restore: "Restore purchases",
+    later: "Not now",
+    active: "Premium active",
+    freePlan: "Free plan",
+    manage: "Manage subscription",
+    upgrade: "Upgrade to Premium",
+    lockedAi: "AI insight is a Premium feature.",
+    lockedHistory: "You've reached the free history limit. Upgrade for unlimited history.",
+    lockedChildren: "Free accounts include one child profile. Upgrade to add more.",
+    restoring: "Restoring…",
+    purchaseFailed: "Purchase could not be completed.",
+    restoreFailed: "No purchases to restore.",
+    restoreOk: "Purchases restored.",
+  },
 };
 
 export type Dictionary = typeof en;
@@ -1168,6 +1199,36 @@ const zhCN: Dictionary = {
     description: "记录孩子的成长，并估算未来的身高、体重和 BMI。",
     resultsTitle: "预测结果 | Heightmaxxing AI",
     resultsDescription: "目标年龄的身高、体重和 BMI 估算",
+  },
+
+  tabs: {
+    predict: "预测",
+    birth: "出生",
+    children: "孩子",
+    history: "历史",
+    account: "账户",
+  },
+
+  paywall: {
+    title: "升级 Premium",
+    subtitle: "解锁 AI 身高解读、无限历史记录，以及多个孩子档案。",
+    featureAi: "每次预测附带 AI 解读",
+    featureHistory: "无限预测历史",
+    featureChildren: "多个孩子档案",
+    cta: "开通 Premium",
+    restore: "恢复购买",
+    later: "暂不",
+    active: "已开通 Premium",
+    freePlan: "免费方案",
+    manage: "管理订阅",
+    upgrade: "升级到 Premium",
+    lockedAi: "AI 解读是 Premium 功能。",
+    lockedHistory: "已达到免费历史记录上限。升级后可无限保存。",
+    lockedChildren: "免费账户可创建 1 个孩子档案。升级后可添加更多。",
+    restoring: "正在恢复…",
+    purchaseFailed: "购买未能完成。",
+    restoreFailed: "没有可恢复的购买。",
+    restoreOk: "购买已恢复。",
   },
 };
 

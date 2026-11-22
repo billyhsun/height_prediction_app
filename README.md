@@ -61,11 +61,12 @@ curl -X POST http://localhost:8000/api/v1/predict/llm \
 
 ## Docs
 
-- [System design](docs/design.md) — full architecture and roadmap
+- [System design & roadmap](docs/design.md) — architecture plus the single product roadmap (shipped vs next)
 - [Prediction backend](docs/prediction-api.md) — the ML endpoint contract and auth
 - [Auth & profiles setup](docs/auth-setup.md) — Clerk, Postgres, guest vs signed-in
 - [Model retraining plan](docs/model-retraining.md) — why the backend is failing, and what a retrain has to fix
 - [iOS release runbook](docs/ios-release.md) — EAS build profiles, store submission, and review-risk checklist
+- [Mobile store copy](apps/mobile/store/) — privacy, review notes, Play listing (Premium + ads)
 
 ## Disclaimer
 

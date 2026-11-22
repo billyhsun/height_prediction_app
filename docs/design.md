@@ -1,8 +1,8 @@
 # Heightmaxxing AI — System Design
 
-**Status:** Draft  
-**Last updated:** 2026-08-18  
-**Related:** [lab-surveys child BMI model](../../lab-surveys/backend/surveys/utils/child_bmi/child_bmi_survey.py)
+**Status:** Living doc  
+**Last updated:** 2026-11-20  
+**Related:** [lab-surveys child BMI model](../../lab-surveys/backend/surveys/utils/child_bmi/child_bmi_survey.py), [iOS release](ios-release.md), [mobile store copy](../apps/mobile/store/)
 
 ---
 
@@ -411,24 +411,11 @@ packages/prediction/models/svr-v1/
 
 When a new measurement is logged, show delta vs previous prediction at the same target age (e.g. "Predicted adult height updated from 172 cm to 175 cm").
 
-### UI modernization — prerequisite for the native apps
+### Design system (web + mobile)
 
-The current interface is functional but visually plain: stacked `fieldset` blocks, default Tailwind slate borders, no design language of its own. That was the right trade for a v0 web app. It is not the right starting point for iOS and Android, and the modernization needs to happen **before** the native work rather than after.
+Shared tokens live in `packages/core/src/design/tokens.ts`; web generates CSS from them, mobile adapts via `apps/mobile/components/ui/theme.ts`. Primitives (button, field, card, chart, loading/empty states) exist on both platforms.
 
-**Why the order matters.** Going native means rebuilding the UI regardless — Tailwind classes and DOM-based JSX do not port to React Native. Only the logic layer travels (`src/lib`: API client, validation, i18n dictionaries). So the visual design has to be settled *first*, or it gets built twice: once as a port of the dated web UI, then again when the redesign lands, with web and mobile drifting apart in between.
-
-**Why it also matters commercially.** App Store reviewers assess polish, and an app that reads as a styled web form invites scrutiny under guideline 4.2 (minimum functionality). Charging a subscription raises that bar further — users comparing a paid growth tracker against free alternatives judge it on feel within seconds.
-
-**Scope of the pass**
-
-- **Design tokens** — colour, type scale, spacing, radii, elevation — defined once so React Native can mirror the same values rather than approximating them.
-- **Component primitives** — button, input, select, card, chip — replacing the ad-hoc class strings currently repeated across forms.
-- **The growth chart as the signature screen.** It is the most distinctive thing this product does and currently does not exist. Design it as the centrepiece, not an afterthought.
-- **State coverage** — empty, loading, error, and offline states designed rather than defaulted. These are far more visible on mobile.
-- **Touch-first sizing** — 44pt minimum targets, thumb-reachable primary actions. Cheap to honour now, expensive to retrofit.
-- **Text-length tolerance.** With English and Simplified Chinese both shipping, labels vary in width; the layout must not depend on a particular string length.
-
-**Sequencing.** Do the redesign on web, where iteration costs nothing and there is no review cycle, then treat the finished web UI as the visual spec the native apps implement.
+**Still open:** keep web and mobile visually aligned when tokens change; deepen motion/empty-state polish on web to match the mobile shell (tabs, branded splash, structured empties).
 
 ---
 
@@ -530,69 +517,60 @@ CORS_ORIGINS=https://app.example.com
 
 ---
 
-## 13. Implementation phases
+## 13. Roadmap
 
-### Phase 0 — Foundation (≈1 week)
+Single source of truth for product sequencing. Older drafts split “UI modernization,” “native apps,” and “mobile loading / UX / paywall / ads” into separate phase lists; those are merged here. Store listing and privacy wording for IAP/ads lives under `apps/mobile/store/`.
 
-- [ ] Repo scaffold (`apps/`, `packages/`, Docker Compose)
-- [ ] Copy `.bin` models into `packages/prediction/models/svr-v1/`
-- [ ] Port prediction logic; unit tests against known lab-surveys outputs
-- [ ] `POST /predict/anonymous` smoke endpoint
-- [ ] CI pipeline
+### Shipped
 
-**Acceptance:** Prediction matches lab-surveys for same inputs (within float tolerance).
+| Theme | What landed |
+|-------|-------------|
+| Foundation | Monorepo (`apps/`, `packages/`), prediction package, guest + account predict paths |
+| Auth & profiles | Clerk, children, history, parent defaults, account deletion |
+| Design system | Shared tokens + web/mobile UI primitives; growth chart on results / children |
+| Mobile shell | Expo app, branded splash hold, `LoadingBlock` / `EmptyState`, tab navigation, header polish, results motion |
+| Monetization (client) | RevenueCat entitlements, paywall, free caps (1 child / 5 history / no AI), AdMob banner for non‑Premium |
+| Store copy | Review notes, privacy, Play listing updated for Premium + ads |
 
-### Phase 1 — MVP (≈2–3 weeks)
+**Monetization rules (current):** free = core ML predict + birth estimate + limited history + one child; Premium = AI insight + unlimited history + multi-child; ads only when `!isPremium`.
 
-- [ ] Auth integration (Clerk or Auth0)
-- [ ] DB schema + migrations (`users`, `children`, `measurements`, `predictions`)
-- [ ] CRUD APIs for children and measurements
-- [ ] `POST /children/{id}/predict` with persistence
-- [ ] Dashboard + child detail + log measurement + results UI
-- [ ] Deploy staging
+### Next
 
-**Acceptance:** User can sign up, add a child, log a measurement, run prediction, see result.
+#### A — Finish monetization for store
 
-### Phase 2 — History & polish (≈2 weeks)
+Merges former “Phase 6 IAP” with the mobile payments/ads work.
 
-- [ ] Growth chart with measurements and predictions
-- [ ] Prediction history list + compare view
-- [ ] Export child data (CSV)
-- [ ] Model load at startup; float precision fix verified
-- [ ] Error states, loading, empty states
+- [ ] Create App Store / Play subscription products; wire RevenueCat `premium` entitlement + offerings
+- [ ] Set production RevenueCat / AdMob keys (replace test AdMob app IDs in `app.json`)
+- [ ] Server-side entitlement checks on AI / history / multi-child APIs (client gate is best-effort today)
+- [ ] Confirm App Privacy / Play Data safety match `apps/mobile/store/privacy.md` (purchases + ads)
+- [ ] Optional: web paywall parity for the same Premium features
 
-**Acceptance:** Longitudinal use case works across multiple visits.
+#### B — Smarter predictions
 
-### Phase 3 — Smarter predictions (ongoing)
+Merges former “Phase 3” / LLM table with model work in [model-retraining.md](model-retraining.md).
 
-- [ ] Retrain model with velocity / history features (`svr-v2`)
-- [ ] LLM "explain my results" (read-only narrative)
-- [ ] A/B or shadow mode for new model versions
+- [ ] Retrain / pin model path (`svr-v2` or current Cloud Run model) with velocity / history features as available
+- [ ] Keep LLM as Premium insight (already gated on mobile); deepen grounding / guidance quality
+- [ ] Shadow or A/B new model versions behind `model_version`
 
-### Phase 4 — Scale & compliance
+#### C — Product polish & scale
 
-- [ ] Rate limiting, monitoring, alerting
-- [ ] Privacy policy + consent flows
-- [ ] Optional family sharing
+Merges former history polish leftovers, compliance, and family-sharing ideas.
 
-### Phase 5 — UI modernization (blocks Phase 6)
+- [ ] Export child / history data (CSV)
+- [ ] Prediction comparison across visits (“predicted adult height updated from … to …”)
+- [ ] Rate limiting, monitoring, alerting on predict endpoints
+- [ ] Optional family sharing / pediatrician read-only link (see §10 v2)
 
-- [ ] Design tokens and component primitives (see §8, *UI modernization*)
-- [ ] Growth chart designed and built as the signature screen
-- [ ] Empty / loading / error states designed rather than defaulted
-- [ ] Touch-first sizing and text-length tolerance across both locales
-
-**Acceptance:** the web UI is good enough to serve as the visual spec for the native apps — no screen that would need redesigning again once mobile ships.
-
-### Phase 6 — iOS and Android
-
-- [ ] Extract shared logic into `packages/core` (types, API client, validation, i18n)
-- [ ] Expo / React Native app implementing the Phase 5 design
-- [ ] Clerk bearer-token auth against the existing route handlers
-- [ ] In-app purchase wired to the entitlement layer
-- [ ] Store requirements: account deletion (done), privacy disclosures, health disclaimers
-
-**Depends on Phase 5.** Native work rebuilds the UI from scratch, so starting it before the redesign means building every screen twice and letting web and mobile diverge.
+```mermaid
+flowchart LR
+  shipped[Shipped_core_mobile_monetization_client]
+  shipped --> A[A_Store_monetization]
+  shipped --> B[B_Smarter_predictions]
+  A --> C[C_Polish_and_scale]
+  B --> C
+```
 
 ---
 

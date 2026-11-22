@@ -11,10 +11,14 @@ import {
   type SavedPredictionSummary,
 } from "@notch/core";
 
+import {
+  FREE_HISTORY_LIMIT,
+  useEntitlements,
+} from "@/components/entitlements";
 import { useI18n } from "@/components/i18n";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useUnits } from "@/components/units";
-import { Button, Card, fontSize, theme } from "@/components/ui";
+import { Button, Card, EmptyState, LoadingBlock, fontSize, theme } from "@/components/ui";
 
 export default function HistoryScreen() {
   return (
@@ -29,9 +33,15 @@ function History() {
   const router = useRouter();
   const { locale, t } = useI18n();
   const { units } = useUnits();
+  const { isPremium } = useEntitlements();
   const [predictions, setPredictions] = useState<SavedPredictionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const visible = isPremium
+    ? predictions
+    : predictions.slice(0, FREE_HISTORY_LIMIT);
+  const historyCapped =
+    !isPremium && predictions.length > FREE_HISTORY_LIMIT;
 
   useFocusEffect(
     useCallback(() => {
@@ -75,7 +85,7 @@ function History() {
     >
       <Text style={styles.subtitle}>{t.history.subtitle}</Text>
 
-      {loading ? <Text style={styles.muted}>{t.history.loading}</Text> : null}
+      {loading ? <LoadingBlock rows={3} /> : null}
 
       {error ? (
         <Card tone="muted" padding="sm">
@@ -84,17 +94,25 @@ function History() {
       ) : null}
 
       {!loading && !error && predictions.length === 0 ? (
-        <Card padding="lg">
+        <EmptyState
+          title={t.history.empty}
+          actionLabel={t.history.runPrediction}
+          onAction={() => router.replace("/")}
+        />
+      ) : null}
+
+      {historyCapped ? (
+        <Card tone="muted" padding="md">
           <View style={styles.rowGap}>
-            <Text style={styles.body}>{t.history.empty}</Text>
-            <Button size="sm" variant="secondary" onPress={() => router.replace("/")}>
-              {t.history.runPrediction}
+            <Text style={styles.body}>{t.paywall.lockedHistory}</Text>
+            <Button size="sm" onPress={() => router.push("/paywall")}>
+              {t.paywall.upgrade}
             </Button>
           </View>
         </Card>
       ) : null}
 
-      {predictions.map((p) => (
+      {visible.map((p) => (
         <Card key={p.id} padding="md">
           <View style={styles.rowGap}>
             <Text style={styles.body}>

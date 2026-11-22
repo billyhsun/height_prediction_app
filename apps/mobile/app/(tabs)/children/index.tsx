@@ -19,10 +19,22 @@ import {
   type SavedPredictionSummary,
 } from "@notch/core";
 
+import {
+  FREE_CHILD_LIMIT,
+  useEntitlements,
+} from "@/components/entitlements";
 import { useI18n } from "@/components/i18n";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useUnits } from "@/components/units";
-import { Button, Card, GrowthChart, fontSize, theme } from "@/components/ui";
+import {
+  Button,
+  Card,
+  EmptyState,
+  GrowthChart,
+  LoadingBlock,
+  fontSize,
+  theme,
+} from "@/components/ui";
 
 export default function ChildrenScreen() {
   return (
@@ -37,6 +49,7 @@ function ChildrenList() {
   const router = useRouter();
   const { locale, t } = useI18n();
   const { units } = useUnits();
+  const { isPremium } = useEntitlements();
   const [children, setChildren] = useState<ChildProfile[]>([]);
   // Saved predictions double as each child's height history for the charts.
   const [history, setHistory] = useState<SavedPredictionSummary[]>([]);
@@ -97,11 +110,27 @@ function ChildrenList() {
       {/* Navigates from its own onPress. Wrapped in <Link asChild><Pressable>,
           the Button (itself a Pressable) took the touch and the link never
           fired, so the button did nothing. */}
-      <Button size="lg" fullWidth onPress={() => router.push("/children/new")}>
+      <Button
+        size="lg"
+        fullWidth
+        onPress={() => {
+          if (!isPremium && children.length >= FREE_CHILD_LIMIT) {
+            router.push("/paywall");
+            return;
+          }
+          router.push("/children/new");
+        }}
+      >
         {t.children.addChild}
       </Button>
 
-      {loading ? <Text style={styles.muted}>{t.common.loading}</Text> : null}
+      {!isPremium && children.length >= FREE_CHILD_LIMIT ? (
+        <Card tone="muted" padding="sm">
+          <Text style={styles.body}>{t.paywall.lockedChildren}</Text>
+        </Card>
+      ) : null}
+
+      {loading ? <LoadingBlock rows={3} /> : null}
 
       {error ? (
         <Card tone="muted" padding="sm">
@@ -110,10 +139,7 @@ function ChildrenList() {
       ) : null}
 
       {!loading && !error && children.length === 0 ? (
-        <Card padding="lg">
-          <Text style={styles.body}>{t.children.empty}</Text>
-          <Text style={styles.muted}>{t.children.emptyHelp}</Text>
-        </Card>
+        <EmptyState title={t.children.empty} body={t.children.emptyHelp} />
       ) : null}
 
       {children.map((child) => {

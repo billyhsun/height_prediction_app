@@ -28,7 +28,7 @@ EXPECTING OR HAVE A BABY?
 No measurements needed. Estimate adult height from the parents' heights using the mid-parental (Tanner) method, the approach pediatricians use, and add birth length and weight if you have them.
 
 TRACK EVERY CHILD
-Create a free account to save a profile for each child, keep every prediction in your history, and watch how the estimate changes as they grow. Or use guest mode without signing up.
+Create a free account to save a child profile and recent history, or use guest mode without signing up. Premium unlocks AI insight, unlimited history, and multiple children.
 
 BUILT FOR FAMILIES
 • Metric or imperial units

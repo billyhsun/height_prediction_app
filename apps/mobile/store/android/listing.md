@@ -61,10 +61,11 @@ marketing/play-feature-graphic.png here.
 
 ## App content answers
 - **Privacy policy:** https://www.heightmaxxing-ai.app/privacy
-- **Ads:** No, the app contains no ads.
+- **Ads:** Yes — AdMob banners for free-tier users only. Premium subscribers see no ads.
 - **App access:** Some features are restricted. Guest mode needs no sign-in;
-  saved children and history need an account. Sign-in is by emailed code, so give
-  reviewers a Clerk test account (see "Reviewer account" below).
+  saved children and history need an account; Premium (Play Billing) unlocks AI
+  insight, unlimited history, and multiple children. Sign-in is by emailed code,
+  so give reviewers a Clerk test account (see "Reviewer account" below).
 - **Content rating (IARC):** Reference / utility, no violence, sexuality,
   language, controlled substances, gambling, user-to-user interaction or location
   sharing. Expect "Everyone" / PEGI 3.

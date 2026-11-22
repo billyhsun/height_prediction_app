@@ -8,29 +8,21 @@ import { GearIcon, SettingsSheet } from "@/components/SettingsSheet";
 import { Badge, fontSize, theme } from "@/components/ui";
 
 type ScreenHeaderProps = {
-  /** Shown as the screen's own title, since the native header is hidden. */
   title: string;
   subtitle?: string;
-  /** Marks a signed-out session on screens where that changes what happens to
-   *  the data — the prediction form, not every screen. */
   showGuestBadge?: boolean;
+  /** Compact brand row that stays visually sticky at the top of the screen. */
+  stickyBrand?: boolean;
 };
 
 /**
- * The equivalent of the web's sticky <Header>, minus the stickiness.
- *
- * The web can afford a persistent bar because a desktop viewport has the room.
- * At phone height a fixed 64px chrome costs a form field, so the same contents —
- * brand, settings, session — scroll with the page and each screen renders its
- * own. Language and units live behind the gear, mirroring the web header's
- * settings menu; as their own row they cost a form field too. Sign-out lives
- * here rather than behind Clerk's <UserButton>, which has no React Native
- * equivalent; the account screen will take it over when it lands.
+ * Brand + title block for tab screens (native header is hidden there).
  */
 export function ScreenHeader({
   title,
   subtitle,
   showGuestBadge = false,
+  stickyBrand = false,
 }: ScreenHeaderProps) {
   const { t } = useI18n();
   const { isSignedIn } = useAuth();
@@ -38,7 +30,7 @@ export function ScreenHeader({
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, stickyBrand && styles.sticky]}>
       <View style={styles.topRow}>
         <Text style={styles.brand}>{t.common.appName}</Text>
         <View style={styles.actions}>
@@ -90,6 +82,12 @@ export function ScreenHeader({
 
 const styles = StyleSheet.create({
   header: { gap: theme.space[2] },
+  sticky: {
+    paddingBottom: theme.space[2],
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.semantic.border,
+    marginBottom: theme.space[1],
+  },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -118,7 +116,7 @@ const styles = StyleSheet.create({
     gap: theme.space[3],
   },
   title: {
-    fontSize: fontSize["3xl"],
+    fontSize: fontSize["2xl"],
     fontWeight: "700",
     color: theme.semantic.textPrimary,
   },

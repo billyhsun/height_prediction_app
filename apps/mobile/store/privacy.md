@@ -6,8 +6,9 @@ policy text. Keep in step with https://www.heightmaxxing-ai.app/privacy.
 ## Plain-language summary
 
 Heightmaxxing AI collects only what it needs to make growth predictions and run
-your account. We don't show ads, don't track you across other apps or websites,
-and never sell your data.
+your account. Free-tier builds may show AdMob ads; Premium removes them. We
+never sell your data, and we don't track you across other apps beyond what the
+ad SDK requires to serve ads.
 
 - **Without an account (guest mode):** predictions are calculated and shown,
   but nothing is saved to a profile, and we never ask for a name or date of birth.
@@ -39,9 +40,13 @@ Functionality** for every type.
 | User Content → Other User Content | Child names and dates of birth | Yes |
 | Identifiers → User ID | Account ID | Yes |
 
-Not collected: location, contacts, browsing/search history, purchases (no
-in-app purchases on iOS), financial info, usage data, diagnostics, device ID,
-photos, audio.
+Purchases: Premium subscription status is handled by Apple/Google and
+RevenueCat (purchase receipts / app user id). Declare Purchases →
+Purchase History if Apple's questionnaire requires it for IAP.
+
+Not collected: location, contacts, browsing/search history, financial info
+beyond store subscription status, usage data, diagnostics, photos, audio.
+Device identifiers may be used by AdMob to serve ads on the free tier.
 
 If `ENABLE_GUEST_DATA_COLLECTION=true` is set in production, also declare
 Health and Sensitive Info as **Not linked to user**, purpose **Analytics**
@@ -74,6 +79,12 @@ server, guest mode included. It is stored only for signed-in users, unless
 `ENABLE_GUEST_DATA_COLLECTION=true` (see above). In that case, also tick
 **Analytics** for Health info and Race and ethnicity.
 
-Not collected: location, financial info, messages, photos/videos, audio, files,
-calendar, contacts, app activity, web browsing, app info and performance (crash
-logs, diagnostics), device or other IDs.
+Also declare for free-tier ads (AdMob):
+- App activity / Device or other IDs as collected and shared with Google for
+  Advertising, when ads are enabled.
+
+Also declare Purchases → In-app purchase history for Premium subscriptions
+(processed by Google Play Billing / RevenueCat).
+
+Not collected: location, messages, photos/videos, audio, files, calendar,
+contacts, web browsing, crash diagnostics beyond store defaults.

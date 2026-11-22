@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { useTranslations } from "@/components/i18n";
-import { Button, Card, fontSize, theme } from "@/components/ui";
+import { Button, Card, LoadingBlock, fontSize, theme } from "@/components/ui";
 
 /**
  * Gate for the screens that need an account.
@@ -22,11 +22,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const t = useTranslations();
 
   if (!isLoaded) {
-    return (
-      <View style={styles.centre}>
-        <Text style={styles.muted}>{t.common.loading}</Text>
-      </View>
-    );
+    return <LoadingBlock fill rows={2} />;
   }
 
   if (!isSignedIn) {
@@ -66,11 +62,6 @@ const styles = StyleSheet.create({
   body: {
     fontSize: fontSize.sm,
     lineHeight: 21,
-    color: theme.semantic.textSecondary,
-  },
-  muted: {
-    fontSize: fontSize.sm,
-    textAlign: "center",
     color: theme.semantic.textSecondary,
   },
 });

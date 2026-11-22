@@ -13,5 +13,12 @@ expo-env.d.ts
 .env
 .env.local
 
+# EAS Android signing credentials downloaded locally
+credentials.json
+credentials/
+*.jks
+*.keystore
+upload_certificate.pem
+
 # Output of scripts/verify-ui.mjs
 .verify-dist/

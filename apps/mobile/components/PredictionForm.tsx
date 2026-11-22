@@ -40,6 +40,7 @@ import {
   type UnitSystem,
 } from "@notch/core";
 
+import { useEntitlements } from "@/components/entitlements";
 import { useI18n } from "@/components/i18n";
 import { useUnits } from "@/components/units";
 import {
@@ -221,6 +222,7 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
   const { locale, t } = useI18n();
   const { units } = useUnits();
   const { isLoaded: authLoaded, isSignedIn } = useAuth();
+  const { isPremium } = useEntitlements();
 
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [selectedChildId, setSelectedChildId] = useState(initialChildId ?? "");
@@ -444,7 +446,8 @@ export function PredictionForm({ initial, initialChildId }: PredictionFormProps)
       let llmResult = null;
       let llmError: string | null = null;
 
-      if (hasParentHeights(inputs)) {
+      // AI insight is Premium-only; free users still get the core ML prediction.
+      if (isPremium && hasParentHeights(inputs)) {
         try {
           llmResult = await predictLlm(inputs);
         } catch (err) {

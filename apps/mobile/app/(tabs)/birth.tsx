@@ -25,6 +25,7 @@ import {
 } from "@notch/core";
 
 import { useTranslations } from "@/components/i18n";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useUnits } from "@/components/units";
 import {
   Badge,
@@ -195,7 +196,7 @@ export default function BirthScreen() {
       contentContainerStyle={[
         styles.page,
         {
-          paddingTop: theme.space[5],
+          paddingTop: theme.space[4] + insets.top,
           paddingBottom: theme.space[5] + insets.bottom,
         },
       ]}
@@ -203,10 +204,11 @@ export default function BirthScreen() {
       keyboardDismissMode="on-drag"
       automaticallyAdjustKeyboardInsets
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>{t.birth.title}</Text>
-        <Text style={styles.subtitle}>{t.birth.subtitle}</Text>
-      </View>
+      <ScreenHeader
+        title={t.birth.title}
+        subtitle={t.birth.subtitle}
+        stickyBrand
+      />
 
       <Section title={t.birth.babyLegend} description={t.birth.sexHint}>
         <View style={styles.stack}>

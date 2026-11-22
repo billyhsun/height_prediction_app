@@ -86,15 +86,19 @@ Before submitting **for App Store review**, App Store Connect needs:
   | Health & fitness → Health | Yes (child height/weight/DOB) | Yes, on an account | No | App functionality |
   | Sensitive info | Yes — ethnicity, when the user opts to enter it | Yes, on an account | No | App functionality |
   | Identifiers → User ID | Yes (Clerk user id) | Yes | No | App functionality |
-  | Everything else (location, browsing, purchases, diagnostics, ads) | No | — | — | — |
+  | Purchases → Purchase History | Yes (Premium via StoreKit / RevenueCat) | Yes | No | App functionality |
+  | Identifiers → Device ID | Yes when AdMob serves free-tier ads | No / per AdMob | See ATT | Advertising |
+  | Everything else (location, browsing, diagnostics) | No | — | — | — |
 
+  Canonical answers: [`apps/mobile/store/privacy.md`](../apps/mobile/store/privacy.md).
   Guest-mode caveat: with `ENABLE_GUEST_DATA_COLLECTION` off (the default),
   guest predictions are not collected at all. If that flag is ever turned on,
   the labels above still hold — the guest rows carry no identifiers — but
   "Health & fitness" then also applies to users without accounts, collected
   "not linked to identity".
-- **Tracking**: none. No ATT prompt is needed; answer "no" to tracking
-  throughout.
+- **Tracking**: AdMob may require an ATT prompt on iOS when personalized ads
+  are enabled. Prefer non-personalized requests until ATT is productized; keep
+  store answers aligned with the actual SDK flags.
 - **Listing assets** — description, keywords, support URL, screenshots for
   6.9" and 6.5" iPhones (and 13" iPad while `supportsTablet` is true — drop
   tablet support if nobody will maintain iPad screenshots).
@@ -106,9 +110,10 @@ Before submitting **for App Store review**, App Store Connect needs:
 
 ## Known review risks
 
-- **Guideline 4.2 (minimum functionality)** — see the UI-modernization section
-  of [design.md](design.md). The growth chart helps; make sure empty/loading/
-  error states look intentional before submitting.
+- **Guideline 4.2 (minimum functionality)** — see the design-system / roadmap
+  sections of [design.md](design.md). Tabs, growth chart, and intentional
+  empty/loading states are in the mobile app; keep them intentional before
+  submit.
 - **Guideline 5.1.1 / health data** — the in-app "not medical advice"
   disclaimers already shown on prediction screens are what reviewers look for;
   keep them visible.

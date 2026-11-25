@@ -12,7 +12,8 @@
       "bundleIdentifier": "ai.heightmaxxing.app",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserTrackingUsageDescription": "This identifier is used to deliver personalized ads on the free plan. Premium removes ads."
       }
     },
     "plugins": [

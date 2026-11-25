@@ -13,7 +13,6 @@
     "@clerk/clerk-expo": "^2.20.0",
     "@clerk/shared": "^3.48.0",
     "@notch/core": "*",
-    "@react-navigation/bottom-tabs": "^7.22.0",
     "expo": "~57.0.26",
     "expo-constants": "~57.0.20",
     "expo-linking": "~57.0.11",

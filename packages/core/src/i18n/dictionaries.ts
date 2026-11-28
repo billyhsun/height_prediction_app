@@ -1,3 +1,4 @@
+import { formatAgeYears } from "../age";
 import type { Locale } from "./config";
 
 /** Percentiles read as "N in 100", clamped so the tails never say 0 or 100. */
@@ -27,7 +28,7 @@ const en = {
      *  inference would otherwise narrow to the English literals. */
     sexNoun: (sex: number): string => (sex === 1 ? "male" : "female"),
     disclaimer: "For informational purposes only. Not medical advice.",
-    years: (n: number) => `${n} years`,
+    years: (n: number) => `${formatAgeYears(n)} years`,
     /** Compact because it appears inline in chips and list rows. Months are
      *  dropped at a whole number of years rather than rendered as "0m". */
     ageYearsMonths: (years: number, months: number): string =>
@@ -282,7 +283,8 @@ const en = {
     failedToLoad: "Failed to load history",
     empty: "No saved predictions yet.",
     runPrediction: "Run a prediction",
-    ageTransition: (from: number, to: number) => `age ${from} → ${to}`,
+    ageTransition: (from: number, to: number) =>
+      `age ${formatAgeYears(from)} → ${formatAgeYears(to)}`,
     llmValue: (height: string) => `LLM: ${height}`,
   },
 
@@ -298,9 +300,9 @@ const en = {
       ageAxis: "age (years)",
       heightAxis: (unit: string) => `height (${unit})`,
     },
-    atAge: (age: number) => `At age ${age}`,
+    atAge: (age: number) => `At age ${formatAgeYears(age)}`,
     basedOn: (age: number, sexNoun: string, height: string, weight: string) =>
-      `Based on a ${age}-year-old ${sexNoun} measuring ${height} and ${weight}.`,
+      `Based on a ${formatAgeYears(age)}-year-old ${sexNoun} measuring ${height} and ${weight}.`,
     savedToAccount: "Saved to your account",
     viewHistory: "View history",
     mlModel: "ML model",
@@ -333,8 +335,9 @@ const en = {
      *  see stature-reference.ts. */
     heightForAge: {
       heading: "Height for age",
-      nowColumn: (age: number) => `Now, at age ${age}`,
-      futureColumn: (age: number) => `Predicted, at age ${age}`,
+      nowColumn: (age: number) => `Now, at age ${formatAgeYears(age)}`,
+      futureColumn: (age: number) =>
+        `Predicted, at age ${formatAgeYears(age)}`,
       /** Clamped at the edges: past the 1st or 99th the rounded number stops
        *  meaning anything, and false precision alarms parents. */
       percentile: (p: number): string => {
@@ -694,7 +697,7 @@ const zhCN: Dictionary = {
     female: "女",
     sexNoun: (sex: number) => (sex === 1 ? "男孩" : "女孩"),
     disclaimer: "仅供参考，不构成医疗建议。",
-    years: (n: number) => `${n} 岁`,
+    years: (n: number) => `${formatAgeYears(n)} 岁`,
     ageYearsMonths: (years: number, months: number): string =>
       months === 0 ? `${years} 岁` : `${years} 岁 ${months} 个月`,
     listSeparator: "、",
@@ -898,7 +901,8 @@ const zhCN: Dictionary = {
     failedToLoad: "加载历史记录失败",
     empty: "还没有保存的预测记录。",
     runPrediction: "开始预测",
-    ageTransition: (from: number, to: number) => `${from} 岁 → ${to} 岁`,
+    ageTransition: (from: number, to: number) =>
+      `${formatAgeYears(from)} 岁 → ${formatAgeYears(to)} 岁`,
     llmValue: (height: string) => `大语言模型：${height}`,
   },
 
@@ -913,9 +917,9 @@ const zhCN: Dictionary = {
       ageAxis: "年龄（岁）",
       heightAxis: (unit: string) => `身高（${unit}）`,
     },
-    atAge: (age: number) => `${age} 岁时`,
+    atAge: (age: number) => `${formatAgeYears(age)} 岁时`,
     basedOn: (age: number, sexNoun: string, height: string, weight: string) =>
-      `基于一名 ${age} 岁${sexNoun}，身高 ${height}，体重 ${weight}。`,
+      `基于一名 ${formatAgeYears(age)} 岁${sexNoun}，身高 ${height}，体重 ${weight}。`,
     savedToAccount: "已保存到您的账户",
     viewHistory: "查看历史记录",
     mlModel: "机器学习模型",
@@ -939,8 +943,9 @@ const zhCN: Dictionary = {
     statureCaveat: "与同龄同性别的孩子相比。健康儿童之间差异很大。",
     heightForAge: {
       heading: "同龄身高对比",
-      nowColumn: (age: number) => `现在（${age} 岁）`,
-      futureColumn: (age: number) => `预测（${age} 岁）`,
+      nowColumn: (age: number) => `现在（${formatAgeYears(age)} 岁）`,
+      futureColumn: (age: number) =>
+        `预测（${formatAgeYears(age)} 岁）`,
       percentile: (p: number): string => {
         const rounded = Math.round(p);
         if (rounded < 1) return "低于第 1 百分位";

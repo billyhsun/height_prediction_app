@@ -7,16 +7,19 @@
 //   tablet10: Play 10" tablet, 9:16 at 810x1440dp @2 = 1620x2880px
 // usage: node shoot.mjs <mobileRoot> <outDir> [skipExport] [ios|android|tablet7|tablet10]
 import { spawn, spawnSync } from "node:child_process";
-import { createServer } from "node:http";
+import { createServer as createHttpsServer } from "node:https";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { extname, join, normalize } from "node:path";
+import { dirname, extname, join, normalize } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const [MOBILE, OUT, SKIP, PLATFORM = "ios"] = process.argv.slice(2);
 const ANDROID = PLATFORM !== "ios"; // phones and tablets share the Android status bar
-const API = "https://heightmaxxing-ai.vercel.app"; // same deployment; corp proxy blocks the new domain
+const API = "https://www.heightmaxxing-ai.app";
 const PORT = 5050, CDP = 9233;
-const DIST = join(OUT, "..", "dist");
+const STORE_ROOT = dirname(fileURLToPath(import.meta.url));
+const DIST = join(STORE_ROOT, "dist");
 const VIEWPORT = {
   ios: { width: 440, height: 956, deviceScaleFactor: 3, mobile: true },
   android: { width: 405, height: 720, deviceScaleFactor: 8 / 3, mobile: true },
@@ -40,7 +43,14 @@ if (!SKIP) {
 }
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".png": "image/png", ".ttf": "font/ttf", ".svg": "image/svg+xml" };
-const server = createServer(async (req, res) => {
+const tlsKey = join(STORE_ROOT, ".certs", "key.pem");
+const tlsCert = join(STORE_ROOT, ".certs", "cert.pem");
+if (!existsSync(tlsKey) || !existsSync(tlsCert)) {
+  throw new Error("Missing .certs/key.pem + cert.pem (needed because .app requires HTTPS)");
+}
+const server = createHttpsServer(
+  { key: await readFile(tlsKey), cert: await readFile(tlsCert) },
+  async (req, res) => {
   if (req.url.startsWith("/api/guest/")) return res.writeHead(204).end(); // keep prod stats clean
   if (req.url.startsWith("/api/")) {
     const chunks = []; for await (const c of req) chunks.push(c);
@@ -59,8 +69,30 @@ const server = createServer(async (req, res) => {
 await new Promise((r) => server.listen(PORT, r));
 
 const profile = await mkdtemp(join(tmpdir(), "shots-"));
-const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  ["--headless=new", "--hide-scrollbars", `--remote-debugging-port=${CDP}`, `--user-data-dir=${profile}`, "about:blank"], { stdio: "ignore" });
+const chromeCandidates = process.platform === "win32"
+  ? [
+      process.env.CHROME_PATH,
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+      join(process.env.LOCALAPPDATA || "", "Google", "Chrome", "Application", "chrome.exe"),
+    ]
+  : [process.env.CHROME_PATH, "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"];
+const chromeBin = chromeCandidates.find((p) => p && existsSync(p));
+if (!chromeBin) throw new Error("Chrome not found; set CHROME_PATH");
+// Production Clerk keys only allow Origin on *.heightmaxxing-ai.app. Map a
+// shots.* host to localhost (avoids HSTS on the apex / www names).
+const chrome = spawn(chromeBin,
+  [
+    "--headless=new",
+    "--hide-scrollbars",
+    `--remote-debugging-port=${CDP}`,
+    `--user-data-dir=${profile}`,
+    "--ignore-certificate-errors",
+    "--allow-insecure-localhost",
+    "--host-resolver-rules=MAP shots.heightmaxxing-ai.app 127.0.0.1",
+    "about:blank",
+  ],
+  { stdio: "ignore" });
 let list;
 for (let i = 0; i < 40; i++) { try { list = await (await fetch(`http://127.0.0.1:${CDP}/json/list`)).json(); if (list.find((t) => t.type === "page")) break; } catch {} await sleep(500); }
 const ws = new WebSocket(list.find((t) => t.type === "page").webSocketDebuggerUrl);
@@ -69,15 +101,68 @@ let id = 0; const pending = new Map();
 ws.onmessage = (m) => { const x = JSON.parse(m.data); if (x.id && pending.has(x.id)) { const p = pending.get(x.id); pending.delete(x.id); x.error ? p.rej(new Error(JSON.stringify(x.error))) : p.res(x.result); } };
 const send = (method, params = {}) => new Promise((res, rej) => { const n = ++id; pending.set(n, { res, rej }); ws.send(JSON.stringify({ id: n, method, params })); });
 const ev = async (expression) => { const r = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.text + " " + JSON.stringify(r.exceptionDetails.exception?.description)); return r.result.value; };
-const waitText = async (s, ms = 60000) => { const d = Date.now() + ms; while (Date.now() < d) { if (await ev(`document.body.innerText.includes(${JSON.stringify(s)})`).catch(() => false)) return; await sleep(500); } const {data}=await send("Page.captureScreenshot",{format:"png"}); await writeFile(join(OUT,"debug.png"),Buffer.from(data,"base64")); console.log("BODY:", (await ev("document.body.innerText")).slice(0,500), "\nURL:", await ev("location.href")); throw new Error("timeout waiting for " + s); };
+const waitText = async (s, ms = 60000) => {
+  const d = Date.now() + ms;
+  while (Date.now() < d) {
+    const hit = await ev(`document.body.innerText.toLowerCase().includes(${JSON.stringify(s.toLowerCase())})`).catch(() => false);
+    if (hit) return;
+    await sleep(500);
+  }
+  const { data } = await send("Page.captureScreenshot", { format: "png" });
+  await writeFile(join(OUT, "debug.png"), Buffer.from(data, "base64"));
+  console.log("BODY:", (await ev("document.body.innerText")).slice(0, 500), "\nURL:", await ev("location.href"));
+  throw new Error("timeout waiting for " + s);
+};
 const click = async (text) => {
-  const ok = await ev(`(() => { const hits=[...document.querySelectorAll('div,span')].filter(e=>e.textContent.trim()===${JSON.stringify(text)}&&e.getClientRects().length);
-    const el=hits.filter(e=>!hits.some(o=>o!==e&&e.contains(o)))[0]; if(!el) return false; el.scrollIntoView({block:'center'}); window.__t=el; return true; })()`);
+  const ok = await ev(`(() => {
+    const nodes=[...document.querySelectorAll('div,span,button,a,[role="button"]')];
+    const hits=nodes.filter(e=>e.textContent.trim()===${JSON.stringify(text)}&&e.getClientRects().length);
+    let el=hits.filter(e=>!hits.some(o=>o!==e&&e.contains(o)))[0];
+    if(!el) return false;
+    // Walk up to the pressable / button host RN web actually listens on.
+    let host=el;
+    for (let i=0;i<6&&host;i++) {
+      const role=host.getAttribute?.('role');
+      const clickable=role==='button'||host.tagName==='BUTTON'||host.tagName==='A'||getComputedStyle(host).cursor==='pointer';
+      if (clickable) { el=host; break; }
+      host=host.parentElement;
+    }
+    el.scrollIntoView({block:'center'});
+    window.__t=el;
+    return true;
+  })()`);
   if (!ok) throw new Error("no element " + text);
-  await sleep(300);
+  await sleep(400);
+  const pressed = await ev(`(() => {
+    const el = window.__t;
+    const fire = (node) => {
+      if (!node) return false;
+      const propsKey = Object.keys(node).find((k) => k.startsWith('__reactProps$'));
+      const fiberKey = Object.keys(node).find((k) => k.startsWith('__reactFiber$'));
+      const props = propsKey ? node[propsKey] : null;
+      if (props?.onClick) { props.onClick({ preventDefault(){}, stopPropagation(){}, nativeEvent:{} }); return true; }
+      if (props?.onPress) { props.onPress({ preventDefault(){}, stopPropagation(){} }); return true; }
+      const fiber = fiberKey ? node[fiberKey] : null;
+      let f = fiber;
+      for (let i = 0; i < 8 && f; i++) {
+        const p = f.memoizedProps || f.pendingProps;
+        if (p?.onPress) { p.onPress({ preventDefault(){}, stopPropagation(){} }); return true; }
+        if (p?.onClick) { p.onClick({ preventDefault(){}, stopPropagation(){}, nativeEvent:{} }); return true; }
+        f = f.return;
+      }
+      return false;
+    };
+    if (fire(el)) return 'react';
+    let n = el;
+    for (let i = 0; i < 6 && n; i++) { if (fire(n)) return 'react-parent'; n = n.parentElement; }
+    try { el.click(); return 'dom'; } catch { return 'none'; }
+  })()`);
+  console.log("click", text, pressed);
   const b = await ev(`(()=>{const r=window.__t.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
-  for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x: b.x, y: b.y, button: "left", clickCount: 1 });
-  await sleep(700);
+  for (const type of ["mousePressed", "mouseReleased"]) {
+    await send("Input.dispatchMouseEvent", { type, x: b.x, y: b.y, button: "left", clickCount: 1 });
+  }
+  await sleep(900);
 };
 const setInput = async (current, next) => {
   const ok = await ev(`(() => { const el=[...document.querySelectorAll('input')].find(i=>i.value===${JSON.stringify(current)}); if(!el) return false;
@@ -112,29 +197,86 @@ const shot = async (name) => {
   await writeFile(join(OUT, name + ".png"), Buffer.from(data, "base64"));
   console.log("saved", name);
 };
-const go = async (path, text) => { await send("Page.navigate", { url: `http://localhost:${PORT}${path}` }); await waitText(text); await sleep(1200); };
+const ORIGIN = `https://shots.heightmaxxing-ai.app:${PORT}`;
+const go = async (path, text) => { await send("Page.navigate", { url: `${ORIGIN}${path}` }); await waitText(text); await sleep(1200); };
 
 await mkdir(OUT, { recursive: true });
 try {
-  await send("Page.enable"); await send("Runtime.enable"); await send("Log.enable"); ws.addEventListener("message", m => { const x=JSON.parse(m.data); if (x.method==="Runtime.exceptionThrown"||(x.method==="Log.entryAdded"&&x.params.entry.level==="error")||(x.method==="Runtime.consoleAPICalled"&&x.params.type==="error")) console.log("ERR", JSON.stringify(x.params.exceptionDetails?.exception?.description ?? x.params).slice(0,600)); });
+  await send("Page.enable"); await send("Runtime.enable"); await send("Log.enable"); await send("Network.enable");
+  ws.addEventListener("message", m => {
+    const x=JSON.parse(m.data);
+    if (x.method==="Runtime.exceptionThrown"||(x.method==="Log.entryAdded"&&x.params.entry.level==="error")||(x.method==="Runtime.consoleAPICalled"&&x.params.type==="error")) console.log("ERR", JSON.stringify(x.params.exceptionDetails?.exception?.description ?? x.params).slice(0,600));
+    if (x.method==="Network.responseReceived" && /\/api\//.test(x.params?.response?.url||"")) {
+      console.log("API", x.params.response.status, x.params.response.url);
+    }
+  });
   await send("Emulation.setDeviceMetricsOverride", VIEWPORT);
   await send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
 
   const fillEmpty = (vals) => ev(`(() => { const e=[...document.querySelectorAll('input')].filter(i=>!i.value&&i.getClientRects().length&&getComputedStyle(i).visibility!=='hidden'&&!i.closest('[aria-hidden="true"]'));
     ${JSON.stringify(vals)}.forEach((v,k)=>{ Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e[k],v); e[k].dispatchEvent(new Event('input',{bubbles:true})); }); })()`).then(() => sleep(400));
-  const waitRe = (re, ms) => ev(`new Promise(r=>{const d=Date.now()+${ms};(function f(){const t=document.body.innerText;if((${re}).test(t)||Date.now()>d)return r();setTimeout(f,800)})()})`);
+  const waitRe = async (re, ms, label = String(re)) => {
+  const ok = await ev(`new Promise(r=>{const d=Date.now()+${ms};(function f(){const t=document.body.innerText;if((${re}).test(t))return r(true);if(Date.now()>d)return r(false);setTimeout(f,800)})()})`);
+  if (!ok) throw new Error("timeout waiting for " + label);
+};
 
   // 1. form
   await go("/", "Get prediction");
   await setInput("110", "112");
-  await fillEmpty(["165", "180"]);   // mother, father height
+  // Prefer labeled fields over "first empty inputs" — parent weights are also empty.
+  await ev(`(() => {
+    const byLabel=(label,val)=>{
+      const lab=[...document.querySelectorAll('div,span,label')].find(e=>e.textContent.trim()===label);
+      if(!lab) return false;
+      let root=lab.parentElement;
+      for(let i=0;i<5&&root;i++){ const input=root.querySelector('input'); if(input){ Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,val); input.dispatchEvent(new Event('input',{bubbles:true})); return true;} root=root.parentElement; }
+      return false;
+    };
+    byLabel("Mother's height (cm)","165");
+    byLabel("Father's height (cm)","180");
+  })()`);
+  await sleep(400);
   await scrollTop();
   await shot("01-form");
 
-  // 2-3. results
-  await click("Get prediction");
-  await waitRe(/predicted height/i, 60000);
-  await waitRe(/^(?![\s\S]*(Writing an explanation|Loading|Thinking))/, 90000);
+  // 2-3. results — try the real button, then seed sessionStorage + navigate
+  // (RN-web onPress is unreliable under headless CDP).
+  await scrollTo("Get prediction", 200);
+  await click("Get prediction").catch((e) => console.log("click warn", e.message));
+  let onResults = false;
+  for (let i = 0; i < 8; i++) {
+    const state = await ev(`({ href: location.href, text: document.body.innerText.slice(0, 800) })`);
+    if (/\/results/i.test(state.href) || /predicted height|Likely range|Growth curve/i.test(state.text)) {
+      onResults = true;
+      break;
+    }
+    await sleep(1000);
+  }
+  if (!onResults) {
+    console.log("seeding results via API");
+    const seeded = await ev(`(async () => {
+      const inputs = {
+        sex: 1, height_cm: 112, weight_kg: 20,
+        current_age_years: 5, target_age_years: 18,
+        mother_height_cm: 165, father_height_cm: 180,
+      };
+      const res = await fetch("/api/v1/predict", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(inputs),
+      });
+      if (!res.ok) return "predict-http-" + res.status + " " + (await res.text()).slice(0, 200);
+      const result = await res.json();
+      sessionStorage.setItem("height-prediction-result", JSON.stringify({
+        inputs, result, llmResult: null, llmError: null, childId: null,
+      }));
+      location.href = "/results";
+      return "ok";
+    })()`);
+    console.log("seed", seeded);
+    if (seeded !== "ok") throw new Error("seed failed: " + seeded);
+    await waitText("predicted height", 60000);
+  }
   await sleep(2500);
   await writeFile(join(OUT, "results.txt"), await ev("document.body.innerText"));
   await scrollTop();
@@ -142,10 +284,9 @@ try {
   console.log("scroll03", await scrollTo("height over time", 110));
   await shot("03-results-more");
 
-  // 4-5. baby / unborn
-  await go("/", "Get prediction");
-  await click("A baby's adult height");
-  await waitText("Estimate adult height"); await sleep(1200);
+  // 4. baby / unborn (Birth tab)
+  await go("/birth", "Estimate adult height");
+  await sleep(1200);
   await click("Not yet born");
   await fillEmpty(["165", "180"]);
   await click("Estimate adult height");
@@ -153,7 +294,7 @@ try {
   await waitRe(/^(?![\s\S]*Writing an explanation)/, 90000);
   await sleep(1500);
   await writeFile(join(OUT, "birth.txt"), await ev("document.body.innerText"));
-  await scrollTo("mid-parental", ANDROID ? 190 : 175);
+  console.log("scrollBaby", await scrollTo("mid-parental", ANDROID ? 120 : 100));
   await shot("04-baby");
 } finally {
   ws.close(); chrome.kill(); server.close();

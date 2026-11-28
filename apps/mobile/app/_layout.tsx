@@ -53,8 +53,16 @@ function ApiBridge({ children }: { children: React.ReactNode }) {
     if (baseUrl) configureApiBaseUrl(baseUrl);
 
     configureApiHeaders(async (): Promise<Record<string, string>> => {
-      const token = await getToken();
-      return token ? { Authorization: `Bearer ${token}` } : {};
+      // Guest / screenshot / flaky Clerk: don't block API calls on a hung getToken.
+      try {
+        const token = await Promise.race([
+          getToken(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 800)),
+        ]);
+        return token ? { Authorization: `Bearer ${token}` } : {};
+      } catch {
+        return {};
+      }
     });
   }, [getToken]);
 

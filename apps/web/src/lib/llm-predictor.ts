@@ -13,12 +13,15 @@
 import {
   DEFAULT_LOCALE,
   LOCALE_LANGUAGE_NAMES,
+  dictionaries,
+  formatAgeYears,
+  isStatureBand,
+  midParentalHeightCm,
+  sanitizeEthnicities,
+  statureStats,
   type Locale,
+  type StatureBand,
 } from "@notch/core";
-import { dictionaries } from "@notch/core";
-import { sanitizeEthnicities } from "@notch/core";
-import { isStatureBand, midParentalHeightCm, type StatureBand } from "@notch/core";
-import { statureStats } from "@notch/core";
 
 /**
  * Overridable so the endpoint can be pointed at an Azure OpenAI deployment, a
@@ -126,23 +129,23 @@ export function buildLlmPrompt(
     ? `
 Reference context, computed from the CDC LMS growth tables. Do not re-estimate
 these figures; they are what the app shows the parent:
-- The child's current height is at the ${stats.percentile.toFixed(0)}th percentile for ${sexLabel} children aged ${inputs.current_age_years} — "${stats.band}", where "average" means the middle 80%.
+- The child's current height is at the ${stats.percentile.toFixed(0)}th percentile for ${sexLabel} children aged ${formatAgeYears(inputs.current_age_years)} — "${stats.band}", where "average" means the middle 80%.
 - The typical range (10th–90th percentile) at this age is ${stats.typicalRange.lowCm.toFixed(1)}–${stats.typicalRange.highCm.toFixed(1)} cm.
 `
     : "";
   const statureBandInstruction = stats
     ? `- stature_band: exactly "${stats.band}", restating the computed reference context above (string)`
-    : `- stature_band: how the child's CURRENT height of ${inputs.height_cm} cm compares with other ${sexLabel} children aged ${inputs.current_age_years}, against a standard growth reference (WHO or CDC). Exactly one of "below_average", "average", or "above_average" (string). Use "average" for roughly the middle 80% of children — that is the usual answer. Judge current height for current age only; do not use the predicted adult height.`;
+    : `- stature_band: how the child's CURRENT height of ${inputs.height_cm} cm compares with other ${sexLabel} children aged ${formatAgeYears(inputs.current_age_years)}, against a standard growth reference (WHO or CDC). Exactly one of "below_average", "average", or "above_average" (string). Use "average" for roughly the middle 80% of children — that is the usual answer. Judge current height for current age only; do not use the predicted adult height.`;
 
   return `Estimate a child's future height for an educational app.
 
 Child:
 - Sex: ${sexLabel}
-- Current age: ${inputs.current_age_years} years
+- Current age: ${formatAgeYears(inputs.current_age_years)} years
 - Current height: ${inputs.height_cm} cm
 - Current weight: ${inputs.weight_kg} kg
 - Current BMI: ${bmi.toFixed(1)}
-- Target age: ${inputs.target_age_years} years
+- Target age: ${formatAgeYears(inputs.target_age_years)} years
 ${ethnicityLine}
 Parents:
 - Mother height: ${inputs.mother_height_cm} cm${parentBuild(inputs.mother_height_cm, inputs.mother_weight_kg)}

@@ -1,3 +1,4 @@
+import { formatAgeYears } from "./age";
 import type { ChartPoint } from "./design/chart";
 import type { Dictionary } from "./i18n/dictionaries";
 import { formatHeight, heightInDisplayUnit, type UnitSystem } from "./units";
@@ -66,7 +67,7 @@ export function childGrowthChartData(
     predictionChange:
       previousHeight && previousHeight !== latestHeight
         ? t.children.predictionChange(
-            new Intl.NumberFormat(locale).format(latest.targetAgeYears),
+            formatAgeYears(latest.targetAgeYears),
             previousHeight,
             latestHeight,
           )

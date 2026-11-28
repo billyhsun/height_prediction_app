@@ -71,6 +71,20 @@ export function ageYearsFromMonths(months: number): number {
   return months / MONTHS_PER_YEAR;
 }
 
+/**
+ * Human-readable decimal age for UI copy.
+ *
+ * Ages travel as floating-point years (4y 1m → 4.0833…), which looks broken
+ * when interpolated into strings. Quantise back to whole months — the same
+ * resolution the rest of age math uses — then render without float residue
+ * ("4.08", "5", never "4.083333333333333").
+ */
+export function formatAgeYears(years: number): string {
+  if (!Number.isFinite(years)) return String(years);
+  const months = Math.round(years * MONTHS_PER_YEAR);
+  return String(Number((months / MONTHS_PER_YEAR).toFixed(2)));
+}
+
 export function ageYearsFromYearsMonths(age: AgeYearsMonths): number {
   return ageYearsFromMonths(totalMonths(age));
 }
